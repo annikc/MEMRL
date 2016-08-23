@@ -1,0 +1,581 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="744.09448819"
+   height="1052.3622047"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.4 r9939"
+   sodipodi:docname="student_example1.svg">
+  <defs
+     id="defs4">
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1Mend"
+       style="overflow:visible;">
+      <path
+         id="path4222"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;"
+         transform="scale(0.4) rotate(180) translate(10,0)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="2.8284271"
+     inkscape:cx="469.848"
+     inkscape:cy="809.23993"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="472"
+     inkscape:window-height="383"
+     inkscape:window-x="635"
+     inkscape:window-y="440"
+     inkscape:window-maximized="0" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       sodipodi:type="arc"
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="path2985"
+       sodipodi:cx="191.42857"
+       sodipodi:cy="226.6479"
+       sodipodi:rx="45.714287"
+       sodipodi:ry="45.714287"
+       d="m 237.14286,226.6479 a 45.714287,45.714287 0 1 1 -91.42857,0 45.714287,45.714287 0 1 1 91.42857,0 z"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       d="m 237.14286,226.6479 a 45.714287,45.714287 0 1 1 -91.42857,0 45.714287,45.714287 0 1 1 91.42857,0 z"
+       sodipodi:ry="45.714287"
+       sodipodi:rx="45.714287"
+       sodipodi:cy="226.6479"
+       sodipodi:cx="191.42857"
+       id="path3755"
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       sodipodi:type="arc"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       sodipodi:type="arc"
+       style="fill:#ffffff;fill-opacity:1;stroke:#0000db;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="path3757"
+       sodipodi:cx="191.42857"
+       sodipodi:cy="226.6479"
+       sodipodi:rx="45.714287"
+       sodipodi:ry="45.714287"
+       d="m 237.14286,226.6479 a 45.714287,45.714287 0 1 1 -91.42857,0 45.714287,45.714287 0 1 1 91.42857,0 z"
+       transform="translate(-0.4,0)"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       sodipodi:type="arc"
+       style="fill:#ffffff;fill-opacity:1;stroke:#0000db;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="path3761"
+       sodipodi:cx="191.42857"
+       sodipodi:cy="226.6479"
+       sodipodi:rx="45.714287"
+       sodipodi:ry="45.714287"
+       d="m 237.14286,226.6479 a 45.714287,45.714287 0 1 1 -91.42857,0 45.714287,45.714287 0 1 1 91.42857,0 z"
+       transform="translate(161.6,176)"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       transform="translate(-0.4,176)"
+       d="m 237.14286,226.6479 a 45.714287,45.714287 0 1 1 -91.42857,0 45.714287,45.714287 0 1 1 91.42857,0 z"
+       sodipodi:ry="45.714287"
+       sodipodi:rx="45.714287"
+       sodipodi:cy="226.6479"
+       sodipodi:cx="191.42857"
+       id="path3759"
+       style="fill:#ffffff;fill-opacity:1;stroke:#0000db;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       sodipodi:type="arc"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       transform="translate(323.6,176)"
+       d="m 237.14286,226.6479 a 45.714287,45.714287 0 1 1 -91.42857,0 45.714287,45.714287 0 1 1 91.42857,0 z"
+       sodipodi:ry="45.714287"
+       sodipodi:rx="45.714287"
+       sodipodi:cy="226.6479"
+       sodipodi:cx="191.42857"
+       id="path3763"
+       style="fill:#ffffff;fill-opacity:1;stroke:#0000db;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       sodipodi:type="arc"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect3771"
+       width="86.549202"
+       height="86.549202"
+       x="309.75397"
+       y="183.65903"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path6928"
+       d="m 174.87465,175.57576 c 1.5411,-14.85477 -8.32358,-28.51574 -22.91733,-31.68781 -15.8156,-3.43764 -31.44956,6.61146 -34.88721,22.42707 -3.26625,15.02701 5.63555,29.86946 20.09796,34.26292 l -2.94189,1.37875 10.91641,0.69668 -8.90195,-6.34917 1.34965,2.83303 c -13.71563,-4.18183 -22.14933,-18.22683 -19.04939,-32.48878 3.26546,-15.02344 18.05954,-24.55516 33.08299,-21.2897 13.85899,3.01236 23.25248,15.94474 21.78902,30.05162 l 1.46178,0.16505 z"
+       style="font-size:medium;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.5;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Sans;-inkscape-font-specification:Sans"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       sodipodi:type="arc"
+       style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="path4101"
+       sodipodi:cx="343.57144"
+       sodipodi:cy="604.50507"
+       sodipodi:rx="13.571428"
+       sodipodi:ry="13.571428"
+       d="m 357.14287,604.50507 a 13.571428,13.571428 0 1 1 -27.14286,0 13.571428,13.571428 0 1 1 27.14286,0 z"
+       transform="matrix(0.75490196,0,0,0.75490196,142.06583,104.59158)"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       x="154.28571"
+       y="229.79076"
+       id="text4103"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         sodipodi:role="line"
+         id="tspan4105"
+         x="154.28571"
+         y="229.79076"
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic">Facebook</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4107"
+       y="231.34769"
+       x="331.13013"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       xml:space="preserve"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic"
+         y="231.34769"
+         x="331.13013"
+         id="tspan4109"
+         sodipodi:role="line">Sleep</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       x="151.42857"
+       y="400.93362"
+       id="text4111"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         sodipodi:role="line"
+         id="tspan4113"
+         x="151.42857"
+         y="400.93362" /></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4115"
+       y="407.79077"
+       x="163.20436"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       xml:space="preserve"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic"
+         y="407.79077"
+         x="163.20436"
+         id="tspan4117"
+         sodipodi:role="line">Class 1</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       x="324.4895"
+       y="407.79077"
+       id="text4119"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         sodipodi:role="line"
+         id="tspan4121"
+         x="324.4895"
+         y="407.79077"
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic">Class 2</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4123"
+       y="407.79077"
+       x="486.50903"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       xml:space="preserve"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic"
+         y="407.79077"
+         x="486.50903"
+         id="tspan4125"
+         sodipodi:role="line">Class 3</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       x="360.28571"
+       y="591.79077"
+       id="text4127"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         sodipodi:role="line"
+         id="tspan4129"
+         x="360.28571"
+         y="591.79077"
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic">Go to Pub</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4131"
+       y="141.79076"
+       x="122.28571"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#0000ff;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       xml:space="preserve"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#0000ff;fill-opacity:1;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic"
+         y="141.79076"
+         x="122.28571"
+         id="tspan4133"
+         sodipodi:role="line"> -1</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#0000ff;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       x="212.28571"
+       y="319.79077"
+       id="text4135"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         sodipodi:role="line"
+         id="tspan4137"
+         x="212.28571"
+         y="319.79077"
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#0000ff;fill-opacity:1;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic">-1</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4139"
+       y="329.79077"
+       x="354.28571"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#0000ff;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       xml:space="preserve"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#0000ff;fill-opacity:1;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic"
+         y="329.79077"
+         x="354.28571"
+         id="tspan4141"
+         sodipodi:role="line"> 0</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#0000ff;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       x="495.28571"
+       y="507.79077"
+       id="text4143"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         sodipodi:role="line"
+         id="tspan4145"
+         x="495.28571"
+         y="507.79077"
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#0000ff;fill-opacity:1;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic"> +1</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4153"
+       y="219.45447"
+       x="446.08975"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#0000ff;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       xml:space="preserve"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#0000ff;fill-opacity:1;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic"
+         y="219.45447"
+         x="446.08975"
+         id="tspan4155"
+         sodipodi:role="line"> +10</tspan></text>
+    <path
+       style="font-size:medium;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.5;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Sans;-inkscape-font-specification:Sans"
+       d="m 142.11435,313.49469 c -0.19733,-17.0911 3.01427,-34.09635 10.2391,-52.64043 l 1.12107,0.42351 c -13.69225,35.14412 -12.89693,64.57187 -1.69406,99.77518 l 1.09616,-2.19232 0.34878,6.55203 c 0.0898,0.26611 0.15814,0.5304 0.24912,0.79721 l -0.22421,0.0747 0.0747,1.27055 -0.72247,-1.04633 -0.24912,0.0996 c -0.0966,-0.28319 -0.17875,-0.56458 -0.27404,-0.84703 l -3.7369,-5.35622 2.34179,1.14598 c -5.38057,-16.88303 -8.39043,-32.50779 -8.56995,-48.05651 z"
+       id="path3905"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path4175"
+       d="m 235.46597,314.91469 c 0.19733,17.0911 -3.01427,34.09635 -10.2391,52.64043 l -1.12107,-0.42351 c 13.69225,-35.14412 12.89693,-64.57187 1.69406,-99.77518 l -1.09616,2.19232 -0.34878,-6.55203 c -0.0898,-0.26611 -0.15814,-0.5304 -0.24912,-0.79721 l 0.22421,-0.0747 -0.0747,-1.27055 0.72247,1.04633 0.24912,-0.0996 c 0.0966,0.28319 0.17875,0.56458 0.27404,0.84703 l 3.7369,5.35622 -2.34179,-1.14598 c 5.38057,16.88303 8.39043,32.50779 8.56995,48.05651 z"
+       style="font-size:medium;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.5;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Sans;-inkscape-font-specification:Sans"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.50000000000000000;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;marker-end:url(#Arrow1Mend)"
+       d="m 242.4163,403.23816 57.98276,0"
+       id="path4201"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.50000000000000000;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;marker-end:url(#Arrow1Mend)"
+       d="m 407.2935,403.23816 55.15433,0"
+       id="path4203"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.06206465;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Mend)"
+       d="m 528.97041,348.3028 c 0,0 -1.7765,-68.32032 -12.7188,-90.81457 -12.91149,-26.54234 -34.77331,-26.48991 -52.99502,-32.63649 -19.75603,-6.66413 -60.06102,-4.25694 -60.06102,-4.25694"
+       id="path4207"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="caac"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path5199"
+       d="m 351.97018,351.14717 0,-67.62196"
+       style="fill:none;stroke:#000000;stroke-width:1.61989056999999992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Mend)"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path5565"
+       d="m 477.61829,514.32295 c 16.21592,-15.82553 29.15791,-34.76813 39.78376,-58.91661 l -1.44743,-0.6548 c -20.13777,45.76538 -48.4854,72.58674 -91.99998,95.05649 l 1.02948,-3.08189 -6.47238,5.81068 c -0.33374,0.165 -0.64565,0.34853 -0.98114,0.51314 l 0.13998,0.28027 -1.26171,1.12016 1.65822,-0.30255 0.13992,0.32697 c 0.35612,-0.17469 0.69702,-0.36122 1.05122,-0.53643 l 8.52466,-1.51248 -3.26864,-1.12301 c 20.87633,-10.76885 38.3516,-22.58265 53.10414,-36.98001 z"
+       style="font-size:medium;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.5;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Sans;-inkscape-font-specification:Sans"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:2,1;marker-end:url(#Arrow1Mend);stroke-dashoffset:0"
+       d="M 400.06518,556.297 481.93482,445.42737"
+       id="path5751"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.11846089;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend);stroke-miterlimit:4;stroke-dasharray:2.23692179,2.23692179;stroke-dashoffset:0"
+       d="M 400.94077,555.30295 359.05923,455.42142"
+       id="path5753"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.06095183;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend);stroke-miterlimit:4;stroke-dasharray:2.12190366,2.12190366;stroke-dashoffset:0"
+       d="M 397.96952,558.3317 221.03048,446.39267"
+       id="path5755"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#0000ff;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       x="408.28571"
+       y="397.79077"
+       id="text6303"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         sodipodi:role="line"
+         id="tspan6305"
+         x="408.28571"
+         y="397.79077"
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#0000ff;fill-opacity:1;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic">   -2</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text6307"
+       y="397.79077"
+       x="244.28571"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#0000ff;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       xml:space="preserve"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#0000ff;fill-opacity:1;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic"
+         y="397.79077"
+         x="244.28571"
+         id="tspan6309"
+         sodipodi:role="line">    -2</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#0000ff;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       x="120.28571"
+       y="319.79077"
+       id="text6311"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         sodipodi:role="line"
+         id="tspan6313"
+         x="120.28571"
+         y="319.79077"
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#0000ff;fill-opacity:1;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic"> 0</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text6315"
+       y="487.79077"
+       x="408.28571"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#fa00ff;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       xml:space="preserve"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#fa00ff;fill-opacity:1;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic"
+         y="487.79077"
+         x="408.28571"
+         id="tspan6317"
+         sodipodi:role="line">   0.4</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#fa00ff;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       x="324.28571"
+       y="487.79077"
+       id="text6319"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         sodipodi:role="line"
+         id="tspan6321"
+         x="324.28571"
+         y="487.79077"
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#fa00ff;fill-opacity:1;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic">   0.4</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text6323"
+       y="487.79077"
+       x="222.28571"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#fa00ff;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       xml:space="preserve"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#fa00ff;fill-opacity:1;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic"
+         y="487.79077"
+         x="222.28571"
+         id="tspan6325"
+         sodipodi:role="line">   0.2</tspan></text>
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot6559"
+       style="fill:black;stroke:none;stroke-opacity:1;stroke-width:1px;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;font-family:Courier;font-style:normal;font-weight:normal;font-size:40px;line-height:125%;letter-spacing:0px;word-spacing:0px;-inkscape-font-specification:Courier;font-stretch:normal;font-variant:normal"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><flowRegion
+         id="flowRegion6561"><rect
+           id="rect6563"
+           width="256"
+           height="95"
+           x="-136"
+           y="68.362183" /></flowRegion><flowPara
+         id="flowPara6565"></flowPara></flowRoot>    <path
+       sodipodi:type="arc"
+       style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="path4101-6"
+       sodipodi:cx="343.57144"
+       sodipodi:cy="604.50507"
+       sodipodi:rx="13.571428"
+       sodipodi:ry="13.571428"
+       d="m 357.14287,604.50507 a 13.571428,13.571428 0 1 1 -27.14286,0 13.571428,13.571428 0 1 1 27.14286,0 z"
+       transform="matrix(0.47587207,0,0,0.47587207,353.92933,-28.855478)"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <text
+       inkscape:export-ydpi="90"
+       inkscape:export-xdpi="90"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       x="512.50903"
+       y="245.79077"
+       id="text6589"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan6591"
+         x="512.50903"
+         y="245.79077"
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic">Study</tspan></text>
+    <text
+       inkscape:export-ydpi="90"
+       inkscape:export-xdpi="90"
+       inkscape:export-filename="/home/annik/Dropbox/LINC Lab Documents/Individual Folders/ACarson/Research/MDP/path2985.png"
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#0000ff;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       x="532.28571"
+       y="311.79077"
+       id="text6593"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan6595"
+         x="532.28571"
+         y="311.79077"
+         style="font-size:16px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#0000ff;fill-opacity:1;font-family:Droid Sans Japanese;-inkscape-font-specification:Droid Sans Japanese Italic"> 0</tspan></text>
+  </g>
+</svg>
