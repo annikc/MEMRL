@@ -154,8 +154,8 @@ class Trial:
 		#self.step = self.trial_set.working_env.state_trans(action)		
 
 class Trial_Set: 
-	def __init__(self, total_trials, **kwargs):
-		self.working_env = Environment()
+	def __init__(self, total_trials, env_name, **kwargs):
+		self.working_env = env_name
 		self.num_trials = 0 
 		self.tot_trials = total_trials
 		self.trials = []

@@ -226,7 +226,7 @@ for i in range(trialset.tot_trials):
 		#pre_choice = random.choice(act)
 		#choice = random.choice(pre_choice)
 
-		try_this = np.random.choice(actions_list, 1, list(policy_calc))
+		try_this = np.random.choice(actions_list, 1, p=list(policy_calc))
 		print "attempt action", try_this[0]
 		choice = try_this[0]	
 
