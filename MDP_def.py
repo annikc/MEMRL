@@ -203,10 +203,7 @@ class OutputLayer(object):
 		self.value_unit 	= np.dot(self.W_V, self.inputs) + self.b_V # calculate the value unit
 
 		# select an action
-		try:
-			choice                       = np.random.choice(np.arange(self.k), 1, p=list(self.soft_policy[:,0]))[0]
-		except: 
-			pdb.set_trace()
+		choice                       = np.random.choice(np.arange(self.k), 1, p=[0,0,0,0.5,0,0.5])[0] #list(self.soft_policy[:,0]))[0]
 		self.selected_action[:]      = 0.0
 		self.selected_action[choice] = 1.0
 
