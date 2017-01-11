@@ -1,6 +1,8 @@
 ### Outline for Behavioural Experiment MDP 
-import numpy as np 
+import numpy as np
+import matplotlib 
 import matplotlib.pyplot as plt
+matplotlib.use('Agg')
 import matplotlib.ticker 
 import pdb
 import random
@@ -64,22 +66,22 @@ plot_action_grads = True
 T_maze = Environment()
 
 # Create trial set with specified number of trials
-trialset = Trial_Set(T_maze, total_trials=1, num_events=150)
+trialset = Trial_Set(T_maze, total_trials=2, num_events=500)
 
 # Create network for valicy and policy calculations 
-network = Network(num_units = [17, 6], learning_rate=[0.0001,0.0001,0.0001,0.0001])
+network = Network(num_units = [17, 6], learning_rate=[0.001,0.0001,0.0001,0.1])
 
 # 
-actions_list = ['poke', 'W', 'W', 'W', 'W', 'W']#trialset.working_env.all_actions # ['N','E','S','W','stay','poke']
+actions_list = trialset.working_env.all_actions # ['N','E','S','W','stay','poke']
 
 #set up lists for storing variables to track
-store_return = []
-store_reward = []
-store_ev     = []
-store_Wv     = []
-store_Wa	 = [[], [], [], [], [], []]
-store_loc 	 = []
-store_act 	 = []
+#store_return = []
+#store_reward = []
+#store_ev     = []
+#store_Wv     = []
+#store_Wa	 = [[], [], [], [], [], []]
+#store_loc 	 = []
+#store_act 	 = []
 
 ev_total = 0
 reward_marker = 0
@@ -103,6 +105,7 @@ choice_data = {'HOME':home_store, 'E1':E1_store, 'E2':E2_store, 'W1':W1_store, '
 """ 				   Run Trial					"""
 #------------------------------------------------------
 for i in range(trialset.tot_trials):
+	count = i 
 	if print_statements:
 		print(" ---------- \n Trial Number:", trialset.num_trials, "\n ----------")
 
@@ -125,11 +128,6 @@ for i in range(trialset.tot_trials):
 		# value estimation
 		value_tracker = network.value[0][0]
 
-		# prediction error
-		rv = (T_maze.rtrn - network.value[0][0])
-		ev_total = 0.5*(rv**2)
-
-
 		action_choice = np.random.choice(T_maze.all_actions, 1, p=network.action[:,0])[0]
 		if print_statements:
 			print("agent chooses", action_choice)
@@ -137,12 +135,25 @@ for i in range(trialset.tot_trials):
 		# Add events to the trial corresponding to action selections
 		trialset.current_trial.add_event(action_choice)
 
+		# prediction error
+		rv = (T_maze.rtrn - network.value[0][0])
+		ev_total = 0.5*(rv**2)
+
 		if print_statements:
 			print("cumulative reward is ", reward_test)
 
 		network.accumulate_gradients(rv)
 
-		if i == trialset.tot_trials-1:
+		if count == trialset.tot_trials-1:
+			if j == 0:
+				ev_total = 0
+				store_return = []
+				store_reward = []
+				store_ev     = []
+				store_Wv     = []
+				store_Wa	 = [[], [], [], [], [], []]
+				store_loc 	 = []
+				store_act 	 = []
 			# gradients 
 			wv_tracker = network.output_layer.dWv
 			wa_tracker = network.output_layer.dWa
@@ -224,39 +235,39 @@ if plot_value_grads == True:
 	splots['ax1'].set_title('Value Weight Gradients')
 
 	# show difference in accumulated gradients from last time step
-	im2 = splots['ax2'].imshow(wv_loc.T, cmap='Greens_r', interpolation='none', aspect='auto')
+	im2 = splots['ax2'].imshow(wv_loc.T, cmap='Greens_r',interpolation=None,aspect='auto')
 	splots['ax2'].locator_params(axis='y',nbins=10)
 	splots['ax2'].set_yticklabels(['DUMMY LABEL','HOME', 'W1', 'W2', 'E1', 'E2', 'S1', 'S2'])
 	splots['ax2'].yaxis.grid()
 	plt.colorbar(im2, cax = caxes[0])
 
-	im3 = splots['ax3'].imshow(wv_tex.T, cmap='Greens_r', interpolation='none', aspect='auto')
+	im3 = splots['ax3'].imshow(wv_tex.T, cmap='Greens_r', interpolation=None, aspect='auto')
 	splots['ax3'].locator_params(axis='y',nbins=6)
 	splots['ax3'].set_yticklabels(['DUMMY LABEL','null', 'A', 'B', 'C'])
 	splots['ax3'].yaxis.grid()
 	plt.colorbar(im3, cax = caxes[1])
 
-	im4 = splots['ax4'].imshow(wv_act.T, cmap='Greens_r', interpolation='none', aspect='auto')
+	im4 = splots['ax4'].imshow(wv_act.T, cmap='Greens_r', interpolation=None, aspect='auto')
 	splots['ax4'].locator_params(axis='y',nbins=10)
 	splots['ax4'].set_yticklabels(['DUMMY LABEL','N', 'E', 'S', 'W', 'STAY', 'POKE'])
 	splots['ax4'].yaxis.grid()
 	plt.colorbar(im4, cax = caxes[2])
 
 	# show action selection
-	im5 = splots['ax5'].imshow(loc_array.T, cmap='bone_r', interpolation='none', aspect='auto')#aspect=0.9, extent=[0,5000,0,555])
+	im5 = splots['ax5'].imshow(loc_array.T, cmap='bone_r', interpolation=None, aspect='auto')#aspect=0.9, extent=[0,5000,0,555])
 	splots['ax5'].locator_params(axis='y',nbins=10)
 	splots['ax5'].set_yticklabels(['DUMMY LABEL','HOME', 'W1', 'W2', 'E1', 'E2', 'S1', 'S2'])
 	splots['ax5'].tick_params(axis='y')
 	plt.colorbar(im5, cax = caxes[3], ticks=[0, 1])
 
 	# show action selection
-	im6 = splots['ax6'].imshow(act_array.T, cmap='bone_r', interpolation='none', aspect='auto')#0.8, extent=[0,5000,0,555])
+	im6 = splots['ax6'].imshow(act_array.T, cmap='bone_r', interpolation=None, aspect='auto')#0.8, extent=[0,5000,0,555])
 	splots['ax6'].locator_params(axis='y',nbins=10)
 	splots['ax6'].set_yticklabels(['DUMMY LABEL','N', 'E', 'S', 'W', 'STAY', 'POKE'])
 	splots['ax6'].tick_params(axis='y')
 	plt.colorbar(im6, cax = caxes[4], ticks=[0, 1])
 
-	plt.savefig('./plots/value_fig.png')
+	plt.savefig('./plots/value_fig.svg')
 
 if plot_action_grads == True:
 	weight_dim_list = ['North', 'East', 'West', 'South', 'Stay', 'Poke']
@@ -311,39 +322,39 @@ if plot_action_grads == True:
 		splots['ax1'].set_title('Action Gradient Derivatives for Unit: {}'.format(weight_dim_list[item]))
 
 		# show difference in accumulated gradients from last time step
-		im2 = splots['ax2'].imshow(wa_loc.T, cmap='Blues', interpolation='none', aspect='auto')
+		im2 = splots['ax2'].imshow(wa_loc.T, cmap='Blues', interpolation=None, aspect='auto')
 		splots['ax2'].locator_params(axis='y',nbins=10)
 		splots['ax2'].set_yticklabels(['DUMMY LABEL','HOME', 'W1', 'W2', 'E1', 'E2', 'S1', 'S2'])
 		splots['ax2'].yaxis.grid()
 		plt.colorbar(im2, cax = caxes[0])
 
-		im3 = splots['ax3'].imshow(wa_tex.T, cmap='Blues', interpolation='none', aspect='auto')
+		im3 = splots['ax3'].imshow(wa_tex.T, cmap='Blues', interpolation=None, aspect='auto')
 		splots['ax3'].locator_params(axis='y',nbins=6)
 		splots['ax3'].set_yticklabels(['DUMMY LABEL','null', 'A', 'B', 'C'])
 		splots['ax3'].yaxis.grid()
 		plt.colorbar(im3, cax = caxes[1])
 
-		im4 = splots['ax4'].imshow(wa_act.T, cmap='Blues', interpolation='none', aspect='auto')
+		im4 = splots['ax4'].imshow(wa_act.T, cmap='Blues', interpolation=None, aspect='auto')
 		splots['ax4'].locator_params(axis='y',nbins=10)
 		splots['ax4'].set_yticklabels(['DUMMY LABEL','N', 'E', 'S', 'W', 'STAY', 'POKE'])
 		splots['ax4'].yaxis.grid()
 		plt.colorbar(im4, cax = caxes[2])
 
 		# show action selection
-		im5 = splots['ax5'].imshow(loc_array.T, cmap='bone_r', interpolation='none', aspect='auto')#aspect=0.9, extent=[0,5000,0,555])
+		im5 = splots['ax5'].imshow(loc_array.T, cmap='bone_r', interpolation=None, aspect='auto')#aspect=0.9, extent=[0,5000,0,555])
 		splots['ax5'].locator_params(axis='y',nbins=10)
 		splots['ax5'].set_yticklabels(['DUMMY LABEL','HOME', 'W1', 'W2', 'E1', 'E2', 'S1', 'S2'])
 		splots['ax5'].tick_params(axis='y')
 		plt.colorbar(im5, cax = caxes[3], ticks=[0, 1])
 
 		# show action selection
-		im6 = splots['ax6'].imshow(act_array.T, cmap='bone_r', interpolation='none', aspect='auto')#0.8, extent=[0,5000,0,555])
+		im6 = splots['ax6'].imshow(act_array.T, cmap='bone_r', interpolation=None, aspect='auto')#0.8, extent=[0,5000,0,555])
 		splots['ax6'].locator_params(axis='y',nbins=10)
 		splots['ax6'].set_yticklabels(['DUMMY LABEL','N', 'E', 'S', 'W', 'STAY', 'POKE'])
 		splots['ax6'].tick_params(axis='y')
 		plt.colorbar(im6, cax = caxes[4], ticks=[0, 1])
 
-		plt.savefig('./plots/action_fig_{}.png'.format(weight_dim_list[item]))
+		plt.savefig('./plots/action_fig_{}.svg'.format(weight_dim_list[item]))
 
 
 

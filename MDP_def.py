@@ -148,6 +148,7 @@ class Trial_Set(object):
 	def add_trial(self, **kwargs):
 		self.current_trial = Trial(self, num_events=self.num_trial_events)
 		self.trials.append(self.current_trial)
+		self.working_env.rtrn = 0
 		if self.num_trials < self.tot_trials:
 			self.num_trials += 1
 
@@ -203,7 +204,7 @@ class OutputLayer(object):
 		self.value_unit 	= np.dot(self.W_V, self.inputs) + self.b_V # calculate the value unit
 
 		# select an action
-		choice                       = np.random.choice(np.arange(self.k), 1, p=[0,0,0,0.5,0,0.5])[0] #list(self.soft_policy[:,0]))[0]
+		choice                       = np.random.choice(np.arange(self.k), 1, list(self.soft_policy[:,0]))[0] #p=[0,0,0,0.5,0,0.5])[0] #
 		self.selected_action[:]      = 0.0
 		self.selected_action[choice] = 1.0
 
@@ -218,7 +219,6 @@ class OutputLayer(object):
 
 		# store gradient to be passed to next layer
 		self.bprop_v_partial = -delta
-		#pdb.set_trace()
 		try:
 			self.bprop_pi_partial = pi_vec.T
 		except:
@@ -230,7 +230,9 @@ class OutputLayer(object):
 		# action weight gradients
 		self.dLpi_dWa = delta*(np.outer(pi_vec, self.inputs))
 		self.dLpi_dba = delta*pi_vec
-
+		
+		#if delta != 0.0:
+		#	pdb.set_trace()
 		# accumulate the gradients
 		self.dWv = self.dWv + self.dLv_dWv
 		self.dWa = self.dWa + self.dLpi_dWa
@@ -243,6 +245,11 @@ class OutputLayer(object):
 		self.W_V = self.W_V - learning_rate*self.dWv
 		self.b_A = self.b_A - learning_rate*self.dba
 		self.b_V = self.b_V - learning_rate*self.dbv
+
+		self.dWv = 0
+		self.dWa = 0
+		self.dbv = 0
+		self.dba = 0
 
 	def initialize_weights(self,sigma):
 
@@ -414,7 +421,9 @@ class Network(object):
 		if self.has_hidden: 
 			for i in range(self.num_hidden):
 				self.hidden_layers[i].accumulate_gradients(delta)
+		
 		self.output_layer.accumulate_gradients(delta)
+
 
 	def update_weights(self):
 		if self.has_hidden: 
