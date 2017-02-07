@@ -93,7 +93,7 @@ class Environment(object):
 		self.rwd = 0 
 		self.rwd_mag = kwargs.get('reward_magnitude', 1)
 		self.rtrn = 0
-		self.gamma = kwargs.get('gamma', 0)
+		self.gamma = kwargs.get('gamma', 0.99)
 
 
 	def state_trans(self, action):
@@ -241,9 +241,9 @@ class OutputLayer(object):
 
 	def update_weights(self,learning_rate):
 
-		self.W_A = self.W_A - learning_rate*self.dWa
+		self.W_A = self.W_A + learning_rate*self.dWa
 		self.W_V = self.W_V - learning_rate*self.dWv
-		self.b_A = self.b_A - learning_rate*self.dba
+		self.b_A = self.b_A + learning_rate*self.dba
 		self.b_V = self.b_V - learning_rate*self.dbv
 
 		self.dWv = 0
@@ -658,3 +658,6 @@ def plot_walk(agent_loc, step_no):
 
 	plt.imshow(env_map, interpolation="none", aspect=1)
 	#plt.show()
+
+def center_labels(plot, labels): 
+	plot.set(ticks=np.arange(0.5, len(labels)), ticklabels=labels)
