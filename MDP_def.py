@@ -92,8 +92,8 @@ class Environment(object):
 		# Track reward and return 
 		self.rwd = 0 
 		self.rwd_mag = kwargs.get('reward_magnitude', 1)
-		self.rtrn = 0
-		self.gamma = kwargs.get('gamma', 0.99)
+		# self.rtrn = 0 # BLAKE SAYS: NO LONGER USE! WE NEED TO ACCUMULATE RETURN BACKWARDS THROUGH TIME
+		self.gamma = kwargs.get('gamma', 0.0)
 
 
 	def state_trans(self, action):
@@ -105,7 +105,8 @@ class Environment(object):
 			self.rwd = self.rwd_mag
 		else: 
 			self.rwd = 0
-		self.rtrn = self.rwd + (self.gamma)*self.rtrn
+		# self.rtrn = self.rwd + (self.gamma)*self.rtrn # BLAKE SAYS: NO LONGER USE! WE NEED TO ACCUMULATE RETURN BACKWARDS THROUGH TIME
+		
 		# update agent's state based on selected action
 		next_loc = self.geom[self.cur_state.loc][action]
 		next_tex = self.tex_loc[next_loc]
@@ -132,7 +133,7 @@ class Trial(object):
 		self.state_is = self.trial_set.working_env.cur_state
 		self.action_is = action
 		self.reward_is = self.trial_set.working_env.rwd
-		self.return_is = self.trial_set.working_env.rtrn
+		# self.return_is = self.trial_set.working_env.rtrn # BLAKE SAYS: NO LONGER USE! WE NEED TO ACCUMULATE RETURN BACKWARDS THROUGH TIME
 		self.events.append([self.time_is, self.state_is, self.action_is, self.reward_is, self.return_is])
 	
 
@@ -148,7 +149,7 @@ class Trial_Set(object):
 	def add_trial(self, **kwargs):
 		self.current_trial = Trial(self, num_events=self.num_trial_events)
 		self.trials.append(self.current_trial)
-		self.working_env.rtrn = 0
+		# self.working_env.rtrn = 0 # BLAKE SAYS: NO LONGER USE! WE NEED TO ACCUMULATE RETURN BACKWARDS THROUGH TIME
 		if self.num_trials < self.tot_trials:
 			self.num_trials += 1
 
@@ -204,18 +205,47 @@ class OutputLayer(object):
 		self.value_unit 	= np.dot(self.W_V, self.inputs) + self.b_V # calculate the value unit
 
 		# select an action
-		choice                       = np.random.choice(np.arange(self.k), 1, list(self.soft_policy[:,0]))[0] #p=[0,0,0,0.5,0,0.5])[0] #
+		choice                       = np.random.choice(np.arange(self.k), 1, p=list(self.soft_policy[:,0]))[0] #p=[0,0,0,0.5,0,0.5])[0] #
 		self.selected_action[:]      = 0.0
 		self.selected_action[choice] = 1.0
 
 		return (self.selected_action, self.value_unit, self.soft_policy)
 
-	def accumulate_gradients(self, delta):
-		# calculating gradients
-		#d_linsum_d_Wa = np.multiply.outer(self.inputs[:,0], np.eye(self.k))
-		ind = np.where(self.selected_action == 1.0)
-		pi_vec = -self.soft_policy
-		pi_vec[ind[0][0]] = 1-self.soft_policy[ind[0][0]]
+#	def accumulate_gradients(self, delta):
+#		# calculating gradients
+#		#d_linsum_d_Wa = np.multiply.outer(self.inputs[:,0], np.eye(self.k))
+#		ind = np.where(self.selected_action == 1.0)
+#		pi_vec = -self.soft_policy
+#		pi_vec[ind[0][0]] = 1-self.soft_policy[ind[0][0]]
+#
+#		# store gradient to be passed to next layer
+#		self.bprop_v_partial = -delta
+#		try:
+#			self.bprop_pi_partial = pi_vec.T
+#		except:
+#			pdb.set_trace()
+#		# value weight gradients
+#		self.dLv_dWv = (self.bprop_v_partial*self.inputs).T
+#		self.dLv_dbv = self.bprop_v_partial
+#
+#		# action weight gradients
+#		self.dLpi_dWa = delta*(np.outer(pi_vec, self.inputs))
+#		self.dLpi_dba = delta*pi_vec
+#		
+#		#if delta != 0.0:
+#		#	pdb.set_trace()
+#		# accumulate the gradients
+#		self.dWv = self.dWv + self.dLv_dWv
+#		self.dWa = self.dWa + self.dLpi_dWa
+#		self.dbv = self.dbv + self.dLv_dbv
+#		self.dba = self.dba + self.dLpi_dba
+
+	## BLAKE'S NEW VERSION, FOR BACKAWARDS UPDATES
+	def accumulate_gradients(self, delta, selected_action, soft_policy, inputs):
+		
+		ind = np.where(selected_action == 1.0)
+		pi_vec = -soft_policy
+		pi_vec[ind[0][0]] = 1-soft_policy[ind[0][0]]
 
 		# store gradient to be passed to next layer
 		self.bprop_v_partial = -delta
@@ -223,12 +253,13 @@ class OutputLayer(object):
 			self.bprop_pi_partial = pi_vec.T
 		except:
 			pdb.set_trace()
+
 		# value weight gradients
-		self.dLv_dWv = (self.bprop_v_partial*self.inputs).T
+		self.dLv_dWv = (self.bprop_v_partial*inputs).T
 		self.dLv_dbv = self.bprop_v_partial
 
 		# action weight gradients
-		self.dLpi_dWa = delta*(np.outer(pi_vec, self.inputs))
+		self.dLpi_dWa = delta*(np.outer(pi_vec, inputs))
 		self.dLpi_dba = delta*pi_vec
 		
 		#if delta != 0.0:
@@ -253,10 +284,10 @@ class OutputLayer(object):
 
 	def initialize_weights(self,sigma):
 
-		self.W_A = 0.00*np.random.normal(0.0,sigma,(self.k,self.l))
-		self.W_V = 0.00*np.random.normal(0.0,sigma,(1,self.l))
-		self.b_A = 0.00*np.random.normal(0.0,sigma,(self.k,1))
-		self.b_V = 0.00*np.random.normal(0.0,sigma,(1,1))
+		self.W_A = np.random.normal(0.0,sigma,(self.k,self.l))
+		self.W_V = np.random.normal(0.0,sigma,(1,self.l))
+		self.b_A = np.random.normal(0.0,sigma,(self.k,1))
+		self.b_V = np.random.normal(0.0,sigma,(1,1))
 
 	def reset_gradients(self):
 
@@ -393,7 +424,7 @@ class Network(object):
 
 		# create the output layer
 		self.output_layer = OutputLayer(self.num_units[-2],self.num_units[-1])
-		self.output_layer.initialize_weights(1)
+		self.output_layer.initialize_weights(0.01)
 
 		#initialize prediction error tracking 
 		self.delta = 0
@@ -417,12 +448,19 @@ class Network(object):
 		# do the forward step in the output layer
 		(self.action, self.value, self.policy_calc) = self.output_layer.f_step(activity,self.temperature)
 
-	def accumulate_gradients(self,delta):
+#	def accumulate_gradients(self,delta):
+#		if self.has_hidden: 
+#			for i in range(self.num_hidden):
+#				self.hidden_layers[i].accumulate_gradients(delta)
+#		
+#		self.output_layer.accumulate_gradients(delta)
+
+	def accumulate_gradients(self,delta, selected_action, soft_policy, inputs):
 		if self.has_hidden: 
 			for i in range(self.num_hidden):
 				self.hidden_layers[i].accumulate_gradients(delta)
 		
-		self.output_layer.accumulate_gradients(delta)
+		self.output_layer.accumulate_gradients(delta, selected_action, soft_policy, inputs)
 
 
 	def update_weights(self):
@@ -569,9 +607,9 @@ def make_state_vector(loc_var, tex_var, last_act):
 		input_vec[11] = 1
 	elif last_act == 'E':
 		input_vec[12] = 1
-	elif last_act == 'W':
-		input_vec[13] = 1
 	elif last_act == 'S':
+		input_vec[13] = 1
+	elif last_act == 'W':
 		input_vec[14] = 1
 	elif last_act == 'stay':
 		input_vec[15] = 1
