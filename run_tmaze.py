@@ -160,9 +160,107 @@ print "Total time for run with {} trials is {} minutes".format(trialset.tot_tria
 ###plt.legend(loc=0)
 ###plt.show()
 
-anim = make_animation(what_do)
+def calc_centre(loc):
+	if (loc=='W2'):
+		x = 0 + 0.5
+		y = 2 + 0.5
+	elif (loc=='W1'):
+		x = 1 + 0.5
+		y = 2 + 0.5
+	elif (loc=='HOME'):
+		x = 2 + 0.5
+		y = 2 + 0.5
+	elif (loc=='E1'):
+		x = 3 + 0.5
+		y = 2 + 0.5
+	elif (loc=='E2'):
+		x = 4 + 0.5
+		y = 2 + 0.5
+	elif (loc=='S1'):
+		x = 2 + 0.5
+		y = 1 + 0.5
+	elif (loc=='S2'):
+		x = 2 + 0.5
+		y = 0 + 0.5
+	else:
+		x=0
+		y=0
+		print "Location error"
+	return (x,y)
+
+def rew_loc(loc):
+	if (loc=='W2'):
+		marker_x = 0
+		marker_y = 2.5 
+	elif (loc=='E2'):
+		marker_x = 5
+		marker_y = 2.5 
+	elif (loc=='S2'):
+		marker_x = 2.5 
+		marker_y = 0
+	else: 
+  		print "reward loc not found"
+
+  	return (marker_x, marker_y)
+
+x = np.arange(6)
+y = np.arange(4)
+
+
+fig = plt.figure(figsize=(10,6))
+patches = []
+ax = fig.gca()
+ax.set_xticks(x)
+ax.set_yticks(y)
+
+agt = plt.Circle((2.5,2.5), 0.2, fc='#234756')
+rwd = plt.Circle((0,0), 0.1, fc='r')
+
+time_template = 'time = %.1fs'
+time_text = ax.text(0.02, 0.05, '', transform=ax.transAxes, color= 'r')
+def init():	
+	time_text.set_text(time_template % (i))
+	patches.append(mpatches.Rectangle((0, 0), 2, 2, color='k', ec="none"))
+	patches.append(mpatches.Rectangle((3, 0), 2, 2, color='k', ec="none"))
+	patches.append(mpatches.Rectangle((0, 3), 6, 2, color='k', ec="none"))
+	collection = PatchCollection(patches, alpha=0.2)
+	ax.add_collection(collection)
+	print "Starting location is", what_do[0][0]
+	print "Reward starts at ", T_maze.correct_reward
+	agt.center = calc_centre(what_do[1][0])
+	rwd.center = rew_loc(what_do[1][2])
+	ax.add_patch(agt)
+	ax.add_patch(rwd)
+	return agt, rwd, time_text
+
+def animate(i):
+	xa, ya = agt.center
+	xa, ya = calc_centre(what_do[i][0])
+	agt.center = xa, ya
+	if (what_do[i+1][1]=='poke'):
+		time_text = ax.text((xa/5)-0.005, (ya/3)-0.01, '*', transform=ax.transAxes, color= 'r', fontsize=14, fontweight='bold')
+	else:
+		time_text = ax.text(xa/5, ya/3, '', transform=ax.transAxes, color= 'r')
+	print "step {}, loc {}, action {}".format(i, what_do[i][0], what_do[i+1][1])
+	
+	xr, yr = rwd.center
+	xr, yr = rew_loc(what_do[i][2])
+	rwd.center = xr, yr 
+	ax.set_title('Timestep = {}, Action Selected: {}'.format(i, what_do[i][1]))
+
+	return agt, rwd, time_text,
+
+
+anim = animation.FuncAnimation(fig, animate, 
+								init_func=init, 
+								frames=len(what_do)-1,
+								interval=750,
+								repeat=True, repeat_delay=1000, blit=True)
 plt.grid()
 plt.show()
+
+
+
 
 if print_to_file:
 	sys.stdout = orig_stdout
