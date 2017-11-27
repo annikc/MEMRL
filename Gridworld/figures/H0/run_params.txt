@@ -1,0 +1,32 @@
+#========================
+# Environment Parameters
+#======================== 
+height = 10
+width = 10
+
+mazetype = 'room'
+#obstacle density
+obs_rho = 0
+
+#place cells
+place_cells = 1000
+#place cell full width half max (must be <1)
+fwhm = 0.25
+
+
+#=====================
+# Training Parameters
+#=====================
+#trial parameters
+NUM_TRIALS = 10000
+NUM_EVENTS = 300
+
+discount_factor = 0.98
+port_shift = 'none'
+
+#gradient descent learning rate
+eta = 1e-2
+#  actor LR = 1e-2
+#  critic LR = 0.001*1e-2 
+
+dims = [len(maze.net_state[0]),len(maze.actionlist)] #[1000,6]
