@@ -1,13 +1,27 @@
 from __future__ import division
 
+import torch 
+from torch.autograd import Variable
+from torch import autograd, optim, nn
+import torch.nn.functional as F
+from torch.distributions import Categorical
+
+from collections import namedtuple
+
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+import matplotlib.cm as cmx
+import matplotlib.patches as patches
+from matplotlib.collections import PatchCollection
 
 import os
 from os import listdir
 from os.path import isfile, join
 
 import imageio
+
+
 
 # =====================================
 #  		    OBJECT CLASSES			  #
@@ -22,6 +36,10 @@ class gridworld():
 		
 		self.value_map = self.make_value_map(self.grid)
 		self.init_value_map = self.value_map
+
+		#### TO DO -- COMPLETE THIS CODE
+		#self.policy_map = self.make_policy_map(#####)
+		#self.init_policy_map = self.policy_map
 		
 		self.actionlist = kwargs.get('actionlist', ['N', 'E', 'W', 'S', 'stay', 'poke'])
 		self.rwd_action = kwargs.get('rewarded_action', 'poke')
@@ -44,6 +62,10 @@ class gridworld():
 			plot_grid(self)
 	
 	def grid_maker(self):
+		env_types = ['none', 'bar','room','tmaze']
+		if self.maze_type not in env_types:
+			print("Environment Type '{0}' Not Recognized. \nOptions are: {1} \nDefault is Open Field (maze_type = 'none')".format(self.maze_type, env_types))
+
 		grid = np.zeros((self.y,self.x), dtype=int)
 		
 		if self.maze_type == 'tmaze': 
@@ -192,6 +214,69 @@ class PlaceCells(object):
 		pc_activities = (np.exp(-((self.x-x0)**2 + (self.y-y0)**2) / self.field_width**2))
 		return pc_activities
 
+
+# set up network
+class AC_Net(nn.Module):
+    def __init__(self, dims):        
+        super(AC_Net, self).__init__()
+        # dims is a list of dimensions of each layer [dimension_of_input, dim_of_hiddenlayer1, ... dim_of_hiddenlayerN, dim_of_output]
+        self.layers = dims
+        if len(dims)>2: 
+            self.hidden = []
+            for i in range(len(dims)-2):
+                self.hidden.append(nn.Linear(dims[i], dims[i+1]))
+            self.h_layers = nn.ModuleList(self.hidden)
+            
+        self.p_in = nn.Linear(dims[-2],dims[-1])
+        self.v_in = nn.Linear(dims[-2],1)
+        
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                m.weight.data.normal_(0, 0.001)
+                m.bias.data.zero_()
+        
+        self.saved_actions = []
+        self.rewards = []
+        
+    def forward(self, x):
+        if len(self.layers)>2:
+            for i in range(len(self.hidden)):
+                x = F.relu(self.hidden[i](x))
+        pol = F.softmax(self.p_in(x),dim=1)
+        val = self.v_in(x)
+
+        return pol, val
+
+SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
+def select_action(model,state):
+    policy_, value_ = model(state)
+    a = Categorical(policy_)
+    action = a.sample()
+    model.saved_actions.append(SavedAction(a.log_prob(action), value_))
+    return action.data[0], policy_.data[0], value_.data[0]
+
+
+def finish_trial(model, discount_factor, optimizer):
+    R = 0
+    returns_ = discount_rwds(np.asarray(model.rewards), gamma=discount_factor)
+    saved_actions = model.saved_actions
+    
+    policy_losses = []
+    value_losses = []
+    
+    returns_ = torch.Tensor(returns_)
+    #returns_ = (returns_ - returns_.mean()) / (returns_.std() + np.finfo(np.float32).eps)
+    for (log_prob, value), r in zip(saved_actions, returns_):
+        rpe = r - value.data[0, 0]
+        policy_losses.append(-log_prob * rpe)
+        value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([r]))))
+    optimizer.zero_grad()
+    loss = torch.cat(policy_losses).sum() + torch.cat(value_losses).sum()
+    loss.backward(retain_graph=False)
+    optimizer.step()
+    del model.rewards[:]
+    del model.saved_actions[:]
+
 # =====================================
 # 			   FUNCTIONS			  #
 # =====================================
@@ -218,6 +303,69 @@ def plot_grid(env):
 	plt.axis('equal')
 	
 	#plt.show()
+
+
+#========================
+# Environment Plots
+#======================== 
+def make_env_plots(maze, env=True, pc_map=True, pc_vec=True):
+	grid = maze.grid
+	useable_grid = maze.useable
+	rwd_loc = maze.rwd_loc
+	agent_loc = maze.cur_state
+	
+	cmap = plt.cm.jet
+	cNorm  = colors.Normalize(vmin=0, vmax=max(maze.pcs.activity(maze.cur_state)))
+	scalarMap = cmx.ScalarMappable(norm = cNorm, cmap=cmap)
+
+
+	if env: 
+		# plot maze -- agent (blue) and reward (red)
+		fig = plt.figure()
+		axis  = fig.add_axes([0, 0, .7, 1]) # [left, bottom, width, height]
+
+		ax = fig.gca()
+		axis.pcolor(grid, cmap = 'bone', vmax =1, vmin = 0)
+
+		rwd_v, rwd_h = rwd_loc
+
+		agent_v, agent_h = agent_loc
+
+		ax.add_patch(plt.Circle((rwd_v+.5, rwd_h+.5), 0.35, fc='r'))
+		ax.add_patch(plt.Circle((agent_v+.5, agent_h+.5), 0.35, fc='b'))
+
+		ax.invert_yaxis()
+		#plt.colorbar()
+		plt.axis('tight')
+		
+	if pc_map:
+		# plot place cells 
+		# circle radius given by fwhm of place cells (???)
+		fig = plt.figure()
+		ax  = fig.add_axes([0, 0.1, 0.6, 0.85]) # [left, bottom, width, height]
+		axc = fig.add_axes([0.63, 0.1, 0.03, 0.85])
+
+	
+		for i in range(len(maze.pcs.x)):
+			colorVal = scalarMap.to_rgba(maze.pcs.activity(maze.cur_state)[i])
+			ax.add_patch(patches.Circle((maze.pcs.x[i], maze.pcs.y[i]), 0.025, fc=colorVal, ec='none', alpha=0.5))
+			ax.set_ylim([1,0])
+		cb1 = mpl.colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
+		ax.axis('equal')
+		ax.axis('tight')
+		ax.grid('on')
+		plt.show()
+
+	if pc_vec:
+		# plot input vector
+		fig = plt.figure()
+		ax  = fig.add_axes([0, 0.25, 0.7, 0.15]) # [left, bottom, width, height]
+		axc = fig.add_axes([0, 0.1, 0.7, 0.07])
+
+		ax.pcolor(maze.pcs.activity(maze.cur_state).reshape(1,maze.pcs.activity(maze.cur_state).shape[0]), vmin=0, vmax=1, cmap=cmap)
+		ax.set_yticklabels([''])
+		cb2 = mpl.colorbar.ColorbarBase(axc, cmap = cmap, norm = cNorm, orientation='horizontal')
+		plt.show()
 
 
 # Functions for computing relevant terms for weight updates after trial runs
@@ -257,7 +405,7 @@ def make_gif(mypath, mazetype):
 				for filename in intfiles:
 					image = imageio.imread(mypath+str(filename))
 					writer.append_data(image)
-	print "Gif file saved at ", gifname
+	print( "Gif file saved at ", gifname)
 
 
 def make_arrows(action, probability):
