@@ -87,6 +87,12 @@ def select_action(model,state):
     model.saved_actions.append(SavedAction(a.log_prob(action), value_))
     return action.data[0], policy_.data[0], value_.data[0]
 
+def select_action_end(model,policy_, value_):
+    a = Categorical(policy_)
+    action = a.sample()
+    model.saved_actions.append(SavedAction(a.log_prob(action), value_))
+    return action.data[0], policy_.data[0], value_.data[0]
+
 
 def generate_values(maze, model):
     value_map = maze.empty_map

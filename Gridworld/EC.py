@@ -21,6 +21,8 @@ from torch.distributions import Categorical
 
 from collections import namedtuple
 
+from sklearn.neighbors import NearestNeighbors
+
 
 class ep_mem(object):
     def __init__(self, model, cache_limit,**kwargs):
@@ -30,11 +32,14 @@ class ep_mem(object):
         self.memory_envelope = kwargs.get('pers', 10)
         self.cache_list = {}
 
-        #self.reward_unseen = True
-        #self.cs_max = 0
+        self.mem_factor = 0.5
+        self.reward_unseen = True
+        self.time_since_last_reward = 0
+        self.confidence_score = 0
+        self.cs_max = 0
     
     def reset_cache(self):
-        self.cache_list = {}
+        self.cache_list.clear()
         
     def make_onehot(self,action,delta):
         onehot = np.zeros(self.num_actions)
@@ -49,7 +54,6 @@ class ep_mem(object):
         pvals = 1-1/np.cosh(p/self.memory_envelope)
         return pvals
         
-
     def mem_knn(self, entry, **kwargs):
         ## find K nearest neighbours to memory 
         # used for storage and recall 
@@ -69,10 +73,31 @@ class ep_mem(object):
         return knn_acts, distances
     
     def add_mem(self,activity,action,delta,timestamp,**kwargs):
+        '''
+        Add memory to cache list (dictionary)
+        Inputs: 
+            activity    - a tuple of values from the state vector 
+                            (pc activities)
+            action      - an integer value representing the chosen action
+            delta       - a float value (scalar) representing 'reward prediction 
+                            error'/eligibility traces
+            timestamp   - when the memory was taken -- used to caculate memory persistence
+
+        Items in the dictionary are called using activity tuple as the key. The corresponding entry
+        is itself a tuple. entry[0] is an n-dimensional vector where n is the number of possible actions.
+        This vector is zero-valued except at the position corresponding to the chosen action, which is set
+        to the reward prediction error/eligibility trace value (can think of it as a one-hot vector scaled
+        by RPE). 
+
+        If dictionary is not full, will just add memory with pc activity tuple used as key. 
+        If dictionary has reached the cache_limit, will calculate the k-nearest neighbours in the dictionary
+        and replace the entry with the lowest persistence value (a function of the timestep at which the memory
+        was recorded). 
+
+        '''
         ## activity is pc_activites
         ##     --> to be a dict key must be a tuple (immutable type)
         ## item is (delta*action_onehot, timestamp) where delta = r_t - v(s_t) - v(s_t-1)
-        
         item = self.make_onehot(action,delta)
         
         if len(self.cache_list) < self.cache_limit: 
@@ -108,11 +133,29 @@ class ep_mem(object):
                 lp_entry_key = self.cache_list.keys()[np.argmin(persistence_values)]
                 del self.cache_list[lp_entry_key]
                 self.cache_list[activity] = item, timestamp
-                
-    def recall_mem(self, activity,policy,confidence,**kwargs):
-        ## activity is pc_activites - to be a dict key must be a tuple (immutable type)
-        ## item is (delta*action_onehot, persistence) where delta = r_t - v(s_t) - v(s_t-1)
+        print("Added Memory to Cache")
 
+    def mem_confidence(self, rwd):
+        if self.reward_unseen: 
+            cs = 0
+        else:
+            cs = (self.cs_max + self.mem_factor)*np.exp(-self.time_since_last_reward/10)
+        
+        if cs > 1.0:
+            cs = 1
+            
+        if rwd == 1:
+            self.reward_unseen = False
+
+            self.cs_max = cs
+            self.time_since_last_reward = 0
+        
+        self.time_since_last_reward += 1
+        self.confidence_score = cs
+
+    def recall_mem(self, activity, rwd):
+        self.mem_confidence(rwd)
+        
         # KNN to see most similar entries
         act_keys, distances = self.mem_knn(activity)
 
@@ -120,33 +163,19 @@ class ep_mem(object):
             # make new dictionary of just the k nn entries and their data
             cache_knn = {k: self.cache_list[k] for k in act_keys}
             cache_actions = [v[0] for k,v in cache_knn.items()]
-            composite_mem_policy = softmax(sum(cache_actions))
-        else:
-            composite_mem_policy = policy
-
-        composite_policy = (1-confidence)*composite_mem_policy + confidence*policy
-        
-        return composite_policy
-
-    def mem_confidence(self, rwd, cs_max, time_since_last_reward, no_r):
-        self.factor = 0.5
-        
-        if no_r: 
-            cs = 0
-        else:
-            cs = (cs_max + self.factor)*np.exp(-time_since_last_reward/10)
-        
-        if cs > 1.0:
-            cs = 1
+            policy_EC = softmax(sum(cache_actions))
+            print("EC policy is ", policy_EC)
             
-        if rwd == 1:
-            no_r = False
+        else:
+            policy_EC = 0
 
-            cs_max = cs
-            time_since_last_reward = 0
-        
-        time_since_last_reward += 1
-        return cs, cs_max, time_since_last_reward
+        return policy_EC
+
+    def composite_policy(self, policy_MF, policy_EC):
+        if policy_EC == 0:
+            policy_EC = policy_MF
+        policy = (1-self.confidence_score)*policy_EC + self.confidence_score*policy_MF
+        return policy
 
 def sigmoid(x):
     return 1 / (1 + math.exp(-x))
