@@ -13,6 +13,7 @@ from sklearn.neighbors import NearestNeighbors
 
 import numpy as np
 import matplotlib.pyplot as plt
+import operator
 
 import environment as eu
 import MF as mf

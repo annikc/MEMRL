@@ -1,7 +1,7 @@
 '''
 Plot functions used for AC Agent in RL gridworld task
 Author: Annik Carson 
--- Feb 2018
+-- June 2018
 '''
 
 # =====================================
@@ -20,6 +20,8 @@ import matplotlib.patches as patches
 from matplotlib.collections import PatchCollection
 
 from sklearn.neighbors import NearestNeighbors
+
+import scipy.stats as st
 
 import os
 from os import listdir
@@ -49,9 +51,6 @@ fwhm = 0.25 # NB: place cell full width half max must be in (0,1)
 
 ##################################
 
-
-
-
 class PlaceCells(object):
 	def __init__(self, num_cells, grid, **kwargs):
 		self.num_cells = num_cells
@@ -59,42 +58,55 @@ class PlaceCells(object):
 		self.field_width = kwargs.get('fwhm', 0.25)
 		
 		self.x = np.random.uniform(0,1,(self.num_cells,))
-		self.y = np.random.uniform(0,1, (self.num_cells,))
+		self.y = np.random.uniform(0,1,(self.num_cells,))
 		
 	def activity(self, position):
 		x0 = (position[0]/self.gx)+float(1/(2*self.gx))
 		y0 = (position[1]/self.gy)+float(1/(2*self.gy))
 		
 		pc_activities = (np.exp(-((self.x-x0)**2 + (self.y-y0)**2) / self.field_width**2))
-		return pc_activities
+		return pc_activities.round(decimals = 10)
 
 class gridworld(object): 
 	def __init__(self, grid_size, **kwargs):
 		self.y, self.x = grid_size
-		self.rho = kwargs.get('rho', 0)
+		self.rho = kwargs.get('rho', 0.0)
 		self.maze_type = kwargs.get('maze_type', 'none')
 		self.grid, self.useable, self.obstacles = self.grid_maker()
 
 		self.actionlist = kwargs.get('actionlist', ['N', 'E', 'W', 'S', 'stay', 'poke'])
 		self.rwd_action = kwargs.get('rewarded_action', 'poke')
-		
+
 		if self.maze_type == 'tmaze':
-			self.rwd_loc = self.useable[0]
+			self.rwd_loc = [self.useable[0]]
 			self.port_shift = kwargs.get('port_shift', 'none')
 			
+		if self.maze_type == 'triple_reward':
+			self.rwd_loc = [(self.x-1, 0), (self.x-1, self.y-1), (0, self.y-1)]
+			self.orig_rwd_loc = [(self.x-1, 0), (self.x-1, self.y-1), (0, self.y-1)]
+			self.starter = kwargs.get('t_r_start', (0,0))
+
 		else:
-			rwd_choice = np.random.choice(len(self.useable))
-			self.rwd_loc = self.useable[rwd_choice]
+			if self.maze_type == 'none' and self.rho == 0.0:
+				self.rwd_loc = [(np.random.randint(self.x-2), np.random.randint(self.y-2))]
+			else:
+				rwd_choice = np.random.choice(len(self.useable))
+				self.rwd_loc = [self.useable[rwd_choice]]
+			self.orig_rwd_loc = []
+		#print(type(self.rwd_loc),self.rwd_loc)
+
 		
 		start_choice = np.random.choice(len(self.useable))
 		self.start_loc = self.useable[start_choice]
+		if self.maze_type=='triple_reward':
+			self.start_loc = self.starter
 		
 		self.fwhm = kwargs.get('pc_fwhm', 6)
 		self.num_placecells = kwargs.get('num_pc', 500)
 		self.pcs = PlaceCells(num_cells=self.num_placecells, grid=self,fwhm = self.fwhm)
 		self.reset_env()
 
-		self.empty_map = self.make_map(self.grid)
+		self.empty_map = self.make_map(self.grid, False)
 		#self.init_value_map = self.empty_map
 		#self.init_policy_map = self.empty_map
 	
@@ -108,7 +120,7 @@ class gridworld(object):
 				occupy (i.e. grid = 0 at these points)
 		'''
 
-		env_types = ['none', 'bar','room','tmaze']
+		env_types = ['none', 'bar','room','tmaze', 'triple_reward']
 		if self.maze_type not in env_types:
 			print("Environment Type '{0}' Not Recognized. \nOptions are: {1} \nDefault is Open Field (maze_type = 'none')".format(self.maze_type, env_types))
 
@@ -180,13 +192,18 @@ class gridworld(object):
 		
 		return grid, useable_grid, obstacles
 	
-	def make_map(self, grid):
+	def make_map(self, grid, pol=False):
 		'''
 		Set up a map for the agent to record its policy and value
 			estimates as it navigates the grid
 		'''
-		pv_map = np.zeros(grid.shape)
-		pv_map[grid == 1] = np.nan
+		if pol:
+			pv_map = np.zeros(grid.shape, dtype=[('N', 'f8'), ('E', 'f8'),('W', 'f8'), ('S', 'f8'),('stay', 'f8'), ('poke', 'f8')])
+			pv_map[grid == 1] = (np.nan,np.nan,np.nan,np.nan,np.nan,np.nan)
+
+		else:
+			pv_map = np.zeros(grid.shape)
+			pv_map[grid == 1] = np.nan
 		return pv_map
 	
 	def reset_env(self):        
@@ -196,11 +213,12 @@ class gridworld(object):
 		self.rwd = 0
 		
 		self.done = False
-		
+		self.reward_tally = {}
+		#if self.maze_type == 'triple_reward':
+		for i in self.orig_rwd_loc:
+			self.reward_tally[i] = 0
+
 	def start_trial(self):
-		#rwd_choice = np.random.choice(len(self.useable))
-		#self.rwd_loc = self.useable[rwd_choice]
-		
 		start_choice = np.random.choice(len(self.useable))
 		self.start_loc = self.useable[start_choice]
 		
@@ -210,6 +228,11 @@ class gridworld(object):
 		self.rwd = 0 
 		
 		self.done = False
+		if self.maze_type == 'triple_reward':
+			self.start_loc = self.starter
+		self.reward_tally = {}
+		for i in self.orig_rwd_loc:
+			self.reward_tally[i] = 0
 	
 	def move(self, action):
 		if action == 'N': 
@@ -235,21 +258,23 @@ class gridworld(object):
 		return self.net_state
 	
 	def get_reward(self, action):
-		if (action == 'poke') & (self.cur_state == self.rwd_loc):
+		if (action == 'poke') & (self.cur_state in self.rwd_loc):
 			self.rwd = 1
 			self.done = True
 			if self.maze_type == 'tmaze':
 				if self.port_shift in ['equal', 'left', 'right']:
 					self.shift_rwd(self.port_shift)
+			self.reward_tally[self.cur_state] += 1
+
 		elif (self.cur_state == (2,2)):
-			self.rwd = -1 
+			self.rwd = 0
 		else:
 			self.rwd = 0
 			self.done = False
 
 	def shift_rwd(self,shift):
 		port_rwd_probabilities = [0.333, 0.333, 0.333]
-		current_rewarded_port = self.rwd_loc
+		current_rewarded_port = self.rwd_loc[0]
 
 		if shift == 'equal':
 			dir_prob = [0.5, 0.5]
@@ -260,10 +285,10 @@ class gridworld(object):
 		elif shift == 'right':
 			dir_prob = [0.05, 0.95]
 
-		if self.rwd_loc in self.possible_ports:
-			poked_port = self.possible_ports.index(self.rwd_loc)
-			right_port = (self.possible_ports.index(self.rwd_loc)+1)%3
-			left_port = (self.possible_ports.index(self.rwd_loc)+2)%3
+		if self.rwd_loc[0] in self.possible_ports:
+			poked_port = self.possible_ports.index(self.rwd_loc[0])
+			right_port = (self.possible_ports.index(self.rwd_loc[0])+1)%3
+			left_port = (self.possible_ports.index(self.rwd_loc[0])+2)%3
 
 			port_rwd_probabilities[poked_port] = 0
 			port_rwd_probabilities[left_port] = dir_prob[0]*port_rwd_probabilities[left_port]
@@ -271,7 +296,7 @@ class gridworld(object):
 
 			port_rwd_probabilities = [rp/sum(port_rwd_probabilities) for rp in port_rwd_probabilities]
 			new_rwd_loc = np.random.choice(3,1,p=port_rwd_probabilities)
-			self.rwd_loc = self.possible_ports[new_rwd_loc[0]]
+			self.rwd_loc = [self.possible_ports[new_rwd_loc[0]]]
 		else:
 			print('is not works good')
 
@@ -285,9 +310,9 @@ class gridworld(object):
 		s = self.pcs.activity(state)
 		
 		a = np.zeros(len(self.actionlist))
-		if self.last_action in self.actionlist:
-			a[self.actionlist.index(self.last_action)] = 1 
-		s = np.append(s, a)
+		#if self.last_action in self.actionlist:
+		#	a[self.actionlist.index(self.last_action)] = 1 
+		#s = np.append(s, a)
 		s = np.reshape(s, (1, len(s)))
 		
 		return s
@@ -323,9 +348,9 @@ class gymworld(object):
 def sigmoid(x):
 	return 1 / (1 + math.exp(-x))
 
-def softmax(x):
+def softmax(x,T=1):
 	 """Compute softmax values for each sets of scores in x."""
-	 e_x = np.exp(x - np.max(x))
+	 e_x = np.exp((x - np.max(x))/T)
 	 return e_x / e_x.sum(axis=0) # only difference
 
 def plot_softmax(x):
@@ -355,10 +380,9 @@ def running_mean(l, N):
 	return result
 
 
-def make_env_plots(maze, env=True, pc_map=False, pc_vec=False):
+def make_env_plots(maze, env=True, pc_map=False, pc_vec=False, save=False):
 	grid = maze.grid
 	useable_grid = maze.useable
-	rwd_loc = maze.rwd_loc
 	agent_loc = maze.cur_state
 	
 	cmap = plt.cm.jet
@@ -375,11 +399,11 @@ def make_env_plots(maze, env=True, pc_map=False, pc_vec=False):
 		ax = fig.gca()
 		axis.pcolor(grid, cmap = 'bone', vmax =1, vmin = 0)
 
-		rwd_v, rwd_h = rwd_loc
-
+		for rwd_loc in maze.rwd_loc:
+			rwd_v, rwd_h = rwd_loc
+			ax.add_patch(plt.Circle((rwd_v+.5, rwd_h+.5), 0.35, fc='r'))
+		
 		agent_v, agent_h = agent_loc
-
-		ax.add_patch(plt.Circle((rwd_v+.5, rwd_h+.5), 0.35, fc='r'))
 		ax.add_patch(plt.Circle((agent_v+.5, agent_h+.5), 0.35, fc='b'))
 		if maze.maze_type == 'tmaze':
 			pass
@@ -391,8 +415,8 @@ def make_env_plots(maze, env=True, pc_map=False, pc_vec=False):
 		#if maze.y == maze.x: 
 			#plt.axis('tight')
 		ax.set_aspect('equal')
-
-		plt.savefig('{}environment.svg'.format(maze.maze_type), format='svg', pad_inches =2)
+		if save:
+			plt.savefig('{}environment.svg'.format(maze.maze_type), format='svg', pad_inches =2)
 		
 	if pc_map:
 		# plot place cells 
@@ -448,7 +472,7 @@ def make_arrows(action, probability):
 	else: 
 		if action == 0: #N
 			dx = 0
-			dy = -.25
+			dy = .25
 		elif action == 1: #E
 			dx = .25
 			dy = 0
@@ -457,7 +481,7 @@ def make_arrows(action, probability):
 			dy = 0
 		elif action == 3: #S
 			dx = 0
-			dy = .25
+			dy = -.25
 		elif action == 4: #stay
 			dx = -.1
 			dy = -.1
@@ -480,18 +504,36 @@ class artist_instance:
 	def art(self):
 		return getattr(patches,'Circle')(xy=self.xy,radius=self.radius,fc=self.fc,ec=self.ec)
 
-def print_value_maps(maze,val_maps,print_last=False, **kwargs):
+def print_value_maps(maze,val_maps,**kwargs):
+	maptype = kwargs.get('type', 'value')
 	mazetype = maze.maze_type
 	obs_rho = maze.rho
-	rwd_loc = maze.rwd_loc
+	#rwd_loc = maze.rwd_loc[0]
 	maps = kwargs.get('maps', 'all')
+	title = kwargs.get('title',None)
+	save_dir = kwargs.get('save_dir', None)
+	if title == None:
+		if mazetype == 'none':
+			save_string = './figures/grid_obs{}_{}map.svg'.format(obs_rho,maptype)
+		else: 
+			save_string = './figures/{}_{}map.svg'.format(mazetype,maptype)
+	else:
+		if mazetype == 'none':
+			save_string = './figures/grid_obs{}_{}.svg'.format(obs_rho,title.replace(" ",""))
+		else: 
+			save_string = './figures/{}_{}map.svg'.format(mazetype,title.replace(" ", ""))
+	
+	if save_dir != None:
+		save_string = save_string.replace("./figures/", save_dir)
 	
 	if maps == 'all':
 		plotrows = 4
 		plotcols = 5
 		fig, axes = plt.subplots(nrows=plotrows, ncols=plotcols, sharex=True, sharey =True)
 		items = np.linspace(0, len(val_maps)-1, plotrows*plotcols)
-		rwd_patch=artist_instance(xy=np.add(rwd_loc,(0.5,0.5)), rad=.2)
+		rp_s = []
+		for rwd_loc in maze.rwd_loc:
+			rp_s.append(artist_instance(xy=np.add(rwd_loc,(0.5,0.5)), rad=.2))
 
 		for i, ax in enumerate(axes.flat):
 			data = val_maps[int(items[i])]
@@ -501,32 +543,185 @@ def print_value_maps(maze,val_maps,print_last=False, **kwargs):
 			im.cmap.set_bad('w', 1.0)
 			ax.axis('off')
 			ax.set_aspect('equal')
-			ax.add_patch(rwd_patch.art())
+			for rwd_patch in rp_s:
+				ax.add_patch(rwd_patch.art())
 			ax.set_title('{}'.format(int(items[i])))
+
+		if title != None:
+			plt.suptitle(title)
 
 		axes[0,0].invert_yaxis()
 
 		fig.subplots_adjust(right=0.8)
 		cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
 		fig.colorbar(im, cax=cbar_ax)
-		if mazetype == 'none':
-			plt.savefig('./figures/grid_obs{}_valuemap.svg'.format(obs_rho), format='svg')
-		else: 
-			plt.savefig('./figures/{}_valuemap.svg'.format(mazetype), format='svg')
+		plt.savefig(save_string, format='svg')
 		plt.show()
+
+	elif type(maps) == list:
+		plotrows = 4
+		plotcols = 5
+		fig, axes = plt.subplots(nrows=plotrows, ncols=plotcols, sharex=True, sharey =True)
+		items = np.linspace(0, len(val_maps)-1, plotrows*plotcols)
+		rp_s = []
+		for rwd_loc in maze.rwd_loc:
+			rp_s.append(artist_instance(xy=np.add(rwd_loc,(0.5,0.5)), rad=.2))
+
+		for i, ax in enumerate(axes.flat):
+			data = val_maps[int(items[i])]
+			im = ax.pcolor(data, cmap= 'Spectral_r', vmin=np.nanmin(val_maps), vmax=np.nanmax(val_maps))
+			im.cmap.set_under('w', 1.0)
+			im.cmap.set_over('r', 1.0)
+			im.cmap.set_bad('w', 1.0)
+			ax.axis('off')
+			ax.set_aspect('equal')
+			for rwd_patch in rp_s:
+				ax.add_patch(rwd_patch.art())
+			ax.set_title('{}'.format(int(items[i])))
+
+		if title != None:
+			plt.suptitle(title)
+
+		axes[0,0].invert_yaxis()
+
+		fig.subplots_adjust(right=0.8)
+		cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+		fig.colorbar(im, cax=cbar_ax)
+		plt.savefig(save_string, format='svg')
+		plt.show()
+
 
 	else:
 		if type(maps) == int:
 			data = val_maps[maps]
 			trial = maps%len(val_maps)
 			fig = plt.figure(1)
-			im = plt.imshow(data, vmin=np.nanmin(data), vmax=np.nanmax(data), cmap='Spectral_r', interpolation='none')
-			rwd_patch1 = artist_instance(rwd_loc, rad=.2)
+			im = plt.imshow(data, vmin=np.nanmin(data+10), vmax=np.nanmax(data+5), cmap='Spectral_r', interpolation='none')
+			rp_s = []
+			for rwd_loc in maze.rwd_loc:
+				rp_s.append(artist_instance(rwd_loc, rad=.2))
 			im.cmap.set_bad('w', 1.0)
-			fig.axes[0].add_patch(rwd_patch1.art())
+			for rwd_patch1 in rp_s:
+				fig.axes[0].add_patch(rwd_patch1.art())
 			#plt.imshow(data, vmin=1.32, vmax=1.5, cmap='jet', interpolation='none')
 			plt.title('Trial {}'.format(trial))
 			plt.colorbar()
 			plt.show()
 		else:
 			print("Must specify which map to print (integer value) else specify 'all' ")
+
+### from junk.ipynb -- need to make compatible 
+#	data = val_maps[-1].copy()
+#	data[np.where(data>0)] = 0
+#
+#	## Plot actual choice
+#	fig = plt.figure()
+#
+#	cmap = plt.cm.Spectral_r
+#	cNorm  = colors.Normalize(vmin=0, vmax=1)
+#	scalarMap = cmx.ScalarMappable(norm = cNorm, cmap=cmap)
+#
+#
+#	ax1  = fig.add_axes([0.04, 0, 0.4, 0.85]) # [left, bottom, width, height]
+#	ax2   = fig.add_axes([0.47, 0, 0.4, 0.85]) # [left, bottom, width, height]
+#	axc = fig.add_axes([0.89, 0.125, 0.05, 0.6])
+#
+#	cb1 = mpl.colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
+#
+#	ax1.imshow(data, vmin=0, vmax=1, cmap='bone', interpolation='none')
+#	ax1.add_patch(patches.Circle(maze.rwd_loc, 0.35, fc='w'))
+#
+#	ax2.imshow(data, vmin=0, vmax=1, cmap='bone', interpolation='none')
+#	ax2.add_patch(patches.Circle(maze.rwd_loc, 0.35, fc='w'))
+#
+#
+#	# p_field indicies
+#	# 0 - choice, 
+#	# 1 - list(tfprob)[choice], 
+#	# 2 - list(tfprob).index(max(list(tfprob))),
+#	# 3 - max(list(tfprob)), 
+#	# 4 - i)
+#
+#	for i in range(0, p_field.shape[0]):
+#	    for j in range(0, p_field.shape[1]):
+#	        dx1, dy1, head_w1, head_l1 = make_arrows(p_field[i][j][0], p_field[i][j][1]) 
+#	        if (dx1, dy1) == (0,0):
+#	            pass
+#	        else:
+#	            colorVal1 = scalarMap.to_rgba(p_field[i][j][1])
+#	            ax1.arrow(j, i, dx1, dy1, head_width =0.3, head_length =0.2, color=colorVal1, alpha = 1 - ((len(val_maps)-p_field[i][j][4])/len(val_maps)))
+#	            
+#	        dx2, dy2, head_w2, head_l2 = make_arrows(p_field[i][j][2], p_field[i][j][3])
+#	        if (dx2, dy2) == (0,0):
+#	            pass
+#	        else:
+#	            colorVal2 = scalarMap.to_rgba(p_field[i][j][3])
+#	            ax2.arrow(j, i, dx2, dy2, head_width =0.3, head_length =0.2, color=colorVal2, alpha = 1 - ((len(val_maps)-p_field[i][j][4])/len(val_maps)))
+#	            
+#	ax1.set_title("Chosen Action")
+#	ax2.set_title("Most likely choice")
+#
+#	plt.savefig('./figures/{}choice_field.svg'.format(mazetype),format ='svg')
+#	plt.show()
+
+class KLD_holder(object):
+	def __init__(self,gridworld,**kwargs):
+		self.flag = kwargs.get('track', 'KLD')
+		self.y 		 = gridworld.y
+		self.x 		 = gridworld.x
+		self.num_act = len(gridworld.actionlist)
+		if self.flag == 'KLD':
+			self.map = np.zeros((self.y, self.x))
+			self.op 	= opt_pol_map(gridworld)
+		elif self.flag == 'policy':
+			self.map 	 = np.zeros((self.y, self.x, self.num_act))
+		else:
+			print("Flag error. Track 'KLD' (default) or 'policy' as keyword")
+
+	def update(self,state, policy):
+		#policy must be list or array
+		if self.flag == 'policy':
+			self.map[state[1], state[0]] = policy
+
+		elif self.flag =='KLD':
+			optimal = self.op[state[1], state[0]]
+			self.map[state[1], state[0]] = st.entropy(policy,optimal)
+			
+	def reset(self):
+		if self.flag == 'policy':
+			self.map = np.zeros((self.y, self.x, self.num_act))
+		elif self.flag == 'KLD':
+			self.map = np.zeros((self.y, self.x))
+		
+
+def opt_pol_map(gridworld):
+	optimal_policy = np.zeros((gridworld.y, gridworld.x, len(gridworld.actionlist)))
+
+	for location in gridworld.useable:
+		xdim,ydim=location
+		xrwd,yrwd=gridworld.rwd_loc[0]
+		
+		if xdim<xrwd:
+			optimal_policy[ydim,xdim][1] = 1
+			if ydim<yrwd:
+				optimal_policy[ydim,xdim][3] = 1
+			elif ydim>yrwd:
+				optimal_policy[ydim,xdim][0] = 1
+				
+		elif xdim>xrwd:
+			optimal_policy[ydim,xdim][2] = 1
+			if ydim<yrwd:
+				optimal_policy[ydim,xdim][3] = 1
+			elif ydim>yrwd:
+				optimal_policy[ydim,xdim][0] = 1
+		else:
+			if ydim<yrwd:
+				optimal_policy[ydim,xdim][3] = 1
+			elif ydim>yrwd:
+				optimal_policy[ydim,xdim][0] = 1
+			else:
+				optimal_policy[ydim,xdim][5] = 1
+		
+		optimal_policy[ydim,xdim] = softmax(optimal_policy[ydim,xdim],T=0.01)
+
+	return optimal_policy
