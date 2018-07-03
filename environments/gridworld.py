@@ -507,7 +507,6 @@ class artist_instance:
 def print_value_maps(maze,val_maps,**kwargs):
 	maptype = kwargs.get('type', 'value')
 	value_min, value_max = kwargs.get('val_range', (np.nanmin(val_maps),np.nanmax(val_maps)))
-	print('vmaxvmin', value_max, value_min)
 	mazetype = maze.maze_type
 	obs_rho = maze.rho
 	#rwd_loc = maze.rwd_loc[0]
@@ -516,12 +515,18 @@ def print_value_maps(maze,val_maps,**kwargs):
 	save_dir = kwargs.get('save_dir', None)
 	if title == None:
 		if mazetype == 'none':
-			save_string = './figures/grid_obs{}_{}map.svg'.format(obs_rho,maptype)
+			if obs_rho != 0.0:
+				save_string = './figures/grid_obs{}_{}map.svg'.format(obs_rho,maptype)
+			else:
+				save_string = './figures/{}.svg'.format(title.replace(" ",""))
 		else: 
 			save_string = './figures/{}_{}map.svg'.format(mazetype,maptype)
 	else:
 		if mazetype == 'none':
-			save_string = './figures/grid_obs{}_{}.svg'.format(obs_rho,title.replace(" ",""))
+			if obs_rho !=0.0:
+				save_string = './figures/grid_obs{}_{}.svg'.format(obs_rho,title.replace(" ",""))
+			else:
+				save_string = './figures/{}.svg'.format(title.replace(" ",""))
 		else: 
 			save_string = './figures/{}_{}map.svg'.format(mazetype,title.replace(" ", ""))
 	

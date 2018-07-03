@@ -15,7 +15,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import operator
 
-import environment as eu
-import MF as mf
-import EC as ec
+import csv
+
+import sys 
+sys.path.insert(0,"../environments/") ; import gridworld as eu
+sys.path.insert(0,"../memory/") ;import episodic as ec
+sys.path.insert(0,"../rl_network/"); import actorcritic as mf
 
