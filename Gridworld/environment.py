@@ -353,10 +353,10 @@ def softmax(x,T=1):
 	 e_x = np.exp((x - np.max(x))/T)
 	 return e_x / e_x.sum(axis=0) # only difference
 
-def plot_softmax(x):
+def plot_softmax(x, T=1):
 	f, axarr = plt.subplots(2, sharex=True)
 	axarr[0].bar(np.arange(len(x)), x)
-	y = softmax(x)    
+	y = softmax(x, T)    
 	axarr[1].bar(np.arange(len(x)), y) 
 	plt.show()
 
@@ -506,6 +506,8 @@ class artist_instance:
 
 def print_value_maps(maze,val_maps,**kwargs):
 	maptype = kwargs.get('type', 'value')
+	value_min, value_max = kwargs.get('val_range', (np.nanmin(val_maps),np.nanmax(val_maps)))
+	print('vmaxvmin', value_max, value_min)
 	mazetype = maze.maze_type
 	obs_rho = maze.rho
 	#rwd_loc = maze.rwd_loc[0]
@@ -537,7 +539,7 @@ def print_value_maps(maze,val_maps,**kwargs):
 
 		for i, ax in enumerate(axes.flat):
 			data = val_maps[int(items[i])]
-			im = ax.pcolor(data, cmap= 'Spectral_r', vmin=np.nanmin(val_maps), vmax=np.nanmax(val_maps))
+			im = ax.pcolor(data, cmap= 'Spectral_r', vmin=value_min, vmax=value_max)
 			im.cmap.set_under('w', 1.0)
 			im.cmap.set_over('r', 1.0)
 			im.cmap.set_bad('w', 1.0)
@@ -569,7 +571,7 @@ def print_value_maps(maze,val_maps,**kwargs):
 
 		for i, ax in enumerate(axes.flat):
 			data = val_maps[int(items[i])]
-			im = ax.pcolor(data, cmap= 'Spectral_r', vmin=np.nanmin(val_maps), vmax=np.nanmax(val_maps))
+			im = ax.pcolor(data, cmap= 'Spectral_r', vmin=value_min, vmax=value_max)
 			im.cmap.set_under('w', 1.0)
 			im.cmap.set_over('r', 1.0)
 			im.cmap.set_bad('w', 1.0)
@@ -672,11 +674,13 @@ class KLD_holder(object):
 		self.num_act = len(gridworld.actionlist)
 		if self.flag == 'KLD':
 			self.map = np.zeros((self.y, self.x))
+			self.map.fill(np.nan)
 			self.op 	= opt_pol_map(gridworld)
 		elif self.flag == 'policy':
 			self.map 	 = np.zeros((self.y, self.x, self.num_act))
 		else:
 			print("Flag error. Track 'KLD' (default) or 'policy' as keyword")
+		
 
 	def update(self,state, policy):
 		#policy must be list or array
@@ -685,7 +689,7 @@ class KLD_holder(object):
 
 		elif self.flag =='KLD':
 			optimal = self.op[state[1], state[0]]
-			self.map[state[1], state[0]] = st.entropy(policy,optimal)
+			self.map[state[1], state[0]] = st.entropy(optimal,policy)
 			
 	def reset(self):
 		if self.flag == 'policy':
