@@ -34,7 +34,7 @@ class AC_Net(nn.Module):
 	'''
 
 	# ================================
-	def __init__(self, input_dimensions, action_dimensions, hidden_types=[], hidden_dimensions=[]):
+	def __init__(self, input_dimensions, action_dimensions, batch_size=4, hidden_types=[], hidden_dimensions=[]):
 		'''
 		AC_Net(input_dimensions, action_dimensions, hidden_types=[], hidden_dimensions=[])
 
@@ -45,6 +45,7 @@ class AC_Net(nn.Module):
 			- action_dimensions (int): the number of possible actions
 
 		Optional arguments:
+			- batch_size (int): the size of the batches (default = 4).
 			- hidden_types (list of strings): the type of hidden layers to use, options are 'linear',
 			                                  'lstm', 'gru'. If list is empty no hidden layers are
 			                                  used (default = []).
@@ -57,6 +58,9 @@ class AC_Net(nn.Module):
 
 		# store the input dimensions
 		self.input_d = input_dimensions
+
+		# store the batch size
+		self.batch_size = batch_size
 
 		# check that the correct number of hidden dimensions are specified
 		assert len(hidden_types) is len(hidden_dimensions)
@@ -71,6 +75,10 @@ class AC_Net(nn.Module):
 
 		else:
  
+			# to store a record of the last hidden states
+			self.hx = []
+			self.cx = []
+		
 			# create the hidden layers
 			self.hidden = nn.ModuleList()
 			for i,htype in enumerate(hidden_types):
@@ -88,10 +96,16 @@ class AC_Net(nn.Module):
 				# construct the layer
 				if htype is 'linear':
 					self.hidden.append(nn.Linear(input_d, output_d))
+					self.hx.append(None)
+					self.cx.append(None)
 				elif htype is 'lstm':
 					self.hidden.append(nn.LSTMCell(input_d, output_d))
+					self.hx.append(torch.zeros(self.batch_size,output_d))
+					self.cx.append(torch.zeros(self.batch_size,output_d))
 				elif htype is 'gru':
 					self.hidden.append(nn.GRUCell(input_d, output_d))
+					self.hx.append(torch.zeros(self.batch_size,output_d))
+					self.cx.append(None)
 
 			# create the actor and critic layers
 			self.actor = nn.Linear(output_d, action_dimensions)
@@ -101,7 +115,7 @@ class AC_Net(nn.Module):
 		# to store a record of actions and rewards	
 		self.saved_actions = []
 		self.rewards = []
-		
+
 		# initialize the weights ? do we need this?
 #		for m in self.modules():
 #			if isinstance(m, nn.Linear):
@@ -109,54 +123,37 @@ class AC_Net(nn.Module):
 #				m.bias.data.zero_()
 
 	# ================================
-	def forward(self, x, h=None, c=None):
+	def forward(self, x):
 		'''
-		forward(x, h=None, c=None):
+		forward(x):
 
 		Runs a forward pass through the network to get a policy and value.
 
 		Required arguments:
 			- x (torch.Tensor): sensory input to the network, should be of size batch x input_d
 
-		Optional arguments:
-			- h (list of torch.Tensor objests): previous hidden states for recurrent units in a
-			                                    list of length = num layers (entry of None for
-			                                    Linear layers). Input None if no recurrent layers
-			                                    (default = None). 
-			- c (list of torch.Tensor objests): previous cell states for LSTM units in a
-			                                    list of length = num layers (entry of None for
-			                                    Linear or GRU layers). Input None if no LSTM layers
-			                                    (default = None). 
 		'''
 
 		# check the inputs
 		assert x.shape[-1] is self.input_d
-		if not h is None:
-			assert len(h) is len(self.hidden)
-		if not c is None:
-			assert len(c) is len(self.hidden)
-
-		# initialize lists to store recurrent hidden states
-		hx = []
-		cx = []
 
 		# pass the data through each hidden layer
 		for i, layer in enumerate(self.hidden):
 			if isinstance(layer, nn.Linear):
 				x = F.relu(layer(x))
 			elif isinstance(layer, nn.LSTMCell):
-				x, ci = layer(x, (h[i], c[i]))
-				hx.append(x.clone())
-				cx.append(ci.clone())
+				x, cx = layer(x, (self.hx[i], self.cx[i]))
+				self.hx[i] = x.clone()
+				self.cx[i] = cx.clone()
 			elif isinstance(layer, nn.GRUCell):
-				x = layer(x, h[i])
-				hx.append(x.clone())
+				x = layer(x, self.hx[i])
+				self.hx[i] = x.clone()
 
 		# pass to the output layers
 		policy = F.softmax(self.actor(x), dim=1)
 		value  = self.critic(x)
 
-		return policy, value, (hx, cx)
+		return policy, value
 
 # =====================================
 # FUNCTIONS
