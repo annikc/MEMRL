@@ -1,5 +1,5 @@
 # Memory-Assisted Reinforcement Learning 
-Annik Carson (Last updated July 2018)
+By Annik Carson (Last updated July 2018)
 
 This code is used to solve reinforcement learning tasks, using a variety of modules. The file structure is as follows: 
 
