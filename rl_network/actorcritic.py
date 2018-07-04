@@ -67,6 +67,7 @@ class AC_Net(nn.Module):
 		
 		# check whether we're using hidden layers
 		if not hidden_types:
+			self.layers = [input_dimensions,action_dimensions]
 
 			# no hidden layers, only input to output, create the actor and critic layers
 			self.actor = nn.Linear(input_dimensions, action_dimensions)
@@ -108,6 +109,8 @@ class AC_Net(nn.Module):
 					self.cx.append(None)
 
 			# create the actor and critic layers
+			self.layers = [input_dimensions]+hidden_dimensions+[action_dimensions]
+
 			self.actor = nn.Linear(output_d, action_dimensions)
 			self.critic = nn.Linear(output_d, 1)
 			self.output = nn.ModuleList([self.actor, self.critic])
@@ -135,7 +138,7 @@ class AC_Net(nn.Module):
 		'''
 
 		# check the inputs
-		assert x.shape[-1] is self.input_d
+		assert x.shape[-1] == self.input_d
 
 		# pass the data through each hidden layer
 		for i, layer in enumerate(self.hidden):
