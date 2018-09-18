@@ -32,9 +32,9 @@ import imageio
 
 
 ###################################
-#========================
-# Environment Parameters
-#======================== 
+#================================
+# Default Environment Parameters
+#================================ 
 height = 7
 width = 7
 
@@ -65,14 +65,20 @@ class PlaceCells(object):
 		y0 = (position[1]/self.gy)+float(1/(2*self.gy))
 		
 		pc_activities = (np.exp(-((self.x-x0)**2 + (self.y-y0)**2) / self.field_width**2))
-		return pc_activities.round(decimals = 10)
+		state_vec = pc_activities.round(decimals = 10)
+		return np.reshape(state_vec, (1,len(state_vec)))
 
 class gridworld(object): 
 	def __init__(self, grid_size, **kwargs):
 		self.y, self.x = grid_size
 		self.rho = kwargs.get('rho', 0.0)
+		self.bound = kwargs.get('walls', False)
 		self.maze_type = kwargs.get('maze_type', 'none')
-		self.grid, self.useable, self.obstacles = self.grid_maker()
+		if self.bound:
+			g1, u1, o1 = self.grid_maker()
+			self.grid, self.useable, self.obstacles = self.grid_walls(g1, u1, o1)
+		else:
+			self.grid, self.useable, self.obstacles = self.grid_maker()
 
 		self.actionlist = kwargs.get('actionlist', ['N', 'E', 'W', 'S', 'stay', 'poke'])
 		self.rwd_action = kwargs.get('rewarded_action', 'poke')
@@ -101,9 +107,10 @@ class gridworld(object):
 		if self.maze_type=='triple_reward':
 			self.start_loc = self.starter
 		
-		self.fwhm = kwargs.get('pc_fwhm', 6)
-		self.num_placecells = kwargs.get('num_pc', 500)
-		self.pcs = PlaceCells(num_cells=self.num_placecells, grid=self,fwhm = self.fwhm)
+		
+		#self.num_placecells = kwargs.get('num_pc', 500)
+		#self.fwhm = kwargs.get('pc_fwhm', 6)
+		#self.pcs = PlaceCells(num_cells=self.num_placecells, grid=self,fwhm = self.fwhm)
 		self.reset_env()
 
 		self.empty_map = self.make_map(self.grid, False)
@@ -191,6 +198,15 @@ class gridworld(object):
 		obstacles = list(zip(np.where(grid==1)[1], np.where(grid==1)[0]))
 		
 		return grid, useable_grid, obstacles
+
+	def grid_walls(self, grid, useable_grid, obstacles):
+		new_grid = np.ones((self.y+2, self.x+2))
+		for i in xrange(self.y):
+			for j in xrange(self.x):
+				new_grid[i+1][j+1] = grid[i][j]
+		new_useable = [tuple(np.add(x, (1,1))) for x in useable_grid]
+		new_obstacle =[tuple(np.add(x, (1,1))) for x in obstacles]
+		return new_grid, new_useable, new_obstacle
 	
 	def make_map(self, grid, pol=False):
 		'''
@@ -206,10 +222,9 @@ class gridworld(object):
 			pv_map[grid == 1] = np.nan
 		return pv_map
 	
-	def reset_env(self):        
+	def reset_env(self): 
 		self.cur_state = self.start_loc
 		self.last_action = 'NA'
-		self.net_state = self.mk_state()
 		self.rwd = 0
 		
 		self.done = False
@@ -224,7 +239,6 @@ class gridworld(object):
 		
 		self.cur_state = self.start_loc
 		self.last_action = 'NA'
-		self.net_state = self.mk_state()
 		self.rwd = 0 
 		
 		self.done = False
@@ -253,9 +267,8 @@ class gridworld(object):
 				self.cur_state = next_state
 		
 		self.get_reward(action)
-		self.net_state = self.mk_state()
 		self.last_action = action
-		return self.net_state
+		return self.cur_state
 	
 	def get_reward(self, action):
 		if (action == 'poke') & (self.cur_state in self.rwd_loc):
@@ -266,10 +279,8 @@ class gridworld(object):
 					self.shift_rwd(self.port_shift)
 			self.reward_tally[self.cur_state] += 1
 
-		elif (self.cur_state == (2,2)):
-			self.rwd = 0
 		else:
-			self.rwd = 0
+			self.rwd = -.01
 			self.done = False
 
 	def shift_rwd(self,shift):
@@ -302,20 +313,7 @@ class gridworld(object):
 
 
 		
-	def mk_state(self, **kwargs):
-		state = kwargs.get('state', self.cur_state)        
-		#s = np.zeros((self.y, self.x))
-		#s[self.cur_state[1]][self.cur_state[0]] = 1 
-		#s = np.reshape(s, (self.y*self.x))
-		s = self.pcs.activity(state)
-		
-		a = np.zeros(len(self.actionlist))
-		#if self.last_action in self.actionlist:
-		#	a[self.actionlist.index(self.last_action)] = 1 
-		#s = np.append(s, a)
-		s = np.reshape(s, (1, len(s)))
-		
-		return s
+
 
 class action_wrapper(object): 
 	def __init__(self, actionlist):
@@ -326,14 +324,13 @@ class gymworld(object):
 	def __init__(self, gridworld):
 		self.env = gridworld
 		self.action_space = action_wrapper(self.env.actionlist)
-		self.state = self.env.net_state
-		self.observation_space = np.reshape(self.state, (self.state.shape[1], self.state.shape[0]))
+		self.state = self.env.cur_state
+		self.observation_space = self.env.cur_state[0]
 		self.reward = self.env.rwd
 
 	def reset(self):
 		self.env.start_trial()
-		self.state = self.env.net_state
-		return self.state
+		return self.env.cur_state
 
 	def step(self,action):
 		action_string = self.env.actionlist[action]
@@ -343,6 +340,24 @@ class gymworld(object):
 		done = False
 		info = None
 		return observation, self.reward, done, info
+
+
+def get_frame(maze):
+	#grid
+	grid = maze.grid
+	#location of reward
+	rwd_position = np.zeros_like(maze.grid)
+	rwd_position[maze.rwd_loc[0][1], maze.rwd_loc[0][0]] = 1
+	#location of agent
+	agt_position = np.zeros_like(maze.grid)
+	agt_position[maze.cur_state[1], maze.cur_state[0]] = 1
+	
+	return np.array((grid, rwd_position, agt_position)) #np.transpose(np.array((grid, rwd_position, agt_position)),axes=[1,2,0])
+
+
+
+
+
 
 
 def sigmoid(x):
@@ -380,16 +395,11 @@ def running_mean(l, N):
 	return result
 
 
-def make_env_plots(maze, env=True, pc_map=False, pc_vec=False, save=False):
+def make_env_plots(maze, env=True, pc_map=False, pcs=None, pc_vec=False, save=False):
 	grid = maze.grid
 	useable_grid = maze.useable
 	agent_loc = maze.cur_state
 	
-	cmap = plt.cm.jet
-	cNorm  = colors.Normalize(vmin=0, vmax=max(maze.pcs.activity(maze.cur_state)))
-	scalarMap = cmx.ScalarMappable(norm = cNorm, cmap=cmap)
-
-
 	if env: 
 		# plot maze -- agent (blue) and reward (red)
 		fig = plt.figure(0)
@@ -419,6 +429,11 @@ def make_env_plots(maze, env=True, pc_map=False, pc_vec=False, save=False):
 			plt.savefig('{}environment.svg'.format(maze.maze_type), format='svg', pad_inches =2)
 		
 	if pc_map:
+		cmap = plt.cm.jet
+		vmin = 0
+		vmax = max(pcs.activity(maze.cur_state)[0])
+		cNorm  = colors.Normalize(vmin=0, vmax=vmax)
+		scalarMap = cmx.ScalarMappable(norm = cNorm, cmap=cmap)
 		# plot place cells 
 		# circle radius given by fwhm of place cells (???)
 		fig = plt.figure(1)
@@ -426,9 +441,10 @@ def make_env_plots(maze, env=True, pc_map=False, pc_vec=False, save=False):
 		axc = fig.add_axes([0.63, 0.1, 0.03, 0.85])
 
 	
-		for i in range(len(maze.pcs.x)):
-			colorVal = scalarMap.to_rgba(maze.pcs.activity(maze.cur_state)[i])
-			ax.add_patch(patches.Circle((maze.pcs.x[i], maze.pcs.y[i]), 0.025, fc=colorVal, ec='none', alpha=0.5))
+		for i in range(len(pcs.x)):
+
+			colorVal = scalarMap.to_rgba(np.squeeze(pcs.activity(maze.cur_state))[i])
+			ax.add_patch(patches.Circle((pcs.x[i], pcs.y[i]), 0.025, fc=colorVal, ec='none', alpha=0.5))
 			ax.set_ylim([1,0])
 		cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
 		ax.axis('equal')
@@ -438,12 +454,18 @@ def make_env_plots(maze, env=True, pc_map=False, pc_vec=False, save=False):
 		plt.show()
 
 	if pc_vec:
+		cmap = plt.cm.jet
+		vmin = 0
+		vmax = max(pcs.activity(maze.cur_state)[0])
+		cNorm  = colors.Normalize(vmin=0, vmax=vmax)
+		scalarMap = cmx.ScalarMappable(norm = cNorm, cmap=cmap)
+
 		# plot input vector
 		fig = plt.figure(2)
 		ax  = fig.add_axes([0, 0.25, 0.7, 0.15]) # [left, bottom, width, height]
 		axc = fig.add_axes([0, 0.1, 0.7, 0.07])
 
-		ax.pcolor(maze.pcs.activity(maze.cur_state).reshape(1,maze.pcs.activity(maze.cur_state).shape[0]), vmin=0, vmax=1, cmap=cmap)
+		ax.pcolor(pcs.activity(maze.cur_state), vmin=0, vmax=1, cmap=cmap)
 		ax.set_yticklabels([''])
 		cb2 = colorbar.ColorbarBase(axc, cmap = cmap, norm = cNorm, orientation='horizontal')
 		plt.show()
@@ -500,7 +522,7 @@ class artist_instance:
 		self.xy=xy if xy is not None else (1,1)
 		self.radius = rad if rad is not None else 0.1
 		self.fc = 'w'
-		self.ec = 'b'
+		self.ec = 'r'
 	def art(self):
 		return getattr(patches,'Circle')(xy=self.xy,radius=self.radius,fc=self.fc,ec=self.ec)
 
