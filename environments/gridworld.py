@@ -280,7 +280,7 @@ class gridworld(object):
 			self.reward_tally[self.cur_state] += 1
 
 		else:
-			self.rwd = -.01
+			self.rwd = 0
 			self.done = False
 
 	def shift_rwd(self,shift):
@@ -756,3 +756,19 @@ def opt_pol_map(gridworld):
 		optimal_policy[ydim,xdim] = softmax(optimal_policy[ydim,xdim],T=0.01)
 
 	return optimal_policy
+
+
+def save_value_map(vm, maze, trial, savedir):
+    data = vm
+    fig = plt.figure()
+    im = plt.imshow(data, vmin = 0, vmax = 40, cmap='Spectral_r', interpolation ='none')
+    rp_s = []
+    for reward_loc in maze.rwd_loc:
+        rp_s.append(eu.artist_instance(xy=np.add(reward_loc,(0,0)), rad = 0.2))
+    im.cmap.set_bad('w', 1.0)
+    for rp1 in rp_s:
+        fig.axes[0].add_patch(rp1.art())
+    plt.colorbar()
+    plt.title('Trial {}'.format(trial))
+    plt.savefig(savedir+'trial_{}'.format(trial))
+    plt.close()
