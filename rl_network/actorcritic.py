@@ -113,12 +113,12 @@ class AC_Net(nn.Module):
 						output_d[0] = int(np.floor((input_d[0] + 2*padding - rfsize)/stride) + 1)
 						output_d[1] = int(np.floor((input_d[1] + 2*padding - rfsize)/stride) + 1)
 						#pdb.set_trace()
-						assert output_d[0] == hidden_dimensions[i][0]
+						assert output_d[0] == hidden_dimensions[i][0], (hidden_dimensions[i][0], output_d[0])
 						assert output_d[1] == hidden_dimensions[i][1]
 						output_d[2] = hidden_dimensions[i][2]
 					elif htype is 'pool':
-						output_d[0] = int(np.floor((input_d[0] - rfsize)/stride) + 1)
-						output_d[1] = int(np.floor((input_d[1] - rfsize)/stride) + 1)
+						output_d[0] = int(np.floor((input_d[0] +2*padding - (rfsize-1) -1)/stride  +1 ))
+						output_d[1] = int(np.floor((input_d[0] +2*padding - (rfsize-1) -1)/stride  +1 ))
 						assert output_d[0] == hidden_dimensions[i][0]
 						assert output_d[1] == hidden_dimensions[i][1]
 						output_d[2] = hidden_dimensions[i][2]
@@ -146,15 +146,13 @@ class AC_Net(nn.Module):
 					self.hidden.append(nn.MaxPool2d(rfsize,padding=padding,stride=stride))
 					self.hx.append(None)
 					self.cx.append(None)
-
 			# create the actor and critic layers
 			self.layers = [input_dimensions]+hidden_dimensions+[action_dimensions]
 
 			self.actor = nn.Linear(output_d, action_dimensions)
 			self.critic = nn.Linear(output_d, 1)
 			self.output = nn.ModuleList([self.actor, self.critic])
-
-		# store the outpud dimensions
+		# store the output dimensions
 		self.output_d = output_d
 
 		# to store a record of actions and rewards	
@@ -183,7 +181,6 @@ class AC_Net(nn.Module):
 		if type(self.input_d) == int:
 			assert x.shape[-1] == self.input_d
 		elif type(self.input_d) == tuple:
-			print( x.shape, type(self.input_d))
 			assert (x.shape[2], x.shape[3], x.shape[1]) == self.input_d
 		else:	
 		   	pdb.set_trace()
@@ -194,10 +191,9 @@ class AC_Net(nn.Module):
 			if i >= 0:
 				if (isinstance(self.hidden[i-1],nn.Conv2d) or isinstance(self.hidden[i-1],nn.MaxPool2d)) and \
 				not (isinstance(layer,nn.Conv2d) or isinstance(layer,nn.MaxPool2d)):
-					x = x.view(-1)
+					x = x.view(1, -1)
 			else:
 				print('need another case')
-
 			# run input through the layer depending on type
 			if isinstance(layer, nn.Linear):
 				x = F.relu(layer(x))
@@ -212,11 +208,10 @@ class AC_Net(nn.Module):
 				x = layer(x)
 			elif isinstance(layer, nn.MaxPool2d):
 				x = layer(x)
-
 		# pass to the output layers
-		policy = F.softmax(self.actor(x), dim=1)
+		policy = F.softmax(self.actor(x), dim=0)
 		value  = self.critic(x)
-
+		
 		return policy, value
 
 	# ===============================
@@ -259,6 +254,7 @@ def finish_trial(model, discount_factor, optimizer):
 	value_losses = []
 	
 	returns_ = torch.Tensor(returns_)
+	#pdb.set_trace()
 	#returns_ = (returns_ - returns_.mean()) / (returns_.std() + np.finfo(np.float32).eps)
 	for (log_prob, value), r in zip(saved_actions, returns_):
 		rpe = r - value.data[0, 0]
@@ -303,6 +299,7 @@ def select_action_end(model,policy_, value_):
 	a = Categorical(policy_)
 	action = a.sample()
 	model.saved_actions.append(SavedAction(a.log_prob(action), value_))
+	
 	return action.data[0], policy_.data[0], value_.data[0]
 
 
