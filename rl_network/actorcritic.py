@@ -301,13 +301,14 @@ def sample_select_action(model,state, **kwargs):
  
 
 # Functions for computing relevant terms for weight updates after trial runs
-def finish_trial(model, discount_factor, optimizer):
+def finish_trial(model, discount_factor, optimizer, **kwargs):
 	'''
 	finish_trial(model
 	Finishes a given training trial and backpropagates.
 	'''
 
 	# set the return to zero
+	alpha = kwargs.get('alpha', None)
 	R = 0
 	returns_ = discount_rwds(np.asarray(model.rewards), gamma=discount_factor)
 	saved_actions = model.saved_actions
@@ -322,10 +323,16 @@ def finish_trial(model, discount_factor, optimizer):
 		rpe = r - value.data[0, 0]
 		policy_losses.append(-log_prob * rpe)
 		value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
+		#value_losses.append(F.mse_loss(value, Variable(torch.Tensor([[r]]))))
 	optimizer.zero_grad()
-	p_loss = torch.cat(policy_losses).sum()
-	v_loss = torch.cat(value_losses).sum()
+	if alpha is not None:
+		p_loss = alpha*(torch.cat(policy_losses).sum())
+		v_loss = (1-alpha)*(torch.cat(value_losses).sum())
+	else:
+		p_loss = (torch.cat(policy_losses).sum())
+		v_loss = (torch.cat(value_losses).sum())
 	total_loss = p_loss + v_loss
+	#total_loss = p_loss + v_loss
 	total_loss.backward(retain_graph=False)
 	optimizer.step()
 	del model.rewards[:]
