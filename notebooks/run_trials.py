@@ -218,3 +218,4 @@ def run_trials(run_dict, agent_params, grid_params, **kwargs):
                 blocktime = time.time()
 
     return db_id
+
