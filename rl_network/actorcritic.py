@@ -161,6 +161,7 @@ class AC_Net(nn.Module):
 					self.hidden.append(nn.MaxPool2d(rfsize,padding=padding,stride=stride))
 					self.hx.append(None)
 					self.cx.append(None)
+
 			# create the actor and critic layers
 			self.layers = [input_dimensions]+hidden_dimensions+[action_dimensions]
 
