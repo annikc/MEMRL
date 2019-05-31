@@ -94,7 +94,7 @@ def gen_input(maze, agt_dictionary, **kwargs):
                 if i == 'conv' or i == 'pool':
                     agt_dictionary['hid_dims'].append(ac.conv_output(agt_dictionary['hid_dims'][ind-1]))
                 elif i == 'linear':
-                    agt_dictionary['hid_dims'].append(500)
+                    agt_dictionary['hid_dims'].append(agt_dictionary['lin_dims'])
 
     agt_dictionary['maze'] = maze
 
