@@ -55,7 +55,7 @@ class ep_mem(object):
 		
 	def make_pvals(self, p, **kwargs):
 		envelope = kwargs.get('envelope', self.memory_envelope)
-		return 1 / np.cosh(p / self.memory_envelope)
+		return np.round(1 / np.cosh(p / self.memory_envelope), 8)
 
 	# retrieve relevant items from memory
 	def cosine_sim(self, key, **kwargs):
@@ -147,25 +147,26 @@ class ep_mem(object):
 		confidence score = scaled by cosine sim
 
 		'''
-		#envelope = kwargs.get('env', self.memory_envelope)
+		envelope = kwargs.get('env', self.memory_envelope)
 
 		mem_, i, sim = self.cosine_sim(key,threshold=0.9)
-		memory       = self.cache_list[tuple(mem_)]
-		deltas       = memory[0]
-		times        = timestep - np.nan_to_num(memory[1])
 
-		policy = softmax(sim*(np.multiply(deltas, self.make_pvals(times))))
+		memory       = np.nan_to_num(self.cache_list[tuple(mem_)][0])
+		deltas       = memory[:,0]
+		times        = abs(timestep - memory[:,1])
+		pvals 		 = self.make_pvals(times, envelope=envelope)
 
+		policy = softmax(np.multiply(sim,deltas))  #np.multiply(deltas, pvals), T= 0.1)
 		return policy
+
 
 
 def sigmoid(x):
 	return 1 / (1 + math.exp(-x))
 
 def softmax(x, T=1):
-	 """Compute softmax values for each sets of scores in x."""
-	 e_x = np.exp((x - np.max(x))/T)
-	 return e_x / e_x.sum(axis=0) # only difference
+	e_x = np.exp((x - np.max(x))/T)
+	return np.round(e_x / e_x.sum(axis=0),8) # only difference
 
 def plot_softmax(x):
 	f, axarr = plt.subplots(2, sharex=True)
