@@ -65,7 +65,7 @@ def make_env_plots(maze, env=True, pc_map=False, pcs=None, pc_vec=False, save=Fa
 			#for port in maze.possible_ports:
 			#	ax.add_patch(plt.Circle(np.add(port, (0.5,0.5)), 0.25, fc='g'))
 
-		ax.invert_yaxis()
+		#ax.invert_yaxis()
 		#plt.colorbar()
 		#if maze.y == maze.x: 
 			#plt.axis('tight')
