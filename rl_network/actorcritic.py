@@ -71,7 +71,6 @@ class AC_Net(nn.Module):
 		# call the super-class init 
 		super(AC_Net, self).__init__()
 
-
 		# store the input dimensions
 		self.input_d = input_dimensions
 		# determine input type
@@ -94,10 +93,9 @@ class AC_Net(nn.Module):
 			self.layers = [input_dimensions,action_dimensions]
 
 			# no hidden layers, only input to output, create the actor and critic layers
-			self.actor = nn.Linear(input_dimensions, action_dimensions)
-			self.critic = nn.Linear(input_dimensions, 1)
-			self.output = nn.ModuleList([self.actor, self.critic])
-
+			self.output = nn.ModuleList([
+				nn.Linear(input_dimensions, action_dimensions), # ACTOR
+				nn.Linear(input_dimensions, 1)])				# CRITIC
 		else:
 			# to store a record of the last hidden states
 			self.hx = []
@@ -153,7 +151,6 @@ class AC_Net(nn.Module):
 					self.hx.append(Variable(torch.zeros(self.batch_size,output_d)))
 					self.cx.append(None)
 				elif htype is 'conv':
-					#pdb.set_trace()
 					self.hidden.append(nn.Conv2d(input_d[2],output_d[2],rfsize,padding=padding,stride=stride))
 					self.hx.append(None)
 					self.cx.append(None)
@@ -165,9 +162,12 @@ class AC_Net(nn.Module):
 			# create the actor and critic layers
 			self.layers = [input_dimensions]+hidden_dimensions+[action_dimensions]
 
-			self.actor = nn.Linear(output_d, action_dimensions)
-			self.critic = nn.Linear(output_d, 1)
-			self.output = nn.ModuleList([self.actor, self.critic])
+			#self.actor = nn.Linear(output_d, action_dimensions)
+			#self.critic = nn.Linear(output_d, 1)
+			self.output = nn.ModuleList([
+				nn.Linear(output_d, action_dimensions), #actor
+				nn.Linear(output_d, 1)                  #critic
+			])
 		# store the output dimensions
 		self.output_d = output_d
 
@@ -221,8 +221,8 @@ class AC_Net(nn.Module):
 			elif isinstance(layer, nn.MaxPool2d):
 				x = layer(x)
 		# pass to the output layers
-		policy = F.softmax(self.actor(x)/temperature, dim=1)
-		value  = self.critic(x)
+		policy = F.softmax(self.output[0](x), dim=1)
+		value  = self.output[1](x)
 		
 		if isinstance(self.hidden[-1], nn.Linear):
 			return policy, value, lin_activity
@@ -283,22 +283,30 @@ def select_action(model,policy_, value_):
 	action = a.sample()
 	model.saved_actions.append(SavedAction(a.log_prob(action), value_))
 	
-	return action.data[0], policy_.data[0], value_.data[0]
+	return action.item(), policy_.data[0], value_.item()
 
- 
-def sample_select_action(model,state, **kwargs):
-	get_lin = kwargs.get('getlin', False)
-	if get_lin:
-		policy_, value_, linear_activity_ = model(state)
-	else:
-		policy_, value_ = model(state)[0:2]
-	a = Categorical(policy_)
+
+def select_ec_action(model, mf_policy_, mf_value_, ec_policy_):
+	a = Categorical(ec_policy_)
+	b = Categorical(mf_policy_)
 	action = a.sample()
-	#model.saved_actions.append(SavedAction(a.log_prob(action), value_))
-	if get_lin: 
-		return action.data[0], policy_.data[0], value_.data[0], linear_activity_.data[0]
-	else: 
-		return action.data[0], policy_.data[0], value_.data[0]
+	model.saved_actions.append(SavedAction(b.log_prob(action), mf_value_))
+
+	return action.item(), mf_policy_.data[0], mf_value_.item()
+
+# def sample_select_action(model,state, **kwargs):
+# 	get_lin = kwargs.get('getlin', False)
+# 	if get_lin:
+# 		policy_, value_, linear_activity_ = model(state)
+# 	else:
+# 		policy_, value_ = model(state)[0:2]
+# 	a = Categorical(policy_)
+# 	action = a.sample()
+# 	#model.saved_actions.append(SavedAction(a.log_prob(action), value_))
+# 	if get_lin:
+# 		return action.data[0], policy_.data[0], value_.data[0], linear_activity_.data[0]
+# 	else:
+# 		return action.data[0], policy_.data[0], value_.data[0]
  
 
 # Functions for computing relevant terms for weight updates after trial runs
@@ -320,8 +328,10 @@ def finish_trial(model, discount_factor, optimizer, **kwargs):
 	returns_ = torch.Tensor(returns_)
 	#pdb.set_trace()
 	#returns_ = (returns_ - returns_.mean()) / (returns_.std() + np.finfo(np.float32).eps)
+	tva = 0
 	for (log_prob, value), r in zip(saved_actions, returns_):
-		rpe = r - value.data[0, 0]
+		rpe = r - value.item()
+		tva += 1
 		policy_losses.append(-log_prob * rpe)
 		value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
 		#value_losses.append(F.mse_loss(value, Variable(torch.Tensor([[r]]))))
@@ -392,11 +402,30 @@ def generate_values_old(maze, model,**kwargs):
 	else:
 		return EC_pol_map, MF_pol_map
 	
-def make_agent(agent_params):
+def make_agent(agent_params, freeze=False):
 	if agent_params['load_model']: 
 		MF = torch.load(agent_params['load_dir']) # load previously saved model
 	else:
 		MF = AC_Net(agent_params)
-	
-	opt = optim.Adam(MF.parameters(), lr = agent_params['eta'])
+
+	if freeze:
+
+		freeze = []
+		unfreeze = []
+		for i, nums in MF.named_parameters():
+			if i[0:6] == 'output':
+				unfreeze.append(nums)
+			else:
+				freeze.append(nums)
+
+		opt = optim.Adam([{'params': freeze, 'lr': 0.0}, {'params': unfreeze, 'lr': agent_params['eta']}], lr=0.0)
+	else:
+		critic = []
+		others = []
+		for i, nums in MF.named_parameters():
+			if i[0:8] == 'output.1': #critic
+				critic.append(nums)
+			else:
+				others.append(nums)
+		opt = optim.Adam(MF.parameters(), lr= agent_params['eta'])
 	return MF, opt
