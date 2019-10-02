@@ -1,28 +1,33 @@
+'''
+Set up functions for plotting gridworld environment
+
+Author: Annik Carson
+-- Oct 2019
+'''
+
+# =====================================
+#           IMPORT MODULES            #
+# =====================================
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.colorbar as colorbar
 import matplotlib.cm as cmx
 import matplotlib.patches as patches
-from matplotlib.collections import PatchCollection
 
-import os
 from os import listdir
 from os.path import isfile, join
-
 
 import imageio
 
 
-
 # =====================================
-#        DEFINE PLOT FUNCTIONS        #
+#              FUNCTIONS
 # =====================================
 
 def running_mean(x, N):
-    cumsum = np.cumsum(np.insert(x, 0, 0))
-    return (cumsum[N:] - cumsum[:-N]) / float(N)
-
+	cumsum = np.cumsum(np.insert(x, 0, 0))
+	return (cumsum[N:] - cumsum[:-N]) / float(N)
 
 def sigmoid(x):
 	return 1 / (1 + math.exp(-x))
@@ -32,11 +37,16 @@ def softmax(x,T=1):
 	 e_x = np.exp((x - np.max(x))/T)
 	 return e_x / e_x.sum(axis=0) # only difference
 
+
+# =====================================
+#          PLOTTING FUNCTIONS
+# =====================================
+
 def plot_softmax(x, T=1):
 	f, axarr = plt.subplots(2, sharex=True)
 	axarr[0].bar(np.arange(len(x)), x)
-	y = softmax(x, T)    
-	axarr[1].bar(np.arange(len(x)), y) 
+	y = softmax(x, T)
+	axarr[1].bar(np.arange(len(x)), y)
 	plt.show()
 
 
@@ -305,19 +315,19 @@ def policy_plot(maze, policies, **kwargs):
 	ax1.add_patch(patches.Circle(maze.rwd_loc[0], 0.35, fc='w'))
 
 	for i in range(0, maze.grid.shape[1]):
-	    for j in range(0, maze.grid.shape[0]):
-	        action = np.argmax(tuple(policies[i][j]))
-	        prob = max(policies[i][j])
-	        
-	        dx1,dy1,head_w,head_l = make_arrows(action, prob)
-	        if prob > chance_threshold:
-	            if (dx1, dy1) == (0,0):
-	                pass
-	            else:
-	                colorVal1 = scalarMap.to_rgba(prob)
-	                ax1.arrow(j, i, dx1, dy1, head_width =0.3, head_length =0.2, color=colorVal1)
-	        else:
-	            pass
+		for j in range(0, maze.grid.shape[0]):
+			action = np.argmax(tuple(policies[i][j]))
+			prob = max(policies[i][j])
+
+			dx1,dy1,head_w,head_l = make_arrows(action, prob)
+			if prob > chance_threshold:
+				if (dx1, dy1) == (0,0):
+					pass
+				else:
+					colorVal1 = scalarMap.to_rgba(prob)
+					ax1.arrow(j, i, dx1, dy1, head_width =0.3, head_length =0.2, color=colorVal1)
+			else:
+				pass
 
 	ax1.set_title("{} policy".format(pol_source))
 	plt.show()
@@ -358,32 +368,32 @@ def make_dual_policy_plots(maze, EC_policies, MF_policies, **kwargs):
 	# 4 - i)
 
 	for i in range(0, maze.grid.shape[1]):
-	    for j in range(0, maze.grid.shape[0]):
-	        EC_action = np.argmax(tuple(EC_policies[i][j]))
-	        EC_prob = max(EC_policies[i][j])
-	        
-	        dx1,dy1,head_w,head_l = make_arrows(EC_action, EC_prob)
-	        if EC_prob > chance_threshold:
-	            if (dx1, dy1) == (0,0):
-	                pass
-	            else:
-	                colorVal1 = scalarMap.to_rgba(EC_prob)
-	                ax1.arrow(j+0.5, i+0.5, dx1, dy1, head_width =0.3, head_length =0.2, color=colorVal1)
-	        else:
-	            pass
-	        
-	        MF_action = np.argmax(tuple(MF_policies[i][j]))
-	        MF_prob = max(MF_policies[i][j])
-	        dx2,dy2,head_w,head_l = make_arrows(MF_action, MF_prob)
-	        
-	        if MF_prob > chance_threshold:
-	            if (dx2, dy2) == (0,0):
-	                pass
-	            else:
-	                colorVal1 = scalarMap.to_rgba(MF_prob)
-	                ax2.arrow(j+0.5, i+0.5, dx2, dy2, head_width =0.3, head_length =0.2, color=colorVal1)
-	        else: 
-	            pass
+		for j in range(0, maze.grid.shape[0]):
+			EC_action = np.argmax(tuple(EC_policies[i][j]))
+			EC_prob = max(EC_policies[i][j])
+
+			dx1,dy1,head_w,head_l = make_arrows(EC_action, EC_prob)
+			if EC_prob > chance_threshold:
+				if (dx1, dy1) == (0,0):
+					pass
+				else:
+					colorVal1 = scalarMap.to_rgba(EC_prob)
+					ax1.arrow(j+0.5, i+0.5, dx1, dy1, head_width =0.3, head_length =0.2, color=colorVal1)
+			else:
+				pass
+
+			MF_action = np.argmax(tuple(MF_policies[i][j]))
+			MF_prob = max(MF_policies[i][j])
+			dx2,dy2,head_w,head_l = make_arrows(MF_action, MF_prob)
+
+			if MF_prob > chance_threshold:
+				if (dx2, dy2) == (0,0):
+					pass
+				else:
+					colorVal1 = scalarMap.to_rgba(MF_prob)
+					ax2.arrow(j+0.5, i+0.5, dx2, dy2, head_width =0.3, head_length =0.2, color=colorVal1)
+			else:
+				pass
 	ax1.set_title("EC_policy")
 	ax2.set_title("MF_policy")
 	savefig = kwargs.get('savedir', None)
@@ -460,16 +470,18 @@ def opt_pol_map(gridworld):
 
 
 def save_value_map(vm, maze, trial, savedir):
-    data = vm
-    fig = plt.figure()
-    im = plt.imshow(data, vmin = 0, vmax = 40, cmap='Spectral_r', interpolation ='none')
-    rp_s = []
-    for reward_loc in maze.rwd_loc:
-        rp_s.append(eu.artist_instance(xy=np.add(reward_loc,(0,0)), rad = 0.2))
-    im.cmap.set_bad('w', 1.0)
-    for rp1 in rp_s:
-        fig.axes[0].add_patch(rp1.art())
-    plt.colorbar()
-    plt.title('Trial {}'.format(trial))
-    plt.savefig(savedir+'trial_{}'.format(trial))
-    plt.close()
+	data = vm
+	fig = plt.figure()
+	im = plt.imshow(data, vmin = 0, vmax = 40, cmap='Spectral_r', interpolation ='none')
+	rp_s = []
+	for reward_loc in maze.rwd_loc:
+		rp_s.append(eu.artist_instance(xy=np.add(reward_loc,(0,0)), rad = 0.2))
+	im.cmap.set_bad('w', 1.0)
+	for rp1 in rp_s:
+		fig.axes[0].add_patch(rp1.art())
+	plt.colorbar()
+	plt.title('Trial {}'.format(trial))
+	plt.savefig(savedir+'trial_{}'.format(trial))
+	plt.close()
+
+
