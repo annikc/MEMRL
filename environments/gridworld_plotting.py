@@ -37,6 +37,34 @@ def softmax(x,T=1):
 	 e_x = np.exp((x - np.max(x))/T)
 	 return e_x / e_x.sum(axis=0) # only difference
 
+def make_arrows(action, probability):
+	if probability == 0:
+		dx, dy = 0, 0
+		head_w, head_l = 0, 0
+	else:
+		if action == 0:  # N
+			dx = 0
+			dy = -.25
+		elif action == 1:  # E
+			dx = .25
+			dy = 0
+		elif action == 2:  # W
+			dx = -.25
+			dy = 0
+		elif action == 3:  # S
+			dx = 0
+			dy = .25
+		elif action == 4:  # stay
+			dx = -.1
+			dy = -.1
+		elif action == 5:  # poke
+			dx = .1
+			dy = .1
+
+		head_w, head_l = 0.1, 0.1
+
+	return dx, dy, head_w, head_l
+
 
 # =====================================
 #          PLOTTING FUNCTIONS
@@ -49,126 +77,112 @@ def plot_softmax(x, T=1):
 	axarr[1].bar(np.arange(len(x)), y)
 	plt.show()
 
+def plot_env(maze, save=False):
+	'''
+	:param maze: the environment object
+	:param save: bool. save figure in current directory
+	:return: None
+	'''
+	fig  = plt.figure()
+	axis = fig.add_axes([0.05, 0.05, .9, .9]) # [left, bottom, width, height]
+	ax   = fig.gca()
 
-def make_env_plots(maze, env=True, pc_map=False, pcs=None, pc_vec=False, save=False):
-	grid = maze.grid
-	useable_grid = maze.useable
-	agent_loc = maze.cur_state
-	
-	if env: 
-		# plot maze -- agent (blue) and reward (red)
-		fig = plt.figure(0)
+	# plot basic grid
+	axis.pcolor(maze.grid, cmap = 'bone', vmax =1, vmin = 0)
 
-		axis  = fig.add_axes([0.05, 0.05, .9, .9]) # [left, bottom, width, height]
+	# add patch for agent location (blue)
+	agent_y, agent_x = maze.cur_state
+	ax.add_patch(plt.Circle((agent_y + .5, agent_x + .5), 0.35, fc='b'))
 
-		ax = fig.gca()
-		axis.pcolor(grid, cmap = 'bone', vmax =1, vmin = 0)
+	# add patch for reward location/s (red)
+	for rwd_loc in maze.rwd_loc:
+		rwd_y, rwd_x = rwd_loc
+		#ax.add_patch(plt.Circle((rwd_y+.5, rwd_x+.5), 0.35, fc='r'))
+		ax.add_patch(plt.Rectangle((rwd_y, rwd_x), width=1, height=1, linewidth=1, ec='white', fill=False))
+	ax.set_aspect('equal')
 
-		for rwd_loc in maze.rwd_loc:
-			rwd_v, rwd_h = rwd_loc
-			ax.add_patch(plt.Circle((rwd_v+.5, rwd_h+.5), 0.35, fc='r'))
-		
-		agent_v, agent_h = agent_loc
-		ax.add_patch(plt.Circle((agent_v+.5, agent_h+.5), 0.35, fc='b'))
-		if maze.maze_type == 'tmaze':
-			pass
-			#for port in maze.possible_ports:
-			#	ax.add_patch(plt.Circle(np.add(port, (0.5,0.5)), 0.25, fc='g'))
+	if save:
+		plt.savefig('../data/figures/{}environment.svg'.format(maze.maze_type), format='svg', pad_inches=2)
 
-		#ax.invert_yaxis()
-		#plt.colorbar()
-		#if maze.y == maze.x: 
-			#plt.axis('tight')
-		ax.set_aspect('equal')
-		if save:
-			plt.savefig('{}environment.svg'.format(maze.maze_type), format='svg', pad_inches =2)
-		
-	if pc_map:
-		cmap = plt.cm.jet
-		vmin = 0
-		vmax = max(pcs.activity(maze.cur_state)[0])
-		cNorm  = colors.Normalize(vmin=0, vmax=vmax)
-		scalarMap = cmx.ScalarMappable(norm = cNorm, cmap=cmap)
-		# plot place cells 
-		# circle radius given by fwhm of place cells (???)
-		fig = plt.figure(1)
-		ax  = fig.add_axes([0, 0.1, 0.6, 0.85]) # [left, bottom, width, height]
-		axc = fig.add_axes([0.63, 0.1, 0.03, 0.85])
+def plot_valmap(maze, value_array, save=False):
+	'''
+	:param maze: the environment object
+	:param value_array: array of state values
+	:param save: bool. save figure in current directory
+	:return: None
+	'''
+	fig = plt.figure()
+	ax1 = fig.add_axes([0, 0, 0.85, 0.85])
+	axc = fig.add_axes([0.75, 0, 0.05, 0.85])
 
-	
-		for i in range(len(pcs.x)):
+	cmap = plt.cm.Spectral_r
+	cNorm = colors.Normalize(vmin=0, vmax=1)
 
-			colorVal = scalarMap.to_rgba(np.squeeze(pcs.activity(maze.cur_state))[i])
-			ax.add_patch(patches.Circle((pcs.x[i], pcs.y[i]), 0.025, fc=colorVal, ec='none', alpha=0.5))
-			ax.set_ylim([1,0])
-		cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
-		ax.axis('equal')
-		if maze.y == maze.x:
-			ax.axis('tight')
-		#ax.grid('on')
-		plt.show()
+	cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
+	ax1.pcolor(value_array, cmap=cmap, vmin = 0, vmax = 1)
 
-	if pc_vec:
-		cmap = plt.cm.jet
-		vmin = 0
-		vmax = max(pcs.activity(maze.cur_state)[0])
-		cNorm  = colors.Normalize(vmin=0, vmax=vmax)
-		scalarMap = cmx.ScalarMappable(norm = cNorm, cmap=cmap)
+	ax1.invert_yaxis()
 
-		# plot input vector
-		fig = plt.figure(2)
-		ax  = fig.add_axes([0, 0.25, 0.7, 0.15]) # [left, bottom, width, height]
-		axc = fig.add_axes([0, 0.1, 0.7, 0.07])
-
-		ax.pcolor(pcs.activity(maze.cur_state), vmin=0, vmax=1, cmap=cmap)
-		ax.set_yticklabels([''])
-		cb2 = colorbar.ColorbarBase(axc, cmap = cmap, norm = cNorm, orientation='horizontal')
-		plt.show()
-
-def make_gif(mypath, mazetype):
-	onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
-	intfiles = [int(f) for f in onlyfiles]
-	intfiles.sort()
-	if mazetype =='none':
-		gifname = './valplots/gifs/grid{}.gif'.format(obs_rho)
-	else: 
-		gifname = './valplots/gifs/{}.gif'.format(mazetype)
-
-	with imageio.get_writer(gifname, mode='I', duration=0.5) as writer:
-				for filename in intfiles:
-					image = imageio.imread(mypath+str(filename))
-					writer.append_data(image)
-	print( "Gif file saved at ", gifname)
+	# add patch for reward location/s (red)
+	for rwd_loc in maze.rwd_loc:
+		rwd_y, rwd_x = rwd_loc
+		ax1.add_patch(plt.Rectangle((rwd_y, rwd_x), width=.95, height=1, linewidth=1, ec='white', fill=False))
 
 
-def make_arrows(action, probability):
-	if probability == 0: 
-		dx, dy = 0, 0
-		head_w, head_l = 0,0
-	
-	else: 
-		if action == 0: #N
-			dx = 0
-			dy = -.25
-		elif action == 1: #E
-			dx = .25
-			dy = 0
-		elif action == 2: #W
-			dx = -.25
-			dy = 0
-		elif action == 3: #S
-			dx = 0
-			dy = .25
-		elif action == 4: #stay
-			dx = -.1
-			dy = -.1
-		elif action ==5: #poke 
-			dx = .1
-			dy = .1
-		
-		head_w, head_l = 0.1, 0.1
-		
-	return dx,dy, head_w, head_l
+	ax1.set_aspect('equal')
+	ax1.invert_yaxis()
+	plt.show()
+
+	if save:
+		plt.savefig('../data/figures/{}environment.svg'.format(maze.maze_type), format='svg', pad_inches=2)
+
+def plot_polmap(maze, policy_array, save=False):
+	'''
+	:param maze: the environment object
+	:param save: bool. save figure in current directory
+	:return: None
+	'''
+	fig = plt.figure()
+	ax1 = fig.add_axes([0, 0, 0.85, 0.85])
+	axc = fig.add_axes([0.75, 0, 0.05, 0.85])
+
+	cmap = plt.cm.Spectral_r
+	cNorm = colors.Normalize(vmin=0, vmax=1)
+	scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
+
+	# make base grid
+	ax1.pcolor(maze.grid, vmin=0, vmax=1, cmap='bone')
+	# add patch for reward location/s (red)
+	for rwd_loc in maze.rwd_loc:
+		rwd_y, rwd_x = rwd_loc
+		ax1.add_patch(plt.Rectangle((rwd_y, rwd_x), width=1, height=1, linewidth=1, ec='white', fill=False))
+
+	chance_threshold = np.round(1 / len(maze.actionlist), 6)
+
+	cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
+
+	for i in range(0, maze.grid.shape[1]):
+		for j in range(0, maze.grid.shape[0]):
+			action = np.argmax(tuple(policy_array[i][j]))
+			prob = max(policy_array[i][j])
+
+			dx1, dy1, head_w, head_l = make_arrows(action, prob)
+			if prob > chance_threshold:
+				if (dx1, dy1) == (0, 0):
+					pass
+				else:
+					colorVal1 = scalarMap.to_rgba(prob)
+					ax1.arrow(j+0.5, i+0.5, dx1, dy1, head_width=0.3, head_length=0.2, color=colorVal1)
+			else:
+				pass
+	ax1.set_aspect('equal')
+	plt.show()
+	if save:
+		plt.savefig('../data/figures/{}environment.svg'.format(maze.maze_type), format='svg', pad_inches=2)
+
+
+
+
 
 
 
@@ -436,37 +450,7 @@ class KLD_holder(object):
 			self.map = np.zeros((self.y, self.x))
 		
 
-def opt_pol_map(gridworld):
-	optimal_policy = np.zeros((gridworld.y, gridworld.x, len(gridworld.actionlist)))
 
-	for location in gridworld.useable:
-		xdim,ydim=location
-		xrwd,yrwd=gridworld.rwd_loc[0]
-		
-		if xdim<xrwd:
-			optimal_policy[ydim,xdim][1] = 1
-			if ydim<yrwd:
-				optimal_policy[ydim,xdim][3] = 1
-			elif ydim>yrwd:
-				optimal_policy[ydim,xdim][0] = 1
-				
-		elif xdim>xrwd:
-			optimal_policy[ydim,xdim][2] = 1
-			if ydim<yrwd:
-				optimal_policy[ydim,xdim][3] = 1
-			elif ydim>yrwd:
-				optimal_policy[ydim,xdim][0] = 1
-		else:
-			if ydim<yrwd:
-				optimal_policy[ydim,xdim][3] = 1
-			elif ydim>yrwd:
-				optimal_policy[ydim,xdim][0] = 1
-			else:
-				optimal_policy[ydim,xdim][5] = 1
-		
-		optimal_policy[ydim,xdim] = softmax(optimal_policy[ydim,xdim],T=0.01)
-
-	return optimal_policy
 
 
 def save_value_map(vm, maze, trial, savedir):
@@ -485,3 +469,118 @@ def save_value_map(vm, maze, trial, savedir):
 	plt.close()
 
 
+### OLD CODE - PUT IN JUNKYARD AS OF OCT 2019
+def make_env_plots(maze, env=True, pc_map=False, pcs=None, pc_vec=False, save=False):
+	grid = maze.grid
+	agent_loc = maze.cur_state
+
+	if env:
+		# plot maze -- agent (blue) and reward (red)
+		fig = plt.figure(0)
+
+		axis = fig.add_axes([0.05, 0.05, .9, .9])  # [left, bottom, width, height]
+
+		ax = fig.gca()
+		axis.pcolor(grid, cmap='bone', vmax=1, vmin=0)
+
+		for rwd_loc in maze.rwd_loc:
+			rwd_v, rwd_h = rwd_loc
+			ax.add_patch(plt.Circle((rwd_v + .5, rwd_h + .5), 0.35, fc='r'))
+
+		agent_v, agent_h = agent_loc
+		ax.add_patch(plt.Circle((agent_v + .5, agent_h + .5), 0.35, fc='b'))
+
+		# ax.invert_yaxis()
+		# plt.colorbar()
+		# if maze.y == maze.x:
+		# plt.axis('tight')
+		ax.set_aspect('equal')
+		if save:
+			plt.savefig('{}environment.svg'.format(maze.maze_type), format='svg', pad_inches=2)
+
+	if pc_map:
+		cmap = plt.cm.jet
+		vmin = 0
+		vmax = max(pcs.activity(maze.cur_state)[0])
+		cNorm = colors.Normalize(vmin=0, vmax=vmax)
+		scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
+		# plot place cells
+		# circle radius given by fwhm of place cells (???)
+		fig = plt.figure(1)
+		ax = fig.add_axes([0, 0.1, 0.6, 0.85])  # [left, bottom, width, height]
+		axc = fig.add_axes([0.63, 0.1, 0.03, 0.85])
+
+		for i in range(len(pcs.x)):
+			colorVal = scalarMap.to_rgba(np.squeeze(pcs.activity(maze.cur_state))[i])
+			ax.add_patch(patches.Circle((pcs.x[i], pcs.y[i]), 0.025, fc=colorVal, ec='none', alpha=0.5))
+			ax.set_ylim([1, 0])
+		cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
+		ax.axis('equal')
+		if maze.y == maze.x:
+			ax.axis('tight')
+		# ax.grid('on')
+		plt.show()
+
+	if pc_vec:
+		cmap = plt.cm.jet
+		vmin = 0
+		vmax = max(pcs.activity(maze.cur_state)[0])
+		cNorm = colors.Normalize(vmin=0, vmax=vmax)
+		scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
+
+		# plot input vector
+		fig = plt.figure(2)
+		ax = fig.add_axes([0, 0.25, 0.7, 0.15])  # [left, bottom, width, height]
+		axc = fig.add_axes([0, 0.1, 0.7, 0.07])
+
+		ax.pcolor(pcs.activity(maze.cur_state), vmin=0, vmax=1, cmap=cmap)
+		ax.set_yticklabels([''])
+		cb2 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm, orientation='horizontal')
+		plt.show()
+
+def make_gif(mypath, mazetype):
+	onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
+	intfiles = [int(f) for f in onlyfiles]
+	intfiles.sort()
+	if mazetype =='none':
+		gifname = './valplots/gifs/grid{}.gif'.format(obs_rho)
+	else:
+		gifname = './valplots/gifs/{}.gif'.format(mazetype)
+
+	with imageio.get_writer(gifname, mode='I', duration=0.5) as writer:
+				for filename in intfiles:
+					image = imageio.imread(mypath+str(filename))
+					writer.append_data(image)
+	print( "Gif file saved at ", gifname)
+
+def opt_pol_map(gridworld):
+	optimal_policy = np.zeros((gridworld.y, gridworld.x, len(gridworld.actionlist)))
+
+	for location in gridworld.useable:
+		xdim, ydim = location
+		xrwd, yrwd = gridworld.rwd_loc[0]
+
+		if xdim < xrwd:
+			optimal_policy[ydim, xdim][1] = 1
+			if ydim < yrwd:
+				optimal_policy[ydim, xdim][3] = 1
+			elif ydim > yrwd:
+				optimal_policy[ydim, xdim][0] = 1
+
+		elif xdim > xrwd:
+			optimal_policy[ydim, xdim][2] = 1
+			if ydim < yrwd:
+				optimal_policy[ydim, xdim][3] = 1
+			elif ydim > yrwd:
+				optimal_policy[ydim, xdim][0] = 1
+		else:
+			if ydim < yrwd:
+				optimal_policy[ydim, xdim][3] = 1
+			elif ydim > yrwd:
+				optimal_policy[ydim, xdim][0] = 1
+			else:
+				optimal_policy[ydim, xdim][5] = 1
+
+		optimal_policy[ydim, xdim] = softmax(optimal_policy[ydim, xdim], T=0.01)
+
+	return optimal_policy
