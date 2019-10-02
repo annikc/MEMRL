@@ -1,7 +1,8 @@
 '''
 Set up object classes for gridworld environment
 gridworld class defines the environment and available actions, reward function, etc.
-gymworld creates a wrapper so that this environment behaves like OpenAI gym environments
+action_wrapper is used for making gridworld? should get rid of this ??
+gymworld makes steps more consistent with the OpenAI gymworld
 Author: Annik Carson
 -- Oct 2019
 '''
@@ -252,6 +253,11 @@ class gridworld(object):
 			self.rwd_loc = [self.possible_ports[new_rwd_loc[0]]]
 		else:
 			print('is not works good')
+
+class action_wrapper(object):
+	def __init__(self, actionlist):
+		self.n = len(actionlist)
+		self.actionlist = actionlist
 
 class gymworld(object):
 	def __init__(self, gridworld):
