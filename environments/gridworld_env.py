@@ -1,17 +1,17 @@
 '''
-Plot functions used for AC Agent in RL gridworld task
-Author: Annik Carson 
--- January 2019
+Set up object classes for gridworld environment
+gridworld class defines the environment and available actions, reward function, etc.
+gymworld creates a wrapper so that this environment behaves like OpenAI gym environments
+Author: Annik Carson
+-- Oct 2019
 '''
 
 # =====================================
 #           IMPORT MODULES            #
 # =====================================
 from __future__ import division, print_function
-
 import numpy as np
 np.random.seed(12345)
-
 
 class gridworld(object): 
 	def __init__(self, grid_params, **kwargs):
@@ -253,13 +253,6 @@ class gridworld(object):
 		else:
 			print('is not works good')
 
-
-		
-class action_wrapper(object): 
-	def __init__(self, actionlist):
-		self.n = len(actionlist)
-		self.actionlist = actionlist
-		
 class gymworld(object):
 	def __init__(self, gridworld):
 		self.env = gridworld
@@ -280,22 +273,3 @@ class gymworld(object):
 		done = False
 		info = None
 		return observation, self.reward, done, info
-
-
-
-
-def sigmoid(x):
-	return 1 / (1 + math.exp(-x))
-
-def softmax(x,T=1):
-	 """Compute softmax values for each sets of scores in x."""
-	 e_x = np.exp((x - np.max(x))/T)
-	 return e_x / e_x.sum(axis=0) # only difference
-
-def plot_softmax(x, T=1):
-	f, axarr = plt.subplots(2, sharex=True)
-	axarr[0].bar(np.arange(len(x)), x)
-	y = softmax(x, T)    
-	axarr[1].bar(np.arange(len(x)), y) 
-	plt.show()
-
