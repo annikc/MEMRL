@@ -1,8 +1,9 @@
 '''
 Set up object classes for gridworld environment
 gridworld class defines the environment and available actions, reward function, etc.
-action_wrapper is used for making gridworld? should get rid of this ??
-gymworld makes steps more consistent with the OpenAI gymworld
+
+gymworld makes step function more consistent with the OpenAI gymworld
+
 Author: Annik Carson
 -- Oct 2019
 '''
@@ -16,19 +17,18 @@ np.random.seed(12345)
 
 class gridworld(object): 
 	def __init__(self, grid_params, **kwargs):
-		self.y 				= kwargs.get('y_height',grid_params['y_height'])
-		self.x 				= kwargs.get('x_width',grid_params['x_width'])
-		self.rho 			= kwargs.get('rho',grid_params['rho'])
-		self.bound 			= kwargs.get('walls',grid_params['walls'] )
-		self.maze_type 		= kwargs.get('maze_type',grid_params['maze_type'])
-		self.port_shift		= kwargs.get('port_shift',grid_params['port_shift'])
+		self.y 				= grid_params['y_height']
+		self.x 				= grid_params['x_width']
+		self.rho 			= grid_params['rho']
+		self.bound 			= grid_params['walls']
+		self.maze_type 		= grid_params['maze_type']
+		self.port_shift		= grid_params['port_shift']
 
 		self.actionlist 	= kwargs.get('actionlist', ['N', 'E', 'W', 'S', 'stay', 'poke'])
 		self.rwd_action 	= kwargs.get('rewarded_action', 'poke')
-		self.barheight 		= kwargs.get('barheight', 3)
+		self.barheight 		= kwargs.get('barheight',11)
 
 		self.grid, self.useable, self.obstacles = self.grid_maker()
-
 
 		if self.maze_type == 'tmaze':
 			self.rwd_loc 		= [self.useable[0]]
@@ -44,17 +44,18 @@ class gridworld(object):
 			self.orig_rwd_loc 	= []
 		
 		start_choice 	= np.random.choice(len(self.useable))
-		self.start_loc 	= self.useable[start_choice]
+		self.start_loc 	= self.loc_picker()#self.useable[start_choice]
 		
 		if self.maze_type=='triple_reward':
 			self.start_loc = self.starter
 		
-		self.reset_env()
+		self.reset()
 
 		self.empty_map = self.make_map(self.grid, False)
-		#self.init_value_map = self.empty_map
-		#self.init_policy_map = self.empty_map
-	
+
+		## OpenAI gym bits
+		self.action_space = action_wrapper(self.actionlist)
+
 	def grid_maker(self):
 		''' 
 		Default grid is empty -- all squares == 0
@@ -74,8 +75,8 @@ class gridworld(object):
 		if self.maze_type == 'bar':
 			self.rho = 0
 			barheight = self.barheight
-			for i in range(self.x-2): 
-				grid[barheight][i+1] = 1
+			for i in range(self.x-4):
+				grid[barheight][i+2] = 1
 		
 		elif self.maze_type == 'room':
 			self.rho = 0
@@ -156,22 +157,29 @@ class gridworld(object):
 			pv_map = np.zeros(grid.shape)
 			pv_map[grid == 1] = np.nan
 		return pv_map
-	
-	def reset_env(self): 
-		self.cur_state = self.start_loc
-		self.last_action = 'NA'
-		self.rwd = 0
-		
-		self.done = False
-		self.reward_tally = {}
-		#if self.maze_type == 'triple_reward':
-		for i in self.orig_rwd_loc:
-			self.reward_tally[i] = 0
 
-	def start_trial(self):
-		start_choice = np.random.choice(len(self.useable))
-		self.start_loc = self.useable[start_choice]
-		
+	def loc_picker(self):
+		start_buffer = 6
+		a1 = np.random.choice([-1,1])
+		start_x = self.rwd_loc[0][0] + np.random.choice([-1, 1])*np.random.choice(start_buffer)
+		if start_x < 0:
+			start_x = 0
+		elif start_x > self.grid.shape[1] - 1:
+			start_x = self.grid.shape[1] - 1
+		start_y = self.rwd_loc[0][1] + np.random.choice([-1, 1])*np.random.choice(start_buffer)
+		if start_y < 0:
+			start_y = 0
+		elif start_y > self.grid.shape[1] - 1:
+			start_y = self.grid.shape[1] - 1
+
+		return (start_x, start_y)
+
+	def reset(self):
+		#start_choice = np.random.choice(len(self.useable))
+		#self.start_loc = self.useable[start_choice]
+		self.start_loc = self.loc_picker()
+
+
 		self.cur_state = self.start_loc
 		self.last_action = 'NA'
 		self.rwd = 0 
@@ -215,7 +223,7 @@ class gridworld(object):
 			self.reward_tally[self.cur_state] += 1
 
 		else:
-			self.rwd = 0
+			self.rwd = 0 #-0.01
 			self.done = False
 
 	def set_rwd(self, rwd_loc):
@@ -254,28 +262,15 @@ class gridworld(object):
 		else:
 			print('is not works good')
 
+	def step(self,action):
+		action_string = self.actionlist[action]
+		observation = self.move(action_string)
+		self.cur_state = observation
+		done = False
+		info = None
+		return observation, self.rwd, done, info
+
 class action_wrapper(object):
 	def __init__(self, actionlist):
 		self.n = len(actionlist)
 		self.actionlist = actionlist
-
-class gymworld(object):
-	def __init__(self, gridworld):
-		self.env = gridworld
-		self.action_space = action_wrapper(self.env.actionlist)
-		self.state = self.env.cur_state
-		self.observation_space = self.env.cur_state[0]
-		self.reward = self.env.rwd
-
-	def reset(self):
-		self.env.start_trial()
-		return self.env.cur_state
-
-	def step(self,action):
-		action_string = self.env.actionlist[action]
-		observation = self.env.move(action_string)
-		self.state = observation
-		self.reward = self.env.rwd
-		done = False
-		info = None
-		return observation, self.reward, done, info

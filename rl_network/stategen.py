@@ -8,12 +8,10 @@ Author: Annik Carson
 #           IMPORT MODULES            #
 # =====================================
 from __future__ import division, print_function
-import actorcritic as ac
-import sys
-sys.path.insert(0,'../environments/'); import gridworld_plotting as gp
-
-
 import numpy as np
+
+import actorcritic as ac
+
 np.random.seed(12345)
 
 class PlaceCells(object):
@@ -67,7 +65,6 @@ def gen_input(maze, agt_dictionary, **kwargs):
         num_pc = 1000
         fwhm = 0.05
         pcs = PlaceCells(num_cells=num_pc, grid=maze, fwhm=fwhm)
-        gp.make_env_plots(maze,env=True,pc_map=True,pcs=pcs, save=False)
 
         agt_dictionary['pcs'] = pcs
         agt_dictionary['input_dims'] = num_pc
@@ -76,7 +73,6 @@ def gen_input(maze, agt_dictionary, **kwargs):
 
 
     elif state_type == 'conv':
-        #gp.make_env_plots(maze,env=True,save=True)
         num_channels = 3
         agt_dictionary['num_channels'] = num_channels
         if maze.bound:

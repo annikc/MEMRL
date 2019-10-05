@@ -1,5 +1,6 @@
 '''
 Set up functions for plotting gridworld environment
+TODO: Interactive policy plotting
 
 Author: Annik Carson
 -- Oct 2019
@@ -37,7 +38,13 @@ def softmax(x,T=1):
 	 e_x = np.exp((x - np.max(x))/T)
 	 return e_x / e_x.sum(axis=0) # only difference
 
+
 def make_arrows(action, probability):
+	'''
+	:param action:
+	:param probability:
+	:return:
+	'''
 	if probability == 0:
 		dx, dy = 0, 0
 		head_w, head_l = 0, 0
@@ -69,7 +76,6 @@ def make_arrows(action, probability):
 # =====================================
 #          PLOTTING FUNCTIONS
 # =====================================
-
 def plot_softmax(x, T=1):
 	f, axarr = plt.subplots(2, sharex=True)
 	axarr[0].bar(np.arange(len(x)), x)
@@ -131,6 +137,7 @@ def plot_valmap(maze, value_array, save=False):
 
 	ax1.set_aspect('equal')
 	ax1.invert_yaxis()
+	plt.title('State Value Estimates')
 	plt.show()
 
 	if save:
@@ -157,7 +164,8 @@ def plot_polmap(maze, policy_array, save=False):
 		rwd_y, rwd_x = rwd_loc
 		ax1.add_patch(plt.Rectangle((rwd_y, rwd_x), width=1, height=1, linewidth=1, ec='white', fill=False))
 
-	chance_threshold = np.round(1 / len(maze.actionlist), 6)
+	chance_threshold = 0.18 #np.round(1 / len(maze.actionlist), 6)
+
 
 	cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
 
@@ -176,16 +184,12 @@ def plot_polmap(maze, policy_array, save=False):
 			else:
 				pass
 	ax1.set_aspect('equal')
+	plt.title('Most Likely Action from Policy')
 	plt.show()
 	if save:
 		plt.savefig('../data/figures/{}environment.svg'.format(maze.maze_type), format='svg', pad_inches=2)
 
-
-
-
-
-
-
+### OLD CODE - PUT IN JUNKYARD AS OF OCT 2019
 class artist_instance:
 	def __init__(self, xy=None, rad=None):
 		self.xy=xy if xy is not None else (1,1)
@@ -194,229 +198,6 @@ class artist_instance:
 		self.ec = 'r'
 	def art(self):
 		return getattr(patches,'Circle')(xy=self.xy,radius=self.radius,fc=self.fc,ec=self.ec)
-
-def print_value_maps(maze,val_maps,**kwargs):
-	maptype = kwargs.get('type', 'value')
-	value_min, value_max = kwargs.get('val_range', (np.nanmin(val_maps),np.nanmax(val_maps)))
-	mazetype = maze.maze_type
-	obs_rho = maze.rho
-	#rwd_loc = maze.rwd_loc[0]
-	maps = kwargs.get('maps', 'all')
-	title = kwargs.get('title',None)
-	save_dir = kwargs.get('save_dir', None)
-	if title == None:
-		if mazetype == 'none':
-			if obs_rho != 0.0:
-				save_string = './figures/grid_obs{}_{}map.svg'.format(obs_rho,maptype)
-			else:
-				save_string = './figures/{}.svg'.format(title.replace(" ",""))
-		else: 
-			save_string = './figures/{}_{}map.svg'.format(mazetype,maptype)
-	else:
-		if mazetype == 'none':
-			if obs_rho !=0.0:
-				save_string = './figures/grid_obs{}_{}.svg'.format(obs_rho,title.replace(" ",""))
-			else:
-				save_string = './figures/{}.svg'.format(title.replace(" ",""))
-		else: 
-			save_string = './figures/{}_{}map.svg'.format(mazetype,title.replace(" ", ""))
-	
-	if save_dir != None:
-		save_string = save_string.replace("./figures/", save_dir)
-	
-	if maps == 'all':
-		plotrows = 4
-		plotcols = 5
-		fig, axes = plt.subplots(nrows=plotrows, ncols=plotcols, sharex=True, sharey =True)
-		items = np.linspace(0, len(val_maps)-1, plotrows*plotcols)
-		rp_s = []
-		for rwd_loc in maze.rwd_loc:
-			rp_s.append(artist_instance(xy=np.add(rwd_loc,(0.5,0.5)), rad=.2))
-
-		for i, ax in enumerate(axes.flat):
-			data = val_maps[int(items[i])]
-			im = ax.pcolor(data, cmap= 'Spectral_r', vmin=value_min, vmax=value_max)
-			im.cmap.set_under('w', 1.0)
-			im.cmap.set_over('r', 1.0)
-			im.cmap.set_bad('w', 1.0)
-			ax.axis('off')
-			ax.set_aspect('equal')
-			for rwd_patch in rp_s:
-				ax.add_patch(rwd_patch.art())
-			ax.set_title('{}'.format(int(items[i])))
-
-		if title != None:
-			plt.suptitle(title)
-
-		axes[0,0].invert_yaxis()
-
-		fig.subplots_adjust(right=0.8)
-		cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-		fig.colorbar(im, cax=cbar_ax)
-		plt.savefig(save_string, format='svg')
-		plt.show()
-
-	elif type(maps) == list:
-		plotrows = 4
-		plotcols = 5
-		fig, axes = plt.subplots(nrows=plotrows, ncols=plotcols, sharex=True, sharey =True)
-		items = np.floor(np.linspace(maps[0], maps[-1], plotrows*plotcols))
-		rp_s = []
-		for rwd_loc in maze.rwd_loc:
-			rp_s.append(artist_instance(xy=np.add(rwd_loc,(0.5,0.5)), rad=.2))
-
-		for i, ax in enumerate(axes.flat):
-			data = val_maps[int(items[i])]
-			im = ax.pcolor(data, cmap= 'Spectral_r', vmin=value_min, vmax=value_max)
-			im.cmap.set_under('w', 1.0)
-			im.cmap.set_over('r', 1.0)
-			im.cmap.set_bad('w', 1.0)
-			ax.axis('off')
-			ax.set_aspect('equal')
-			for rwd_patch in rp_s:
-				ax.add_patch(rwd_patch.art())
-			ax.set_title('{}'.format(int(items[i])))
-
-		if title != None:
-			plt.suptitle(title)
-
-		axes[0,0].invert_yaxis()
-
-		fig.subplots_adjust(right=0.8)
-		cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-		fig.colorbar(im, cax=cbar_ax)
-		plt.savefig(save_string, format='svg')
-		plt.show()
-
-
-	else:
-		if type(maps) == int:
-			data = val_maps[maps]
-			trial = maps%len(val_maps)
-			fig = plt.figure(1)
-			ax = plt.subplots(1)
-			im = plt.pcolor(data, vmin=np.nanmin(data), vmax=np.nanmax(data), cmap='Spectral_r')
-			rp_s = []
-			for rwd_loc in maze.rwd_loc:
-				rp_s.append(artist_instance(rwd_loc, rad=.2))
-			im.cmap.set_bad('w', 1.0)
-			#for rwd_patch1 in rp_s:
-			#	im.add_patch(rwd_patch1.art())
-			#plt.imshow(data, vmin=1.32, vmax=1.5, cmap='jet', interpolation='none')
-			plt.title('Trial {}'.format(trial))
-			plt.colorbar()
-			plt.savefig('valuemap.svg', format = 'svg')
-			plt.show()
-		else:
-			print("Must specify which map to print (integer value) else specify 'all' ")
-
-def policy_plot(maze, policies, **kwargs):
-	pol_source = kwargs.get('polsource', 'MF')
-	chance_threshold = kwargs.get('chance_threshold', np.round(1/len(maze.actionlist), 6))
-	fig = plt.figure()
-
-	cmap = plt.cm.Spectral_r
-	cNorm  = colors.Normalize(vmin=0, vmax=1)
-	scalarMap = cmx.ScalarMappable(norm = cNorm, cmap=cmap)
-
-
-	ax1  = fig.add_axes([0.04, 0, 0.85, 0.85]) # [left, bottom, width, height]
-	axc = fig.add_axes([0.89, 0.125, 0.05, 0.6])
-
-	cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
-
-	ax1.imshow(maze.grid, vmin=0, vmax=1, cmap='bone', interpolation='none')
-	ax1.add_patch(patches.Circle(maze.rwd_loc[0], 0.35, fc='w'))
-
-	for i in range(0, maze.grid.shape[1]):
-		for j in range(0, maze.grid.shape[0]):
-			action = np.argmax(tuple(policies[i][j]))
-			prob = max(policies[i][j])
-
-			dx1,dy1,head_w,head_l = make_arrows(action, prob)
-			if prob > chance_threshold:
-				if (dx1, dy1) == (0,0):
-					pass
-				else:
-					colorVal1 = scalarMap.to_rgba(prob)
-					ax1.arrow(j, i, dx1, dy1, head_width =0.3, head_length =0.2, color=colorVal1)
-			else:
-				pass
-
-	ax1.set_title("{} policy".format(pol_source))
-	plt.show()
-
-def make_dual_policy_plots(maze, EC_policies, MF_policies, **kwargs):
-	chance_threshold = kwargs.get('chance_threshold', np.round(1/len(maze.actionlist), 6))
-	visited_locs = kwargs.get('visited_locs', [])
-
-	fig 		= plt.figure()
-	cmap 		= plt.cm.Spectral_r
-	cNorm  		= colors.Normalize(vmin=0, vmax=1)
-	scalarMap 	= cmx.ScalarMappable(norm = cNorm, cmap=cmap)
-
-	ax1  		= fig.add_axes([0.04, 0, 0.4, 0.85]) # [left, bottom, width, height]
-	ax2   		= fig.add_axes([0.47, 0, 0.4, 0.85]) # [left, bottom, width, height]
-	axc 		= fig.add_axes([0.89, 0.125, 0.05, 0.6])
-
-	cb1 		= colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
-
-	ax1.pcolor(maze.grid, vmin=0, vmax=1, cmap='bone')#, interpolation='none')
-	ax1.add_patch(patches.Circle(maze.rwd_loc[0], 0.35, fc='w'))
-	ax1.add_patch(patches.Circle((10,10), 0.35, fc='k', ec='w'))
-	ax1.invert_yaxis()
-	ax1.set_aspect('equal')
-
-	
-	ax2.pcolor(maze.grid, vmin=0, vmax=1, cmap='bone')#, interpolation='none')
-	ax2.add_patch(patches.Circle(np.add(maze.rwd_loc[0], (0.5,0.5)), 0.35, fc='w'))
-	#ax2.add_patch(patches.Circle((10,10), 0.35, fc='k', ec='w'))
-	ax2.invert_yaxis()
-	ax2.set_aspect('equal')
-
-	# p_field indicies
-	# 0 - choice, 
-	# 1 - list(tfprob)[choice], 
-	# 2 - list(tfprob).index(max(list(tfprob))),
-	# 3 - max(list(tfprob)), 
-	# 4 - i)
-
-	for i in range(0, maze.grid.shape[1]):
-		for j in range(0, maze.grid.shape[0]):
-			EC_action = np.argmax(tuple(EC_policies[i][j]))
-			EC_prob = max(EC_policies[i][j])
-
-			dx1,dy1,head_w,head_l = make_arrows(EC_action, EC_prob)
-			if EC_prob > chance_threshold:
-				if (dx1, dy1) == (0,0):
-					pass
-				else:
-					colorVal1 = scalarMap.to_rgba(EC_prob)
-					ax1.arrow(j+0.5, i+0.5, dx1, dy1, head_width =0.3, head_length =0.2, color=colorVal1)
-			else:
-				pass
-
-			MF_action = np.argmax(tuple(MF_policies[i][j]))
-			MF_prob = max(MF_policies[i][j])
-			dx2,dy2,head_w,head_l = make_arrows(MF_action, MF_prob)
-
-			if MF_prob > chance_threshold:
-				if (dx2, dy2) == (0,0):
-					pass
-				else:
-					colorVal1 = scalarMap.to_rgba(MF_prob)
-					ax2.arrow(j+0.5, i+0.5, dx2, dy2, head_width =0.3, head_length =0.2, color=colorVal1)
-			else:
-				pass
-	ax1.set_title("EC_policy")
-	ax2.set_title("MF_policy")
-	savefig = kwargs.get('savedir', None)
-	if savefig is not None:
-		print("Saving Figure at {}".format(savefig))
-		plt.savefig(savefig, format='svg')
-
-	plt.show()
-
 
 class KLD_holder(object):
 	def __init__(self,gridworld,**kwargs):
@@ -448,10 +229,226 @@ class KLD_holder(object):
 			self.map = np.zeros((self.y, self.x, self.num_act))
 		elif self.flag == 'KLD':
 			self.map = np.zeros((self.y, self.x))
-		
+
+def print_value_maps(maze, val_maps, **kwargs):
+	maptype = kwargs.get('type', 'value')
+	value_min, value_max = kwargs.get('val_range', (np.nanmin(val_maps), np.nanmax(val_maps)))
+	mazetype = maze.maze_type
+	obs_rho = maze.rho
+	# rwd_loc = maze.rwd_loc[0]
+	maps = kwargs.get('maps', 'all')
+	title = kwargs.get('title', None)
+	save_dir = kwargs.get('save_dir', None)
+	if title == None:
+		if mazetype == 'none':
+			if obs_rho != 0.0:
+				save_string = './figures/grid_obs{}_{}map.svg'.format(obs_rho, maptype)
+			else:
+				save_string = './figures/{}.svg'.format(title.replace(" ", ""))
+		else:
+			save_string = './figures/{}_{}map.svg'.format(mazetype, maptype)
+	else:
+		if mazetype == 'none':
+			if obs_rho != 0.0:
+				save_string = './figures/grid_obs{}_{}.svg'.format(obs_rho, title.replace(" ", ""))
+			else:
+				save_string = './figures/{}.svg'.format(title.replace(" ", ""))
+		else:
+			save_string = './figures/{}_{}map.svg'.format(mazetype, title.replace(" ", ""))
+
+	if save_dir != None:
+		save_string = save_string.replace("./figures/", save_dir)
+
+	if maps == 'all':
+		plotrows = 4
+		plotcols = 5
+		fig, axes = plt.subplots(nrows=plotrows, ncols=plotcols, sharex=True, sharey=True)
+		items = np.linspace(0, len(val_maps) - 1, plotrows * plotcols)
+		rp_s = []
+		for rwd_loc in maze.rwd_loc:
+			rp_s.append(artist_instance(xy=np.add(rwd_loc, (0.5, 0.5)), rad=.2))
+
+		for i, ax in enumerate(axes.flat):
+			data = val_maps[int(items[i])]
+			im = ax.pcolor(data, cmap='Spectral_r', vmin=value_min, vmax=value_max)
+			im.cmap.set_under('w', 1.0)
+			im.cmap.set_over('r', 1.0)
+			im.cmap.set_bad('w', 1.0)
+			ax.axis('off')
+			ax.set_aspect('equal')
+			for rwd_patch in rp_s:
+				ax.add_patch(rwd_patch.art())
+			ax.set_title('{}'.format(int(items[i])))
+
+		if title != None:
+			plt.suptitle(title)
+
+		axes[0, 0].invert_yaxis()
+
+		fig.subplots_adjust(right=0.8)
+		cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+		fig.colorbar(im, cax=cbar_ax)
+		plt.savefig(save_string, format='svg')
+		plt.show()
+
+	elif type(maps) == list:
+		plotrows = 4
+		plotcols = 5
+		fig, axes = plt.subplots(nrows=plotrows, ncols=plotcols, sharex=True, sharey=True)
+		items = np.floor(np.linspace(maps[0], maps[-1], plotrows * plotcols))
+		rp_s = []
+		for rwd_loc in maze.rwd_loc:
+			rp_s.append(artist_instance(xy=np.add(rwd_loc, (0.5, 0.5)), rad=.2))
+
+		for i, ax in enumerate(axes.flat):
+			data = val_maps[int(items[i])]
+			im = ax.pcolor(data, cmap='Spectral_r', vmin=value_min, vmax=value_max)
+			im.cmap.set_under('w', 1.0)
+			im.cmap.set_over('r', 1.0)
+			im.cmap.set_bad('w', 1.0)
+			ax.axis('off')
+			ax.set_aspect('equal')
+			for rwd_patch in rp_s:
+				ax.add_patch(rwd_patch.art())
+			ax.set_title('{}'.format(int(items[i])))
+
+		if title != None:
+			plt.suptitle(title)
+
+		axes[0, 0].invert_yaxis()
+
+		fig.subplots_adjust(right=0.8)
+		cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+		fig.colorbar(im, cax=cbar_ax)
+		plt.savefig(save_string, format='svg')
+		plt.show()
 
 
+	else:
+		if type(maps) == int:
+			data = val_maps[maps]
+			trial = maps % len(val_maps)
+			fig = plt.figure(1)
+			ax = plt.subplots(1)
+			im = plt.pcolor(data, vmin=np.nanmin(data), vmax=np.nanmax(data), cmap='Spectral_r')
+			rp_s = []
+			for rwd_loc in maze.rwd_loc:
+				rp_s.append(artist_instance(rwd_loc, rad=.2))
+			im.cmap.set_bad('w', 1.0)
+			# for rwd_patch1 in rp_s:
+			#	im.add_patch(rwd_patch1.art())
+			# plt.imshow(data, vmin=1.32, vmax=1.5, cmap='jet', interpolation='none')
+			plt.title('Trial {}'.format(trial))
+			plt.colorbar()
+			plt.savefig('valuemap.svg', format='svg')
+			plt.show()
+		else:
+			print("Must specify which map to print (integer value) else specify 'all' ")
 
+def policy_plot(maze, policies, **kwargs):
+	pol_source = kwargs.get('polsource', 'MF')
+	chance_threshold = kwargs.get('chance_threshold', np.round(1 / len(maze.actionlist), 6))
+	fig = plt.figure()
+
+	cmap = plt.cm.Spectral_r
+	cNorm = colors.Normalize(vmin=0, vmax=1)
+	scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
+
+	ax1 = fig.add_axes([0.04, 0, 0.85, 0.85])  # [left, bottom, width, height]
+	axc = fig.add_axes([0.89, 0.125, 0.05, 0.6])
+
+	cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
+
+	ax1.imshow(maze.grid, vmin=0, vmax=1, cmap='bone', interpolation='none')
+	ax1.add_patch(patches.Circle(maze.rwd_loc[0], 0.35, fc='w'))
+
+	for i in range(0, maze.grid.shape[1]):
+		for j in range(0, maze.grid.shape[0]):
+			action = np.argmax(tuple(policies[i][j]))
+			prob = max(policies[i][j])
+
+			dx1, dy1, head_w, head_l = make_arrows(action, prob)
+			if prob > chance_threshold:
+				if (dx1, dy1) == (0, 0):
+					pass
+				else:
+					colorVal1 = scalarMap.to_rgba(prob)
+					ax1.arrow(j, i, dx1, dy1, head_width=0.3, head_length=0.2, color=colorVal1)
+			else:
+				pass
+
+	ax1.set_title("{} policy".format(pol_source))
+	plt.show()
+
+def make_dual_policy_plots(maze, EC_policies, MF_policies, **kwargs):
+	chance_threshold = kwargs.get('chance_threshold', np.round(1 / len(maze.actionlist), 6))
+	visited_locs = kwargs.get('visited_locs', [])
+
+	fig = plt.figure()
+	cmap = plt.cm.Spectral_r
+	cNorm = colors.Normalize(vmin=0, vmax=1)
+	scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
+
+	ax1 = fig.add_axes([0.04, 0, 0.4, 0.85])  # [left, bottom, width, height]
+	ax2 = fig.add_axes([0.47, 0, 0.4, 0.85])  # [left, bottom, width, height]
+	axc = fig.add_axes([0.89, 0.125, 0.05, 0.6])
+
+	cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
+
+	ax1.pcolor(maze.grid, vmin=0, vmax=1, cmap='bone')  # , interpolation='none')
+	ax1.add_patch(patches.Circle(maze.rwd_loc[0], 0.35, fc='w'))
+	ax1.add_patch(patches.Circle((10, 10), 0.35, fc='k', ec='w'))
+	ax1.invert_yaxis()
+	ax1.set_aspect('equal')
+
+	ax2.pcolor(maze.grid, vmin=0, vmax=1, cmap='bone')  # , interpolation='none')
+	ax2.add_patch(patches.Circle(np.add(maze.rwd_loc[0], (0.5, 0.5)), 0.35, fc='w'))
+	# ax2.add_patch(patches.Circle((10,10), 0.35, fc='k', ec='w'))
+	ax2.invert_yaxis()
+	ax2.set_aspect('equal')
+
+	# p_field indicies
+	# 0 - choice,
+	# 1 - list(tfprob)[choice],
+	# 2 - list(tfprob).index(max(list(tfprob))),
+	# 3 - max(list(tfprob)),
+	# 4 - i)
+
+	for i in range(0, maze.grid.shape[1]):
+		for j in range(0, maze.grid.shape[0]):
+			EC_action = np.argmax(tuple(EC_policies[i][j]))
+			EC_prob = max(EC_policies[i][j])
+
+			dx1, dy1, head_w, head_l = make_arrows(EC_action, EC_prob)
+			if EC_prob > chance_threshold:
+				if (dx1, dy1) == (0, 0):
+					pass
+				else:
+					colorVal1 = scalarMap.to_rgba(EC_prob)
+					ax1.arrow(j + 0.5, i + 0.5, dx1, dy1, head_width=0.3, head_length=0.2, color=colorVal1)
+			else:
+				pass
+
+			MF_action = np.argmax(tuple(MF_policies[i][j]))
+			MF_prob = max(MF_policies[i][j])
+			dx2, dy2, head_w, head_l = make_arrows(MF_action, MF_prob)
+
+			if MF_prob > chance_threshold:
+				if (dx2, dy2) == (0, 0):
+					pass
+				else:
+					colorVal1 = scalarMap.to_rgba(MF_prob)
+					ax2.arrow(j + 0.5, i + 0.5, dx2, dy2, head_width=0.3, head_length=0.2, color=colorVal1)
+			else:
+				pass
+	ax1.set_title("EC_policy")
+	ax2.set_title("MF_policy")
+	savefig = kwargs.get('savedir', None)
+	if savefig is not None:
+		print("Saving Figure at {}".format(savefig))
+		plt.savefig(savefig, format='svg')
+
+	plt.show()
 
 def save_value_map(vm, maze, trial, savedir):
 	data = vm
@@ -468,8 +465,6 @@ def save_value_map(vm, maze, trial, savedir):
 	plt.savefig(savedir+'trial_{}'.format(trial))
 	plt.close()
 
-
-### OLD CODE - PUT IN JUNKYARD AS OF OCT 2019
 def make_env_plots(maze, env=True, pc_map=False, pcs=None, pc_vec=False, save=False):
 	grid = maze.grid
 	agent_loc = maze.cur_state
