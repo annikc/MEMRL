@@ -1,5 +1,6 @@
 from __future__ import division, print_function
-import sys 
+import sys
+import experiment as expt
 sys.path.insert(0,'../rl_network/'); import actorcritic as ac;  import stategen as sg
 sys.path.insert(0,'../environments/'); import gridworld_env as eu
 sys.path.insert(0,'../environments/'); import gridworld_plotting as gp

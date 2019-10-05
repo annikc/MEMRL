@@ -3,7 +3,7 @@
 '''
 Object Classes and Relevant Functions for Actor Critic Agent
 Author: Annik Carson 
---  June 2018
+--  Oct 2019
 '''
 
 # =====================================
@@ -19,11 +19,9 @@ from torch import autograd, optim, nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
 
-import stategen as sg
-
 from collections import namedtuple
 
-import pdb
+import stategen as sg
 
 # =====================================
 # CLASSES
@@ -195,8 +193,6 @@ class AC_Net(nn.Module):
 			assert (x.shape[2], x.shape[3], x.shape[1]) == self.input_d
 			if not  (isinstance(self.hidden[0],nn.Conv2d) or isinstance(self.hidden[0],nn.MaxPool2d)):
 				raise Exception('image to non {} layer'.format(self.hidden[0]))
-		else:	
-			pdb.set_trace()
 
 		# pass the data through each hidden layer
 		for i, layer in enumerate(self.hidden):
@@ -294,20 +290,6 @@ def select_ec_action(model, mf_policy_, mf_value_, ec_policy_):
 
 	return action.item(), mf_policy_.data[0], mf_value_.item()
 
-# def sample_select_action(model,state, **kwargs):
-# 	get_lin = kwargs.get('getlin', False)
-# 	if get_lin:
-# 		policy_, value_, linear_activity_ = model(state)
-# 	else:
-# 		policy_, value_ = model(state)[0:2]
-# 	a = Categorical(policy_)
-# 	action = a.sample()
-# 	#model.saved_actions.append(SavedAction(a.log_prob(action), value_))
-# 	if get_lin:
-# 		return action.data[0], policy_.data[0], value_.data[0], linear_activity_.data[0]
-# 	else:
-# 		return action.data[0], policy_.data[0], value_.data[0]
- 
 
 # Functions for computing relevant terms for weight updates after trial runs
 def finish_trial(model, discount_factor, optimizer, **kwargs):
@@ -317,7 +299,6 @@ def finish_trial(model, discount_factor, optimizer, **kwargs):
 	'''
 
 	# set the return to zero
-	alpha = kwargs.get('alpha', None)
 	R = 0
 	returns_ = discount_rwds(np.asarray(model.rewards), gamma=discount_factor)
 	saved_actions = model.saved_actions
@@ -326,26 +307,49 @@ def finish_trial(model, discount_factor, optimizer, **kwargs):
 	value_losses = []
 	
 	returns_ = torch.Tensor(returns_)
-	#pdb.set_trace()
-	#returns_ = (returns_ - returns_.mean()) / (returns_.std() + np.finfo(np.float32).eps)
-	tva = 0
-	for (log_prob, value), r in zip(saved_actions, returns_):
-		rpe = r - value.item()
-		tva += 1
-		policy_losses.append(-log_prob * rpe)
-		value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
-		#value_losses.append(F.mse_loss(value, Variable(torch.Tensor([[r]]))))
-	optimizer.zero_grad()
-	if alpha is not None:
-		p_loss = alpha*(torch.cat(policy_losses).sum())
-		v_loss = (1-alpha)*(torch.cat(value_losses).sum())
+
+	EC = kwargs.get('cache', None)
+	memory_buffer = kwargs.get('buffer', None)
+
+	if EC is not None:
+		if memory_buffer is not None:
+			timesteps = memory_buffer[0]
+			states    = memory_buffer[1]
+			actions   = memory_buffer[2]
+			readable  = memory_buffer[3]
+			trial 	  = memory_buffer[4]
+			mem_dict  = {}
+		else:
+			raise Exception('No memory buffer provided for kwarg "buffer=" ')
+		for (log_prob, value), r, t_, s_, a_, rdbl in zip(saved_actions, returns_, timesteps, states, actions, readable):
+			rpe = r - value.item()
+			policy_losses.append(-log_prob * rpe)
+			value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
+
+			mem_dict['activity'] = s_
+			mem_dict['action']   = a_
+			mem_dict['delta']    = rpe.item()
+			mem_dict['timestamp']= t_
+			mem_dict['readable'] = rdbl
+			mem_dict['trial']    = trial
+
+			EC.add_mem(mem_dict)
 	else:
-		p_loss = (torch.cat(policy_losses).sum())
-		v_loss = (torch.cat(value_losses).sum())
+		for (log_prob, value), r in zip(saved_actions, returns_):
+			rpe = r - value.item()
+			policy_losses.append(-log_prob * rpe)
+			value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
+			#value_losses.append(F.mse_loss(value, Variable(torch.Tensor([[r]]))))
+	optimizer.zero_grad()
+
+	p_loss = (torch.cat(policy_losses).sum())
+	v_loss = (torch.cat(value_losses).sum())
+
 	total_loss = p_loss + v_loss
-	#total_loss = p_loss + v_loss
+
 	total_loss.backward(retain_graph=False)
 	optimizer.step()
+
 	del model.rewards[:]
 	del model.saved_actions[:]
 
@@ -429,3 +433,18 @@ def make_agent(agent_params, freeze=False):
 				others.append(nums)
 		opt = optim.Adam(MF.parameters(), lr= agent_params['eta'])
 	return MF, opt
+
+
+def snapshot(maze, agent):
+	val_array = np.empty(maze.grid.shape)
+	pol_array = np.zeros(maze.grid.shape, dtype=[('N', 'f8'), ('E', 'f8'), ('W', 'f8'), ('S', 'f8'), ('stay', 'f8'), ('poke', 'f8')])
+	# cycle through all available states
+	for i in maze.useable:
+		maze.cur_state = i
+		state = torch.Tensor(sg.get_frame(maze))
+		policy_, value_ = agent(state)[0:2]
+
+		val_array[i[1], i[0]] = value_.item()
+		pol_array[i[1], i[0]] = tuple(policy_.detach().numpy()[0])
+
+	return val_array, pol_array
