@@ -91,6 +91,9 @@ class ep_mem(object):
 		action		= item['action']
 		delta 		= item['delta']
 		timestamp	= item['timestamp']
+		trial       = item['trial']
+		#
+		readable    = item['readable']
 
 		'''
 		1. Memory is not full
@@ -114,10 +117,11 @@ class ep_mem(object):
 				mem_entry = np.empty((self.n_actions, 2))
 				mem_entry[:,0] = np.nan # initialize entries to nan
 				mem_entry[:,1] = np.inf
-				self.cache_list[activity] = [mem_entry, np.inf]
+				self.cache_list[activity] = [mem_entry, np.inf, None]
 			# add or replace relevant info in mem container
-			self.cache_list[activity][0][action] = [delta, timestamp]
+			self.cache_list[activity][0][action] = [delta, trial]
 			self.cache_list[activity][1] = timestamp
+			self.cache_list[activity][2] = readable
 		# if memory is full
 		else:
 			if activity not in self.cache_list.keys(): # if there is no item in memory that matches
@@ -142,11 +146,12 @@ class ep_mem(object):
 				mem_entry = np.empty((self.n_actions, 2))
 				mem_entry[:,0] = np.nan
 				mem_entry[:,1] = np.inf # initialize entries to nan
-				self.cache_list[activity] = [mem_entry, np.inf]
+				self.cache_list[activity] = [mem_entry, np.inf, None]
 
 			# add or replace relevant info in mem container
-			self.cache_list[activity][0][action] = [delta, timestamp]
+			self.cache_list[activity][0][action] = [delta, trial]
 			self.cache_list[activity][1] = timestamp
+			self.cache_list[activity][2] = readable
 
 	def recall_mem(self, key, timestep, **kwargs):
 		'''
@@ -156,9 +161,9 @@ class ep_mem(object):
 
 		'''
 		envelope = kwargs.get('env', self.memory_envelope)
-
-		mem_, i, sim = self.cosine_sim(key,threshold=0.9)
-
+		#print(len(key), "====")
+		mem_, i, sim = self.cosine_sim(key,threshold=0)
+		#eprint(len(mem_), "####")
 		memory       = np.nan_to_num(self.cache_list[tuple(mem_)][0])
 		deltas       = memory[:,0]
 		times        = abs(timestep - memory[:,1])

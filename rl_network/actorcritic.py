@@ -123,7 +123,6 @@ class AC_Net(nn.Module):
 					if htype is 'conv':
 						output_d[0] = int(np.floor((input_d[0] + 2*padding - rfsize)/stride) + 1)
 						output_d[1] = int(np.floor((input_d[1] + 2*padding - rfsize)/stride) + 1)
-						#pdb.set_trace()
 						assert output_d[0] == hidden_dimensions[i][0], (hidden_dimensions[i][0], output_d[0])
 						assert output_d[1] == hidden_dimensions[i][1]
 						output_d[2] = hidden_dimensions[i][2]
@@ -159,9 +158,6 @@ class AC_Net(nn.Module):
 
 			# create the actor and critic layers
 			self.layers = [input_dimensions]+hidden_dimensions+[action_dimensions]
-
-			#self.actor = nn.Linear(output_d, action_dimensions)
-			#self.critic = nn.Linear(output_d, 1)
 			self.output = nn.ModuleList([
 				nn.Linear(output_d, action_dimensions), #actor
 				nn.Linear(output_d, 1)                  #critic
@@ -183,7 +179,6 @@ class AC_Net(nn.Module):
 
 		Required arguments:
 			- x (torch.Tensor): sensory input to the network, should be of size batch x input_d
-
 		'''
 
 		# check the inputs
