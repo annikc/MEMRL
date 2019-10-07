@@ -122,10 +122,10 @@ def plot_valmap(maze, value_array, save=False):
 	axc = fig.add_axes([0.75, 0, 0.05, 0.85])
 
 	cmap = plt.cm.Spectral_r
-	cNorm = colors.Normalize(vmin=0, vmax=1)
+	cNorm = colors.Normalize(vmin=0, vmax=45)
 
 	cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
-	ax1.pcolor(value_array, cmap=cmap, vmin = 0, vmax = 1)
+	ax1.pcolor(value_array, cmap=cmap, vmin = 0, vmax = 45)
 
 	ax1.invert_yaxis()
 
