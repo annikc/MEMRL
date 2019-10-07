@@ -25,34 +25,78 @@ from collections import namedtuple
 from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics.pairwise import cosine_similarity
 
-printflag = False
-
 class ep_mem(object):
 	def __init__(self, model, cache_limit,**kwargs):
-		self.cache_limit 		= cache_limit
-		self.memory_envelope 	= kwargs.get('mem_envelope', 50)
-		self.cache_list 		= {}
-		self.n_actions			= model.layers[-1]
-		#self.key_length	 		= model.layers[-2]
+		self.cache_list 		= {}								# memory bank object
+		self.cache_limit 		= cache_limit                       # size of memory bank
+		self.n_actions			= model.layers[-1]					# number of rows in each memory unit
+
+
+
+		self.memory_envelope 	= kwargs.get('mem_envelope', 50)    # speed of memory decay
+
+
+		#self.key_length	 	= model.layers[-2]
 		#self.key_dtype			= [(f'{i}', 'f8') for i in range(self.key_length)]
 
 
 		##
 		num_inputs                 = model.layers[0]
-
-
 		self.mem_factor            = 0.5
 		self.reward_unseen         = True
 		self.time_since_last_reward= 0
 		self.confidence_score      = 0
 		self.cs_max                = 0
 
-		self.stupid_df = [[],[],[],[],[],[]]
+	def add_mem(self, item):
+		activity 	= item['activity']
+		action		= item['action']
+		delta 		= item['delta']
+		timestamp	= item['timestamp']
+		trial       = item['trial']
+		#
+		readable    = item['readable']
+
+		# Case 1: memory is not full
+		if len(self.cache_list) < self.cache_limit:
+			# Case 1a: key does not yet exist
+			if activity not in self.cache_list.keys(): # if no key for this state exists already, add new one
+				mem_entry = np.empty((self.n_actions, 2))
+				mem_entry[:,0] = np.nan # initialize deltas to nan
+				mem_entry[:,1] = np.inf # initialize timestamps to inf
+				self.cache_list[activity] = [mem_entry, np.inf, None]
+			# Case 1b: key exists, add or replace relevant info in mem container
+			self.cache_list[activity][0][action] = [delta, trial]
+			self.cache_list[activity][1] = timestamp
+			self.cache_list[activity][2] = readable
+		# Case 2: memory is full
+		else:
+			print("hello world")
+			# Case 2a: key does not yet exist
+			if activity not in self.cache_list.keys():
+				# choose key to be removed
+				cache_keys = list(self.cache_list.keys())
+				persistence_ = [t for e, t in self.cache_list.values()] # get list of all timestamp flags
+				print(persistence_)
+				lp = persistence_.index(min(persistence_))              # find entry that was updated the LEAST recently
+				old_activity = cache_keys[lp]                           # get key in dictionary corresponding to oldest timestep flag
+				del self.cache_list[old_activity]                       # delete item from dictionary with oldest timestamp flag
+
+				# add new mem container
+				mem_entry = np.empty((self.n_actions, 2))
+				mem_entry[:,0] = np.nan
+				mem_entry[:,1] = np.inf # initialize entries to nan
+				self.cache_list[activity] = [mem_entry, np.inf, None]
+			# Case2b: key exists, add or replace relevant info in mem container
+			self.cache_list[activity][0][action] = [delta, trial]
+			self.cache_list[activity][1] = timestamp
+			self.cache_list[activity][2] = readable
+
+
 
 	def reset_cache(self):
 		self.cache_list.clear()
-		self.stupid_df = [[], [], [], [],[], []]
-		
+
 	def make_pvals(self, p, **kwargs):
 		policy_ = kwargs.get('pol_id', None)
 		mfc = kwargs.get('mfc', 1)
@@ -85,73 +129,6 @@ class ep_mem(object):
 		else:
 			# print('max memory similarity:', max(cosine_similarity))
 			return [], [], max(cosine_similarity)
-
-	def add_mem(self, item):
-		activity 	= item['activity']
-		action		= item['action']
-		delta 		= item['delta']
-		timestamp	= item['timestamp']
-		trial       = item['trial']
-		#
-		readable    = item['readable']
-
-		'''
-		1. Memory is not full
-			a. key does not yet exist
-				- make mem container w this key 
-				- add relevant info in container
-			b. key already exists
-				- add or replace relevant info in mem container
-				
-		2. Memory is full
-			a. key does not exist in mem
-				- choose key to replace -- should just choose oldest? 
-
-			b. key already exists
-				- add or replace relevant info in mem container
-		'''
-		# if memory is not full
-
-		if len(self.cache_list) < self.cache_limit:
-			if activity not in self.cache_list.keys(): # if no key for this state exists already, add new one
-				mem_entry = np.empty((self.n_actions, 2))
-				mem_entry[:,0] = np.nan # initialize entries to nan
-				mem_entry[:,1] = np.inf
-				self.cache_list[activity] = [mem_entry, np.inf, None]
-			# add or replace relevant info in mem container
-			self.cache_list[activity][0][action] = [delta, trial]
-			self.cache_list[activity][1] = timestamp
-			self.cache_list[activity][2] = readable
-		# if memory is full
-		else:
-			if activity not in self.cache_list.keys(): # if there is no item in memory that matches
-				# choose key to be removed
-				# get list of keys
-				cache_keys = list(self.cache_list.keys())
-
-				# find entry that was updated the LEAST recently
-				# get list of all timestamp flags
-				persistence_ = [t for e, t in self.cache_list.values()]
-
-				# take index of min value of timestamp flags
-				lp = persistence_.index(min(persistence_))
-
-				# get key in dictionary corresponding to oldest timestep flag
-				old_activity = cache_keys[lp]
-
-				# delete item from dictionary with oldest timestamp flag
-				del self.cache_list[old_activity]
-
-				# add new mem container
-				mem_entry = np.empty((self.n_actions, 2))
-				mem_entry[:,0] = np.nan
-				mem_entry[:,1] = np.inf # initialize entries to nan
-				self.cache_list[activity] = [mem_entry, np.inf, None]
-
-			# add or replace relevant info in mem container
-			self.cache_list[activity][0][action] = [delta, trial]
-			self.cache_list[activity][1] = timestamp
-			self.cache_list[activity][2] = readable
 
 	def recall_mem(self, key, timestep, **kwargs):
 		'''

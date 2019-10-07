@@ -18,8 +18,6 @@ def run_full_trials(run_dict, use_EC = False, **kwargs):
     agent_params = run_dict['agt_param']
     penalization = kwargs.get('pen', 0)
 
-    #use_EC     = False# agent_params['use_EC']
-    #EC         = agent_params['EC']
 
     save_data  = kwargs.get('save', True)
 
@@ -28,7 +26,7 @@ def run_full_trials(run_dict, use_EC = False, **kwargs):
     blocktime = time.time()
 
     if use_EC:
-        #EC = agent_params['EC']
+        EC = agent_params['EC']
         EC.reset_cache()
         memory_buffer = [[],[],[],[], 0] # [timestamp, state_t, a_t, readable_state, trial]
         run_dict['total_loss']   = [[],[]]
