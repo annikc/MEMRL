@@ -10,20 +10,7 @@ Author: Annik Carson
 #           IMPORT MODULES            #
 # =====================================
 from __future__ import division, print_function
-
-import time 
 import numpy as np
-
-import torch 
-from torch.autograd import Variable
-from torch import autograd, optim, nn
-import torch.nn.functional as F
-from torch.distributions import Categorical
-
-from collections import namedtuple
-
-from sklearn.neighbors import NearestNeighbors
-from sklearn.metrics.pairwise import cosine_similarity
 
 class ep_mem(object):
 	def __init__(self, model, cache_limit,**kwargs):
@@ -31,17 +18,9 @@ class ep_mem(object):
 		self.cache_limit 		= cache_limit                       # size of memory bank
 		self.n_actions			= model.layers[-1]					# number of rows in each memory unit
 
-
-
 		self.memory_envelope 	= kwargs.get('mem_envelope', 50)    # speed of memory decay
 
-
-		#self.key_length	 	= model.layers[-2]
-		#self.key_dtype			= [(f'{i}', 'f8') for i in range(self.key_length)]
-
-
 		##
-		num_inputs                 = model.layers[0]
 		self.mem_factor            = 0.5
 		self.reward_unseen         = True
 		self.time_since_last_reward= 0
@@ -71,13 +50,11 @@ class ep_mem(object):
 			self.cache_list[activity][2] = readable
 		# Case 2: memory is full
 		else:
-			print("hello world")
 			# Case 2a: key does not yet exist
 			if activity not in self.cache_list.keys():
 				# choose key to be removed
 				cache_keys = list(self.cache_list.keys())
-				persistence_ = [t for e, t in self.cache_list.values()] # get list of all timestamp flags
-				print(persistence_)
+				persistence_ = [x[1] for x in self.cache_list.values()] # get list of all timestamp flags
 				lp = persistence_.index(min(persistence_))              # find entry that was updated the LEAST recently
 				old_activity = cache_keys[lp]                           # get key in dictionary corresponding to oldest timestep flag
 				del self.cache_list[old_activity]                       # delete item from dictionary with oldest timestamp flag

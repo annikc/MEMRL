@@ -28,7 +28,6 @@ def run_full_trials(run_dict, use_EC = False, **kwargs):
     if use_EC:
         EC = agent_params['EC']
         EC.reset_cache()
-        memory_buffer = [[],[],[],[], 0] # [timestamp, state_t, a_t, readable_state, trial]
         run_dict['total_loss']   = [[],[]]
         run_dict['total_reward'] = []
         run_dict['track_cs']     = [[],[]]
@@ -41,6 +40,7 @@ def run_full_trials(run_dict, use_EC = False, **kwargs):
         compare_mfec = {}
 
         for trial in range(NUM_TRIALS):
+            memory_buffer = [[],[],[],[], trial] # [timestamp, state_t, a_t, readable_state, trial]
             trialstart_stamp = timestamp
 
             reward_sum   = 0
@@ -81,7 +81,13 @@ def run_full_trials(run_dict, use_EC = False, **kwargs):
                     else:
                         choice, policy, value = ac.select_action(MF,policy_, value_)
 
+
+                memory_buffer[0].append(timestamp)
+                memory_buffer[1].append(lin_act)
+                memory_buffer[2].append(choice)
                 memory_buffer[3].append(maze.cur_state)
+                memory_buffer[4] = trial
+
 
                 compare_mfec[maze.cur_state] = [policy.numpy(), choice, value]
 
@@ -99,11 +105,6 @@ def run_full_trials(run_dict, use_EC = False, **kwargs):
 
                 MF.rewards.append(reward)
 
-                memory_buffer[0].append(timestamp)
-                memory_buffer[1].append(lin_act)
-                memory_buffer[2].append(choice)
-                memory_buffer[4] = trial
-
                 # because we need to include batch size of 1
                 state = torch.Tensor(sg.get_frame(maze))
                 reward_sum += reward
@@ -115,8 +116,8 @@ def run_full_trials(run_dict, use_EC = False, **kwargs):
 
             if save_data:
                 #value_map = ac.generate_values(maze,MF)
-                #run_dict['total_loss'][0].append(p_loss.data[0])
-                #run_dict['total_loss'][1].append(v_loss.data[0])
+                run_dict['total_loss'][0].append(p_loss.data[0])
+                run_dict['total_loss'][1].append(v_loss.data[0])
                 run_dict['total_reward'].append(reward_sum)
                 #run_dict['val_maps'].append(value_map.copy())
                 #run_dict['deltas'].append(track_deltas)
@@ -196,9 +197,6 @@ def run_truncated_trials(run_dict, use_EC=False, **kwargs):
     opt          = run_dict['optimizer']
     agent_params = run_dict['agt_param']
 
-    use_EC      = False# agent_params['use_EC']
-    #EC         = agent_params['EC']
-
     penalization = kwargs.get('pen', 0)
 
     save_data  = kwargs.get('save', True)
@@ -210,7 +208,6 @@ def run_truncated_trials(run_dict, use_EC=False, **kwargs):
     if use_EC:
         EC = agent_params['EC']
         EC.reset_cache()
-        memory_buffer = [[],[],[],[], 0] # [timestamp, state_t, a_t, readable_state, trial]
         run_dict['total_loss']   = [[],[]]
         run_dict['total_reward'] = []
         run_dict['track_cs']     = [[],[]]
@@ -224,6 +221,7 @@ def run_truncated_trials(run_dict, use_EC=False, **kwargs):
         compare_mfec = {}
 
         for trial in range(NUM_TRIALS):
+            memory_buffer = [[],[],[],[], trial] # [timestamp, state_t, a_t, readable_state, trial]
             trialstart_stamp = timestamp
 
             reward_sum   = 0
@@ -233,7 +231,6 @@ def run_truncated_trials(run_dict, use_EC=False, **kwargs):
 
             state = torch.Tensor(sg.get_frame(maze))
             MF.reinit_hid() #reinit recurrent hidden layers
-            print(maze.cur_state)
             for event in range(NUM_EVENTS):
                 if trial is not 0:
                     #compute confidence in MFC
@@ -263,7 +260,11 @@ def run_truncated_trials(run_dict, use_EC=False, **kwargs):
                     else:
                         choice, policy, value = ac.select_action(MF,policy_, value_)
 
+                memory_buffer[0].append(timestamp)
+                memory_buffer[1].append(lin_act)
+                memory_buffer[2].append(choice)
                 memory_buffer[3].append(maze.cur_state)
+                memory_buffer[4] = trial
 
                 compare_mfec[maze.cur_state] = [policy.numpy(), choice, value]
 
@@ -281,11 +282,6 @@ def run_truncated_trials(run_dict, use_EC=False, **kwargs):
                     run_dict['track_cs'][1].append(MF_cs)
 
                 MF.rewards.append(reward)
-
-                memory_buffer[0].append(timestamp)
-                memory_buffer[1].append(lin_act)
-                memory_buffer[2].append(choice)
-                memory_buffer[4] = trial
 
                 # because we need to include batch size of 1
                 state = torch.Tensor(sg.get_frame(maze))
