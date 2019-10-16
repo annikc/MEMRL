@@ -82,14 +82,13 @@ class ep_mem(object):
 		#specify decay envelope for memory relevance calculation
 		envelope = kwargs.get('decay', self.memory_envelope)
 
-		# use cosine similarity to find most similar memory
-		# returns memory key, index of memory key in list of keys, and the cosine similarity measure
-		similarity, lin_act = self.cosine_sim(key)
+		# returns the most similar key, as well as the cosine similarity measure
+		lin_act, similarity = self.cosine_sim(key)
 
 
-		memory       = np.nan_to_num(self.cache_list[tuple(lin_act)][0])
+		memory       = np.nan_to_num(self.cache_list[lin_act][0])
 		print("memory:", memory)
-		deltas       = similarity*memory[:,0]
+		deltas       = memory[:,0]
 		print('deltas:', deltas)
 		times        = abs(timestep - memory[:,1])
 		print('times:', times)
@@ -104,27 +103,24 @@ class ep_mem(object):
 		envelope = kwargs.get('envelope', self.memory_envelope)
 		if policy_ is not None:
 			if policy_ == 'MF':
-				return np.round(1 / np.cosh(p / self.memory_envelope), 8)
+				return np.round(1 / np.cosh(p / envelope), 8)
 			elif policy_ == 'EC':
-				return mfc*np.round(1 / np.cosh(p / self.memory_envelope), 8)
+				return mfc*np.round(1 / np.cosh(p / envelope), 8)
 		else:
-			return np.round(1 / np.cosh(p / self.memory_envelope), 8)
+			return np.round(1 / np.cosh(p / envelope), 8)
 
 	# retrieve relevant items from memory
 	def cosine_sim(self, key):
 		# make list of memory keys
 		mem_cache = np.asarray(list(self.cache_list.keys()))
 		entry = np.asarray(key)
-
 		# compute cosine similarity measure
 		mqt = np.dot(mem_cache, entry)
 		norm = np.linalg.norm(mem_cache, axis=1) * np.linalg.norm(entry)
 		cosine_similarity = mqt / norm
 
 		lin_act = mem_cache[np.argmax(cosine_similarity)]
-		return max(cosine_similarity), lin_act
-
-
+		return  tuple(lin_act), max(cosine_similarity)
 
 def sigmoid(x):
 	return 1 / (1 + math.exp(-x))
