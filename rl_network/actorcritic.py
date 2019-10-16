@@ -327,7 +327,7 @@ def finish_trial(model, discount_factor, optimizer, **kwargs):
 			mem_dict['timestamp']= t_
 			mem_dict['readable'] = rdbl
 			mem_dict['trial']    = trial
-			print(f"agent at {rdbl}: takes action {a_}, delta: {rpe.item()} ({r} - {value.item()})" )
+			#print(f"agent at {rdbl}: takes action {a_}, delta: {rpe.item()} ({r} - {value.item()})" )
 			EC.add_mem(mem_dict)
 
 	else:
@@ -444,3 +444,24 @@ def snapshot(maze, agent):
 		pol_array[i[1], i[0]] = tuple(policy_.detach().numpy()[0])
 
 	return val_array, pol_array
+
+def mem_snapshot(maze, EC, trial_timestamp,**kwargs):
+	envelope = kwargs.get('decay', 50)
+	mpol_array = np.zeros(maze.grid.shape, dtype=[('N', 'f8'), ('E', 'f8'), ('W', 'f8'), ('S', 'f8'), ('stay', 'f8'), ('poke', 'f8')])
+	# cycle through readable states
+	for i in EC.cache_list.values():
+		xval = i[2][0]
+		yval = i[2][1]
+
+		memory       = np.nan_to_num(i[0])
+		deltas       = memory[:,0]
+		times        = abs(trial_timestamp - memory[:,1])
+		pvals 		 = EC.make_pvals(times, envelope=envelope)
+
+		policy = softmax(  np.multiply(deltas, pvals), T=1) #np.multiply(sim,deltas))
+		mpol_array[yval][xval] = tuple(policy)
+	return mpol_array
+
+def softmax(x, T=1):
+	e_x = np.exp((x - np.max(x))/T)
+	return np.round(e_x / e_x.sum(axis=0),8) # only difference
