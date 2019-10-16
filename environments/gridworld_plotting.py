@@ -110,7 +110,7 @@ def plot_env(maze, save=False):
 	if save:
 		plt.savefig('../data/figures/{}environment.svg'.format(maze.maze_type), format='svg', pad_inches=2)
 
-def plot_valmap(maze, value_array, save=False):
+def plot_valmap(maze, value_array, save=False, **kwargs):
 	'''
 	:param maze: the environment object
 	:param value_array: array of state values
@@ -120,12 +120,12 @@ def plot_valmap(maze, value_array, save=False):
 	fig = plt.figure()
 	ax1 = fig.add_axes([0, 0, 0.85, 0.85])
 	axc = fig.add_axes([0.75, 0, 0.05, 0.85])
-
+	vmin, vmax = kwargs.get('p_range', [0,1])
 	cmap = plt.cm.Spectral_r
-	cNorm = colors.Normalize(vmin=0, vmax=45)
+	cNorm = colors.Normalize(vmin=vmin, vmax=vmax)
 
 	cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
-	ax1.pcolor(value_array, cmap=cmap, vmin = 0, vmax = 45)
+	ax1.pcolor(value_array, cmap=cmap, vmin = vmin, vmax = vmax)
 
 	ax1.invert_yaxis()
 
