@@ -327,9 +327,8 @@ def finish_trial(model, discount_factor, optimizer, **kwargs):
 			mem_dict['timestamp']= t_
 			mem_dict['readable'] = rdbl
 			mem_dict['trial']    = trial
-
+			print(f"agent at {rdbl}: takes action {a_}, delta: {rpe.item()} ({r} - {value.item()})" )
 			EC.add_mem(mem_dict)
-			del mem_dict
 
 	else:
 		for (log_prob, value), r in zip(saved_actions, returns_):

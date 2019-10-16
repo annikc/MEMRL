@@ -27,6 +27,9 @@ class ep_mem(object):
 		self.confidence_score      = 0
 		self.cs_max                = 0
 
+	def reset_cache(self):
+		self.cache_list.clear()
+
 	def add_mem(self, item):
 		activity 	= item['activity']
 		action		= item['action']
@@ -69,10 +72,31 @@ class ep_mem(object):
 			self.cache_list[activity][1] = timestamp
 			self.cache_list[activity][2] = readable
 
+	def recall_mem(self, key, timestep, **kwargs):
+		'''
+		pass in key: get most similar entry and return cosine sim score
+
+		confidence score = scaled by cosine sim
+
+		'''
+		#specify decay envelope for memory relevance calculation
+		envelope = kwargs.get('decay', self.memory_envelope)
+
+		# use cosine similarity to find most similar memory
+		# returns memory key, index of memory key in list of keys, and the cosine similarity measure
+		similarity, lin_act = self.cosine_sim(key)
 
 
-	def reset_cache(self):
-		self.cache_list.clear()
+		memory       = np.nan_to_num(self.cache_list[tuple(lin_act)][0])
+		print("memory:", memory)
+		deltas       = similarity*memory[:,0]
+		print('deltas:', deltas)
+		times        = abs(timestep - memory[:,1])
+		print('times:', times)
+		pvals 		 = self.make_pvals(times, envelope=envelope)
+		print('pvals:', pvals)
+		policy = softmax(  np.multiply(deltas, pvals), T=1) #np.multiply(sim,deltas))
+		return policy
 
 	def make_pvals(self, p, **kwargs):
 		policy_ = kwargs.get('pol_id', None)
@@ -87,44 +111,18 @@ class ep_mem(object):
 			return np.round(1 / np.cosh(p / self.memory_envelope), 8)
 
 	# retrieve relevant items from memory
-	def cosine_sim(self, key, **kwargs):
-		similarity_threshold = kwargs.get('threshold', 0.9)
-
+	def cosine_sim(self, key):
+		# make list of memory keys
 		mem_cache = np.asarray(list(self.cache_list.keys()))
 		entry = np.asarray(key)
 
+		# compute cosine similarity measure
 		mqt = np.dot(mem_cache, entry)
 		norm = np.linalg.norm(mem_cache, axis=1) * np.linalg.norm(entry)
-
 		cosine_similarity = mqt / norm
 
-		index = np.argmax(cosine_similarity)
-		similar_activity = mem_cache[index]
-		if max(cosine_similarity) >= similarity_threshold:
-			return similar_activity, index, max(cosine_similarity)
-
-		else:
-			# print('max memory similarity:', max(cosine_similarity))
-			return [], [], max(cosine_similarity)
-
-	def recall_mem(self, key, timestep, **kwargs):
-		'''
-		pass in key: get most similar entry and return cosine sim score
-
-		confidence score = scaled by cosine sim
-
-		'''
-		envelope = kwargs.get('env', self.memory_envelope)
-		#print(len(key), "====")
-		mem_, i, sim = self.cosine_sim(key,threshold=0)
-		#eprint(len(mem_), "####")
-		memory       = np.nan_to_num(self.cache_list[tuple(mem_)][0])
-		deltas       = memory[:,0]
-		times        = abs(timestep - memory[:,1])
-		pvals 		 = self.make_pvals(times, envelope=envelope)
-
-		policy = softmax(np.multiply(sim,deltas))  #np.multiply(deltas, pvals), T= 0.1)
-		return policy
+		lin_act = mem_cache[np.argmax(cosine_similarity)]
+		return max(cosine_similarity), lin_act
 
 
 
