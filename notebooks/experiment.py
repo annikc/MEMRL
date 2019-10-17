@@ -301,8 +301,8 @@ def run_truncated_trials(run_dict, use_EC=False, **kwargs):
 
             if save_data:
                 #value_map = ac.generate_values(maze,MF)
-                run_dict['total_loss'][0].append(p_loss.data[0])
-                run_dict['total_loss'][1].append(v_loss.data[0])
+                run_dict['total_loss'][0].append(p_loss.item())
+                run_dict['total_loss'][1].append(v_loss.item())
                 run_dict['total_reward'].append(reward_sum)
                 #run_dict['val_maps'].append(value_map.copy())
                 #run_dict['deltas'].append(track_deltas)
