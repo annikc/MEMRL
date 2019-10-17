@@ -87,14 +87,14 @@ class ep_mem(object):
 
 
 		memory       = np.nan_to_num(self.cache_list[lin_act][0])
-		print("memory:", memory)
+
 		deltas       = memory[:,0]
-		print('deltas:', deltas)
 		times        = abs(timestep - memory[:,1])
-		print('times:', times)
 		pvals 		 = self.make_pvals(times, envelope=envelope)
-		print('pvals:', pvals)
 		policy = softmax(  np.multiply(deltas, pvals), T=1) #np.multiply(sim,deltas))
+		prints = kwargs.get('prints', False)
+		if prints:
+			print('policy:\n', policy)
 		return policy
 
 	def make_pvals(self, p, **kwargs):

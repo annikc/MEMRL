@@ -376,7 +376,7 @@ def policy_plot(maze, policies, **kwargs):
 					ax1.arrow(j, i, dx1, dy1, head_width=0.3, head_length=0.2, color=colorVal1)
 			else:
 				pass
-
+	ax1.invert_yaxis()
 	ax1.set_title("{} policy".format(pol_source))
 	plt.show()
 
