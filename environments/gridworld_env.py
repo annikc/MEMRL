@@ -162,7 +162,7 @@ class gridworld(object):
         return pv_map
 
     def loc_picker(self):
-        start_buffer = 10
+        start_buffer = 5
         a1 = np.random.choice([-1,1])
         start_x = self.rwd_loc[0][0] + np.random.choice([-1, 1])*np.random.choice(start_buffer)
         if start_x < 0:

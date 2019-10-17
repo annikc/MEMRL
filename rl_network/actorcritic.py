@@ -128,7 +128,7 @@ class AC_Net(nn.Module):
 						output_d[2] = hidden_dimensions[i][2]
 					elif htype is 'pool':
 						output_d[0] = int(np.floor((input_d[0] +2*padding - (rfsize-1) -1)/stride  +1 ))
-						output_d[1] = int(np.floor((input_d[0] +2*padding - (rfsize-1) -1)/stride  +1 ))
+						output_d[1] = int(np.floor((input_d[1] +2*padding - (rfsize-1) -1)/stride  +1 ))
 						assert output_d[0] == hidden_dimensions[i][0]
 						assert output_d[1] == hidden_dimensions[i][1]
 						output_d[2] = hidden_dimensions[i][2]
