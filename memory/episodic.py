@@ -91,7 +91,7 @@ class ep_mem(object):
 		deltas       = memory[:,0]
 		times        = abs(timestep - memory[:,1])
 		pvals 		 = self.make_pvals(times, envelope=envelope)
-		policy = softmax(  np.multiply(deltas, pvals), T=1) #np.multiply(sim,deltas))
+		policy = softmax( similarity*np.multiply(deltas, pvals), T=1) #np.multiply(sim,deltas))
 		prints = kwargs.get('prints', False)
 		if prints:
 			print('policy:\n', policy)
