@@ -14,25 +14,91 @@ Author: Annik Carson
 from __future__ import division, print_function
 import numpy as np
 np.random.seed(12345)
+class gridworld(object):
+    '''
+    State representation defined in  __init__()
+    Action representation defined in move()
+    Reward function defined in       get_reward()
+    Step function 
 
-class gridworld(object): 
+    '''
     def __init__(self, grid_params, **kwargs):
-        self.y 				= grid_params['y_height']
+        '''
+        :param grid_params: dictionary of inputs for specifying environment
+        required arguments
+            y_height, x_width (int, int):   size of gridworld environment
+            maze_type (str):  specify type of gridworld task
+                                possible env_types = ['none', 'bar','room','tmaze', 'triple_reward']
+                                    none: open field task. can also include rho option in grid_params to specify density
+                                                of randomly distributed obstacles in the environment through which the agent
+                                                cannot pass
+                                    bar: a solid line of obstacles running horizontally through the environment with a
+                                                single space to pass through on either side
+                                    room: space is divided into quadrants which can be accessed only through a single
+                                               space from an adjacent quadrant
+                                    tmaze: standard tmaze task
+                                    triple_reward: gridworld task with presence of multiple rewards
+                                                        *** need to check this works with all environments // should it be removed?
+        optional arguments
+            rho (float, [0,1) ): density of obstacles randomly distributed in environment.
+            walls (bool):        whether gridworld has external perimeter
+            port_shift (str):    possible port shift types = ['none', 'equal', 'left', 'right']
+                                    none: reward location does not change
+                                    equal: equal probability of reward moving to other possible locations
+                                    left: proportionally greater probability of reward moving leftward upon change
+                                    right: proportionally greater probability of reward moving rightward upon change
+
+        other kwargs not specified in grid_params dictionary
+            barheight (int):     row of grid to be obstructed
+                                    only used if maze_type == 'bar'
+
+            actionlist (list): what actions are available for the agent to take
+                                by default these are designed after the tripoke task in which 'stay' (no change of state)
+                                and 'poke' (necessary action to obtain reward) are included. can be modified to only have
+                                4 actions: up/down/right/left as in simpler tasks
+            rwd_action (str, element of actionlist): which action when taken in the reward state will yield a reward
+            pen (float): penalization for steps taken without rewarded action
+        '''
+
+        # State Representation
         self.x 				= grid_params['x_width']
-        self.rho 			= grid_params['rho']
-        self.bound 			= grid_params['walls']
+        self.y 				= grid_params['y_height']
+
         self.maze_type 		= grid_params['maze_type']
-        self.port_shift		= grid_params['port_shift']
 
-        self.actionlist 	= kwargs.get('actionlist', ['N', 'E', 'W', 'S', 'stay', 'poke'])
-        self.rwd_action 	= kwargs.get('rewarded_action', 'poke')
 
-        self.step_penalization = kwargs.get('pen', 0)
+        # optional additional args for state representation
+        ### ************************* is there a more pythonic way to do this??? ******************************
+        if 'rho' in grid_params.keys():
+            self.rho 		= grid_params['rho']
+        else:
+            self.rho        = 0
+        if 'walls' in grid_params.keys():
+            self.bound 		= grid_params['walls']
+        else:
+            self.bound      = False
+        if 'port_shift' in grid_params.keys():
+            self.port_shift	= grid_params['port_shift']
+        else:
+            self.port_shift = 'none'
 
-        self.barheight 		= kwargs.get('barheight',11)
+        if self.maze_type == 'bar':
+            self.barheight 	= kwargs.get('barheight',11)
 
+        # Generate the map of permissible occupancy locations
         self.grid, self.useable, self.obstacles = self.grid_maker()
 
+
+
+        # Actions Representation
+        self.actionlist 	= kwargs.get('actionlist', ['N', 'E', 'W', 'S', 'stay', 'poke'])
+
+        # Reward Representation
+        self.rwd_action 	= kwargs.get('rewarded_action', 'poke')
+        self.step_penalization = kwargs.get('pen', 0)
+
+
+        ## ************* is there a better way to do this? ******************************
         if self.maze_type == 'tmaze':
             self.rwd_loc 		= [self.useable[0]]
 
@@ -40,21 +106,15 @@ class gridworld(object):
             self.rwd_loc 		= [(self.x-1, 0), (self.x-1, self.y-1), (0, self.y-1)]
             self.orig_rwd_loc 	= [(self.x-1, 0), (self.x-1, self.y-1), (0, self.y-1)]
             self.starter 		= kwargs.get('t_r_start', (0,0))
+            self.start_loc      = self.starter
 
         else:
             rwd_choice 			= np.random.choice(len(self.useable))
             self.rwd_loc 		= [self.useable[rwd_choice]]
             self.orig_rwd_loc 	= []
 
-        start_choice 	= np.random.choice(len(self.useable))
-        self.start_loc 	= self.loc_picker()
-        print(self.start_loc) #self.useable[start_choice]
-        if self.maze_type=='triple_reward':
-            self.start_loc = self.starter
-
-        self.reset()
-
-        self.empty_map = self.make_map(self.grid, False)
+        # agent is initialized in a random location from the available states
+        self.reset() # <-- agent's starting location function is called within reset()
 
         ## OpenAI gym bits
         self.action_space = action_wrapper(self.actionlist)
@@ -71,15 +131,14 @@ class gridworld(object):
 
         env_types = ['none', 'bar','room','tmaze', 'triple_reward']
         if self.maze_type not in env_types:
-            print("Environment Type '{0}' Not Recognized. \nOptions are: {1} \nDefault is Open Field (maze_type = 'none')".format(self.maze_type, env_types))
+            print(f"Environment Type '{self.maze_type}' Not Recognized. \nOptions are: {env_types} \nDefault is Open Field (maze_type = 'none')")
 
         grid = np.zeros((self.y,self.x), dtype=int)
 
         if self.maze_type == 'bar':
             self.rho = 0
-            barheight = self.barheight
             for i in range(self.x-4):
-                grid[barheight][i+2] = 1
+                grid[self.barheight][i+2] = 1
 
         elif self.maze_type == 'room':
             self.rho = 0
@@ -147,33 +206,24 @@ class gridworld(object):
 
         return grid, useable_grid, obstacles
 
-    def make_map(self, grid, pol=False):
-        '''
-        Set up a map for the agent to record its policy and value
-            estimates as it navigates the grid
-        '''
-        if pol:
-            pv_map = np.zeros(grid.shape, dtype=[('N', 'f8'), ('E', 'f8'),('W', 'f8'), ('S', 'f8'),('stay', 'f8'), ('poke', 'f8')])
-            pv_map[grid == 1] = (np.nan,np.nan,np.nan,np.nan,np.nan,np.nan)
-
-        else:
-            pv_map = np.zeros(grid.shape)
-            pv_map[grid == 1] = np.nan
-        return pv_map
-
     def loc_picker(self):
         start_buffer = 5
-        a1 = np.random.choice([-1,1])
-        start_x = self.rwd_loc[0][0] + np.random.choice([-1, 1])*np.random.choice(start_buffer)
-        if start_x < 0:
-            start_x = 0
-        elif start_x > self.grid.shape[1] - 1:
-            start_x = self.grid.shape[1] - 1
-        start_y = self.rwd_loc[0][1] + np.random.choice([-1, 1])*np.random.choice(start_buffer)
-        if start_y < 0:
-            start_y = 0
-        elif start_y > self.grid.shape[1] - 1:
-            start_y = self.grid.shape[1] - 1
+        get_start_loc = True
+        while get_start_loc:
+            start_x = self.rwd_loc[0][0] + np.random.choice([-1, 1])*np.random.choice(start_buffer)
+            if start_x < 0:
+                start_x = 0
+            elif start_x > self.grid.shape[1] - 1:
+                start_x = self.grid.shape[1] - 1
+
+            start_y = self.rwd_loc[0][1] + np.random.choice([-1, 1])*np.random.choice(start_buffer)
+            if start_y < 0:
+                start_y = 0
+            elif start_y > self.grid.shape[1] - 1:
+                start_y = self.grid.shape[1] - 1
+            if (start_x, start_y) in self.useable:
+                print('got one')
+                get_start_loc = False
 
         return (start_x, start_y)
 
@@ -218,7 +268,7 @@ class gridworld(object):
 
     def get_reward(self, action):
         if (action == 'poke') & (self.cur_state in self.rwd_loc):
-            self.rwd = 1
+            self.rwd = 10
             self.done = True
             if self.maze_type == 'tmaze':
                 if self.port_shift in ['equal', 'left', 'right']:
@@ -272,6 +322,23 @@ class gridworld(object):
         done = False
         info = None
         return observation, self.rwd, done, info
+
+    ############## JUNKYARD TBD ##############################
+    def make_map(self, grid, pol=False):
+        '''
+        Set up a map for the agent to record its policy and value
+            estimates as it navigates the grid
+        '''
+        if pol:
+            pv_map = np.zeros(grid.shape, dtype=[('N', 'f8'), ('E', 'f8'),('W', 'f8'), ('S', 'f8'),('stay', 'f8'), ('poke', 'f8')])
+            pv_map[grid == 1] = (np.nan,np.nan,np.nan,np.nan,np.nan,np.nan)
+
+        else:
+            pv_map = np.zeros(grid.shape)
+            pv_map[grid == 1] = np.nan
+        return pv_map
+
+
 
 class action_wrapper(object):
     def __init__(self, actionlist):
