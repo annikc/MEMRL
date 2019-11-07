@@ -16,10 +16,10 @@ import numpy as np
 np.random.seed(12345)
 class gridworld(object):
     '''
-    State representation defined in  __init__()
-    Action representation defined in move()
-    Reward function defined in       get_reward()
-    Step function 
+    State representation defined in     __init__(); loc_picker()
+    Action representation defined in    move()
+    Reward function defined in          get_reward(); set_rwd(); shift_rwd()
+    Step function defined in            step()
 
     '''
     def __init__(self, grid_params, **kwargs):
@@ -66,7 +66,6 @@ class gridworld(object):
 
         self.maze_type 		= grid_params['maze_type']
 
-
         # optional additional args for state representation
         ### ************************* is there a more pythonic way to do this??? ******************************
         if 'rho' in grid_params.keys():
@@ -87,8 +86,6 @@ class gridworld(object):
 
         # Generate the map of permissible occupancy locations
         self.grid, self.useable, self.obstacles = self.grid_maker()
-
-
 
         # Actions Representation
         self.actionlist 	= kwargs.get('actionlist', ['N', 'E', 'W', 'S', 'stay', 'poke'])
@@ -114,7 +111,8 @@ class gridworld(object):
             self.orig_rwd_loc 	= []
 
         # agent is initialized in a random location from the available states
-        self.reset() # <-- agent's starting location function is called within reset()
+        around_reward = kwargs.get('around_reward', False)
+        self.reset(around_reward=around_reward) # <-- agent's starting location function is called within reset()
 
         ## OpenAI gym bits
         self.action_space = action_wrapper(self.actionlist)
@@ -122,19 +120,20 @@ class gridworld(object):
     def grid_maker(self):
         '''
         Default grid is empty -- all squares == 0
-        If env_type given, set some squares to == 1
-                (agent cannot occupy these squares)
-        In the case of the T maze, set all squares =1
-                and just rewrite which squares the agent may
-                occupy (i.e. grid = 0 at these points)
+        If env_type given, set some squares to == 1 (agent cannot occupy these squares)
+        In the case of the T maze, set all squares =1 and just rewrite which squares the agent may occupy
+        (i.e. grid = 0 at these points)
         '''
 
         env_types = ['none', 'bar','room','tmaze', 'triple_reward']
+        # Check that maze type is valid
         if self.maze_type not in env_types:
             print(f"Environment Type '{self.maze_type}' Not Recognized. \nOptions are: {env_types} \nDefault is Open Field (maze_type = 'none')")
 
+        # initialize empty grid
         grid = np.zeros((self.y,self.x), dtype=int)
 
+        # set up obstables for different grid types
         if self.maze_type == 'bar':
             self.rho = 0
             for i in range(self.x-4):
@@ -206,32 +205,36 @@ class gridworld(object):
 
         return grid, useable_grid, obstacles
 
-    def loc_picker(self):
-        start_buffer = 5
-        get_start_loc = True
-        while get_start_loc:
-            start_x = self.rwd_loc[0][0] + np.random.choice([-1, 1])*np.random.choice(start_buffer)
-            if start_x < 0:
-                start_x = 0
-            elif start_x > self.grid.shape[1] - 1:
-                start_x = self.grid.shape[1] - 1
+    def loc_picker(self, around_reward = False):
+        if around_reward:
+            # pick starting location for agent in radius around reward location
+            start_buffer = 5  # radius around reward
+            get_start_loc = True
+            while get_start_loc:
+                start_x = self.rwd_loc[0][0] + np.random.choice([-1, 1])*np.random.choice(start_buffer)
+                if start_x < 0:
+                    start_x = 0
+                elif start_x > self.grid.shape[1] - 1:
+                    start_x = self.grid.shape[1] - 1
 
-            start_y = self.rwd_loc[0][1] + np.random.choice([-1, 1])*np.random.choice(start_buffer)
-            if start_y < 0:
-                start_y = 0
-            elif start_y > self.grid.shape[1] - 1:
-                start_y = self.grid.shape[1] - 1
-            if (start_x, start_y) in self.useable:
-                print('got one')
-                get_start_loc = False
+                start_y = self.rwd_loc[0][1] + np.random.choice([-1, 1])*np.random.choice(start_buffer)
+                if start_y < 0:
+                    start_y = 0
+                elif start_y > self.grid.shape[1] - 1:
+                    start_y = self.grid.shape[1] - 1
+
+                if (start_x, start_y) in self.useable:
+                    get_start_loc = False
+        else: # pick a random starting location for agent within the useable spaces
+            get_start = np.random.choice(len(self.useable))
+            start_x = self.useable[get_start][0]
+            start_y = self.useable[get_start][1]
 
         return (start_x, start_y)
 
-    def reset(self):
-        #start_choice = np.random.choice(len(self.useable))
-        #self.start_loc = self.useable[start_choice]
-        self.start_loc = self.loc_picker()
-
+    def reset(self, **kwargs):
+        around_reward = kwargs.get('around_reward', False)
+        self.start_loc = self.loc_picker(around_reward=around_reward)
 
         self.cur_state = self.start_loc
         self.last_action = 'NA'
@@ -322,21 +325,6 @@ class gridworld(object):
         done = False
         info = None
         return observation, self.rwd, done, info
-
-    ############## JUNKYARD TBD ##############################
-    def make_map(self, grid, pol=False):
-        '''
-        Set up a map for the agent to record its policy and value
-            estimates as it navigates the grid
-        '''
-        if pol:
-            pv_map = np.zeros(grid.shape, dtype=[('N', 'f8'), ('E', 'f8'),('W', 'f8'), ('S', 'f8'),('stay', 'f8'), ('poke', 'f8')])
-            pv_map[grid == 1] = (np.nan,np.nan,np.nan,np.nan,np.nan,np.nan)
-
-        else:
-            pv_map = np.zeros(grid.shape)
-            pv_map[grid == 1] = np.nan
-        return pv_map
 
 
 
