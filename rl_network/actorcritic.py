@@ -437,7 +437,7 @@ def snapshot(maze, agent):
 	# cycle through all available states
 	for i in maze.useable:
 		maze.cur_state = i
-		state = torch.Tensor(sg.get_frame(maze))
+		state = torch.Tensor(maze.observation)
 		policy_, value_ = agent(state)[0:2]
 
 		val_array[i[1], i[0]] = value_.item()
