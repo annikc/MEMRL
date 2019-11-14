@@ -5,7 +5,7 @@ gridworld class defines the environment and available actions, reward function, 
 gymworld makes step function more consistent with the OpenAI gymworld
 
 Author: Annik Carson
--- Oct 2019
+-- November 2019
 '''
 
 # =====================================
@@ -13,6 +13,8 @@ Author: Annik Carson
 # =====================================
 from __future__ import division, print_function
 import numpy as np
+from gym import spaces
+
 np.random.seed(12345)
 class gridworld(object):
     '''
@@ -63,9 +65,8 @@ class gridworld(object):
         # State Representation
         self.x 				= grid_params['x_width']
         self.y 				= grid_params['y_height']
-
         self.maze_type 		= grid_params['maze_type']
-
+        self.observation_space = spaces.Box(low=0, high=1, shape=(self.y, self.x, 3))
         # optional additional args for state representation
         ### ************************* is there a more pythonic way to do this??? ******************************
         if 'rho' in grid_params.keys():
@@ -89,7 +90,7 @@ class gridworld(object):
 
         # Actions Representation
         self.actionlist 	= kwargs.get('actionlist', ['N', 'E', 'W', 'S', 'stay', 'poke'])
-
+        self.action_space = spaces.Discrete(len(self.actionlist))
         # Reward Representation
         self.rwd_action 	= kwargs.get('rewarded_action', 'poke')
         self.step_penalization = kwargs.get('pen', 0)
@@ -232,20 +233,13 @@ class gridworld(object):
 
         return (start_x, start_y)
 
-    def reset(self, **kwargs):
-        around_reward = kwargs.get('around_reward', False)
-        self.start_loc = self.loc_picker(around_reward=around_reward)
-
-        self.cur_state = self.start_loc
-        self.last_action = 'NA'
-        self.rwd = 0
-
-        self.done = False
-        if self.maze_type == 'triple_reward':
-            self.start_loc = self.starter
-        self.reward_tally = {}
-        for i in self.orig_rwd_loc:
-            self.reward_tally[i] = 0
+    def set_rwd(self, rwd_loc):
+        if not isinstance(rwd_loc, list):
+            print("must be list of tuples")
+        self.rwd_loc = rwd_loc
+        if self.maze_type is not 'triple_reward':
+            for i in self.rwd_loc:
+                self.orig_rwd_loc.append(i)
 
     def move(self, action):
         if action == 'N':
@@ -269,6 +263,22 @@ class gridworld(object):
         self.last_action = action
         return self.cur_state
 
+    def reset(self, **kwargs):
+        around_reward = kwargs.get('around_reward', False)
+        self.start_loc = self.loc_picker(around_reward=around_reward)
+        self.cur_state = self.start_loc
+        self.observation = self.get_frame()
+
+        self.last_action = 'NA'
+        self.rwd = 0
+
+        self.done = False
+        if self.maze_type == 'triple_reward':
+            self.start_loc = self.starter
+        self.reward_tally = {}
+        for i in self.orig_rwd_loc:
+            self.reward_tally[i] = 0
+
     def get_reward(self, action):
         if (action == 'poke') & (self.cur_state in self.rwd_loc):
             self.rwd = 10
@@ -281,14 +291,6 @@ class gridworld(object):
         else:
             self.rwd = self.step_penalization
             self.done = False
-
-    def set_rwd(self, rwd_loc):
-        if not isinstance(rwd_loc, list):
-            print("must be list of tuples")
-        self.rwd_loc = rwd_loc
-        if self.maze_type is not 'triple_reward':
-            for i in self.rwd_loc:
-                self.orig_rwd_loc.append(i)
 
     def shift_rwd(self,shift):
         port_rwd_probabilities = [0.333, 0.333, 0.333]
@@ -320,13 +322,29 @@ class gridworld(object):
 
     def step(self,action):
         action_string = self.actionlist[action]
-        observation = self.move(action_string)
-        self.cur_state = observation
+        self.cur_state = self.move(action_string)
+        self.observation = self.get_frame()
         done = False
         info = None
-        return observation, self.rwd, done, info
+        return self.observation, self.rwd, done, info
 
+    def get_frame(self, **kwargs):
+        agent_location  = kwargs.get('agtlocation', self.cur_state)
+        reward_location = kwargs.get('rwdlocation', self.rwd_loc[0])
+        state_type      = kwargs.get('state_type', 'conv')
+        #grid
+        grid = self.grid
+        #location of reward
+        rwd_position = np.zeros_like(grid)
+        rwd_position[reward_location[1], reward_location[0]] = 1
+        #location of agent
+        agt_position = np.zeros_like(grid)
+        agt_position[agent_location[1], agent_location[0]] = 1
 
+        if state_type == 'pcs':
+            return np.array((grid, rwd_position, agt_position)) #np.transpose(np.array((grid, rwd_position, agt_position)),axes=[1,2,0])
+        else:
+            return np.array([(grid, rwd_position, agt_position)])
 
 class action_wrapper(object):
     def __init__(self, actionlist):

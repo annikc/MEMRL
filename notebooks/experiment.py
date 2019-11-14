@@ -8,6 +8,47 @@ import sys
 sys.path.insert(0,'../rl_network/'); import actorcritic as ac;  import stategen as sg
 sys.path.insert(0,'../memory/'); import episodic as ec
 
+
+
+def gen_input(maze, agt_dictionary, **kwargs):
+    state_type = kwargs.get('state_type', agt_dictionary['state_type'])
+    if state_type == 'pcs':
+        # place cell parameters
+        num_pc = 1000
+        fwhm = 0.05
+        pcs = PlaceCells(num_cells=num_pc, grid=maze, fwhm=fwhm)
+
+        agt_dictionary['pcs'] = pcs
+        agt_dictionary['input_dims'] = num_pc
+        agt_dictionary['hid_types']  = ['linear']
+        agt_dictionary['hid_dims']   = [500]
+
+
+    elif state_type == 'conv':
+        num_channels = 3
+        agt_dictionary['num_channels'] = num_channels
+        if maze.bound:
+            agt_dictionary['input_dims'] = (maze.y+2, maze.x+2, agt_dictionary['num_channels'])
+        else:
+            agt_dictionary['input_dims'] = (maze.y, maze.x, agt_dictionary['num_channels'])
+
+
+            hidden_layer_types = kwargs.get('hid_types', ['conv', 'pool', 'linear'])
+        agt_dictionary['hid_types'] = hidden_layer_types
+        for ind, i in enumerate(hidden_layer_types):
+            if ind == 0:
+                agt_dictionary['hid_dims'] = [ac.conv_output(agt_dictionary['input_dims'])]
+            else:
+                if i == 'conv' or i == 'pool':
+                    agt_dictionary['hid_dims'].append(ac.conv_output(agt_dictionary['hid_dims'][ind-1]))
+                elif i == 'linear':
+                    agt_dictionary['hid_dims'].append(agt_dictionary['lin_dims'])
+
+    agt_dictionary['maze'] = maze
+
+    return agt_dictionary
+
+
 def run_full_trials(run_dict, use_EC = False, **kwargs):
     NUM_TRIALS = run_dict['NUM_TRIALS']
     NUM_EVENTS = run_dict['NUM_EVENTS']
@@ -48,7 +89,7 @@ def run_full_trials(run_dict, use_EC = False, **kwargs):
 
             maze.reset()
 
-            state = torch.Tensor(sg.get_frame(maze))
+            state = torch.Tensor(maze.observation)
             MF.reinit_hid() #reinit recurrent hidden layers
 
             for event in range(NUM_EVENTS):
@@ -106,7 +147,7 @@ def run_full_trials(run_dict, use_EC = False, **kwargs):
                 MF.rewards.append(reward)
 
                 # because we need to include batch size of 1
-                state = torch.Tensor(sg.get_frame(maze))
+                state = torch.Tensor(maze.observation)
                 reward_sum += reward
 
                 v_last = value
@@ -143,7 +184,7 @@ def run_full_trials(run_dict, use_EC = False, **kwargs):
             visited_locs = []
 
             maze.reset()
-            state = torch.Tensor(sg.get_frame(maze))
+            state = torch.Tensor(maze.observation)
             MF.reinit_hid() #reinit recurrent hidden layers
             for event in range(NUM_EVENTS):
                 policy_, value_ = MF(state, agent_params['temperature'])[0:2]
@@ -162,7 +203,7 @@ def run_full_trials(run_dict, use_EC = False, **kwargs):
 
                 #compute eligibility trace/rpe approximation
                 delta = reward + agent_params['gamma']*value - v_last
-                state = torch.Tensor(sg.get_frame(maze))
+                state = torch.Tensor(maze.observation)
                 run_dict['rpe'][maze.cur_state[1]][maze.cur_state[0]] = delta
 
                 reward_sum += reward
@@ -229,7 +270,7 @@ def run_truncated_trials(run_dict, use_EC=False, **kwargs):
 
             maze.reset()
 
-            state = torch.Tensor(sg.get_frame(maze))
+            state = torch.Tensor(maze.observation)
             MF.reinit_hid() #reinit recurrent hidden layers
             for event in range(NUM_EVENTS):
                 if trial is not 0:
@@ -257,7 +298,7 @@ def run_truncated_trials(run_dict, use_EC=False, **kwargs):
                         else:
                             pol_flag = 'EC'
                         choice, policy, value = ac.select_ec_action(MF, policy_, value_, pol)
-                        print(maze.cur_state, pol_flag, policy.numpy())
+                        #print(maze.cur_state, pol_flag, policy.numpy())
                     else:
                         choice, policy, value = ac.select_action(MF,policy_, value_)
 
@@ -272,6 +313,7 @@ def run_truncated_trials(run_dict, use_EC=False, **kwargs):
                 if event < NUM_EVENTS:
                     next_state, reward, done, info = maze.step(choice)
 
+
                 if event is not 0:
                     if reward == 1:
                         tslr = 0
@@ -285,7 +327,7 @@ def run_truncated_trials(run_dict, use_EC=False, **kwargs):
                 MF.rewards.append(reward)
 
                 # because we need to include batch size of 1
-                state = torch.Tensor(sg.get_frame(maze))
+                state = torch.Tensor(maze.observation)
                 reward_sum += reward
 
                 v_last = value
@@ -332,7 +374,7 @@ def run_truncated_trials(run_dict, use_EC=False, **kwargs):
             visited_locs = []
 
             maze.reset()
-            state = torch.Tensor(sg.get_frame(maze))
+            state = torch.Tensor(maze.observation)
             MF.reinit_hid() #reinit recurrent hidden layers
             for event in range(NUM_EVENTS):
                 policy_, value_ = MF(state, agent_params['temperature'])[0:2]
@@ -342,13 +384,14 @@ def run_truncated_trials(run_dict, use_EC=False, **kwargs):
 
                 if event < NUM_EVENTS:
                     next_state, reward, done, info = maze.step(choice)
+
                 if reward != 1:
                     reward = penalization
                 MF.rewards.append(reward)
 
                 #compute eligibility trace/rpe approximation
                 delta = reward + agent_params['gamma']*value - v_last
-                state = torch.Tensor(sg.get_frame(maze))
+                state = torch.Tensor(maze.observation)
                 run_dict['rpe'][maze.cur_state[1]][maze.cur_state[0]] = delta
 
                 reward_sum += reward
