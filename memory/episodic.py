@@ -98,16 +98,9 @@ class ep_mem(object):
 		return policy
 
 	def make_pvals(self, p, **kwargs):
-		policy_ = kwargs.get('pol_id', None)
-		mfc = kwargs.get('mfc', 1)
 		envelope = kwargs.get('envelope', self.memory_envelope)
-		if policy_ is not None:
-			if policy_ == 'MF':
-				return np.round(1 / np.cosh(p / envelope), 8)
-			elif policy_ == 'EC':
-				return mfc*np.round(1 / np.cosh(p / envelope), 8)
-		else:
-			return np.round(1 / np.cosh(p / envelope), 8)
+
+		return np.round(1 / np.cosh(p / envelope), 8)
 
 	# retrieve relevant items from memory
 	def cosine_sim(self, key):
