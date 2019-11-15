@@ -93,6 +93,7 @@ class gridworld(object):
         self.action_space = spaces.Discrete(len(self.actionlist))
         # Reward Representation
         self.rwd_action 	= kwargs.get('rewarded_action', 'poke')
+        self.rwd_mag        = kwargs.get('reward_size', 1)
         self.step_penalization = kwargs.get('pen', 0)
 
 
@@ -281,7 +282,7 @@ class gridworld(object):
 
     def get_reward(self, action):
         if (action == 'poke') & (self.cur_state in self.rwd_loc):
-            self.rwd = 10
+            self.rwd = self.rwd_mag
             self.done = True
             if self.maze_type == 'tmaze':
                 if self.port_shift in ['equal', 'left', 'right']:
