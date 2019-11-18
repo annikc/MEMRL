@@ -21,7 +21,6 @@ from os.path import isfile, join
 
 import imageio
 
-
 # =====================================
 #              FUNCTIONS
 # =====================================
@@ -38,21 +37,6 @@ def softmax(x,T=1):
 	 e_x = np.exp((x - np.max(x))/T)
 	 return e_x / e_x.sum(axis=0) # only difference
 
-### If using gridworld, get value and policy at each state and store in an array
-# can get rid of this or move to another fil if not useful to the general AC use case
-def snapshot(maze, agent):
-	val_array = np.empty(maze.grid.shape)
-	pol_array = np.zeros(maze.grid.shape, dtype=[('N', 'f8'), ('E', 'f8'), ('W', 'f8'), ('S', 'f8'), ('stay', 'f8'), ('poke', 'f8')])
-	# cycle through all available states
-	for i in maze.useable:
-		maze.cur_state = i
-		state = torch.Tensor(maze.observation)
-		policy_, value_ = agent(state)[0:2]
-
-		val_array[i[1], i[0]] = value_.item()
-		pol_array[i[1], i[0]] = tuple(policy_.detach().numpy()[0])
-
-	return val_array, pol_array
 
 def make_arrows(action, probability):
 	'''

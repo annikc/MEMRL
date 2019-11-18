@@ -445,6 +445,8 @@ def snapshot(maze, agent):
 
 	return val_array, pol_array
 
+
+
 def mem_snapshot(maze, EC, trial_timestamp,**kwargs):
 	envelope = kwargs.get('decay', 50)
 	mpol_array = np.zeros(maze.grid.shape, dtype=[('N', 'f8'), ('E', 'f8'), ('W', 'f8'), ('S', 'f8'), ('stay', 'f8'), ('poke', 'f8')])
