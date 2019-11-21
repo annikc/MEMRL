@@ -78,6 +78,7 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
     save_data  = kwargs.get('save', True)
 
     blocktime = time.time()
+    print_trial_freq = 100
 
     run_dict['total_loss']   = [[],[]]
     run_dict['total_reward'] = []
@@ -89,6 +90,7 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
     if use_EC:
         EC = agent_params['EC']
         EC.reset_cache()
+        print_trial_freq = 1
 
     reward    = 0
     timestamp = 0
@@ -163,6 +165,7 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
 
         if use_EC:
             p_loss, v_loss = ac.finish_trial(MF,agent_params['gamma'],opt,cache=EC, buffer=memory_buffer)
+            print(f'{len(EC.cache_list)}/{EC.cache_limit}')
         else:
             p_loss, v_loss = ac.finish_trial(MF,agent_params['gamma'],opt)
 
@@ -171,7 +174,7 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
             run_dict['total_loss'][1].append(v_loss.item())
             run_dict['total_reward'].append(reward_sum)
 
-        if trial ==0 or trial%100==0 or trial == NUM_TRIALS-1:
+        if trial ==0 or trial%print_trial_freq==0 or trial == NUM_TRIALS-1:
             print("[{0}]  Trial {1} TotRew = {2} ({3:.3f}s)".format(time.strftime("%H:%M:%S", time.localtime()), trial+1, reward_sum,time.time()-blocktime)) #print("[{0}]  Trial {1} total reward = {2} (Avg {3:.3f})".format(time.strftime("%H:%M:%S", time.localtime()), trial, reward_sum, float(reward_sum)/float(NUM_EVENTS)), "Block took {0:.3f}".format(time.time()-blocktime))
             blocktime = time.time()
 

@@ -323,7 +323,7 @@ def finish_trial(model, discount_factor, optimizer, **kwargs):
 
 			mem_dict['activity'] = s_
 			mem_dict['action']   = a_
-			mem_dict['delta']    = rpe.item()
+			mem_dict['delta']    = r ## trial change
 			mem_dict['timestamp']= t_
 			mem_dict['readable'] = rdbl
 			mem_dict['trial']    = trial
@@ -436,10 +436,9 @@ def snapshot(maze, agent):
 	pol_array = np.zeros(maze.grid.shape, dtype=[('N', 'f8'), ('E', 'f8'), ('W', 'f8'), ('S', 'f8'), ('stay', 'f8'), ('poke', 'f8')])
 	# cycle through all available states
 	for i in maze.useable:
-		maze.cur_state = i
-		state = torch.Tensor(maze.observation)
+		#maze.cur_state = i
+		state = torch.Tensor(maze.get_frame(agtlocation=i))
 		policy_, value_ = agent(state)[0:2]
-
 		val_array[i[1], i[0]] = value_.item()
 		pol_array[i[1], i[0]] = tuple(policy_.detach().numpy()[0])
 

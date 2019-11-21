@@ -79,23 +79,24 @@ class ep_mem(object):
 		confidence score = scaled by cosine sim
 
 		'''
-		#specify decay envelope for memory relevance calculation
-		envelope = kwargs.get('decay', self.memory_envelope)
+		if len(self.cache_list) == 0:
+			random_policy = softmax(np.zeros(6))
+			return random_policy
+		else:
+			#specify decay envelope for memory relevance calculation
+			envelope = kwargs.get('decay', self.memory_envelope)
 
-		# returns the most similar key, as well as the cosine similarity measure
-		lin_act, similarity = self.cosine_sim(key)
+			# returns the most similar key, as well as the cosine similarity measure
+			lin_act, similarity = self.cosine_sim(key)
 
 
-		memory       = np.nan_to_num(self.cache_list[lin_act][0])
+			memory       = np.nan_to_num(self.cache_list[lin_act][0])
 
-		deltas       = memory[:,0]
-		times        = abs(timestep - memory[:,1])
-		pvals 		 = self.make_pvals(times, envelope=envelope)
-		policy = softmax( similarity*np.multiply(deltas, pvals), T=1) #np.multiply(sim,deltas))
-		prints = kwargs.get('prints', False)
-		if prints:
-			print('policy:\n', policy)
-		return policy
+			deltas       = memory[:,0]
+			times        = abs(timestep - memory[:,1])
+			pvals 		 = self.make_pvals(times, envelope=envelope)
+			policy = softmax( similarity*np.multiply(deltas, pvals), T=1) #np.multiply(sim,deltas))
+			return policy
 
 	def make_pvals(self, p, **kwargs):
 		envelope = kwargs.get('envelope', self.memory_envelope)
