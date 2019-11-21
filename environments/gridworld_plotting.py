@@ -122,7 +122,8 @@ def plot_valmap(maze, value_array, save=False, **kwargs):
 	vmin, vmax = kwargs.get('p_range', [0,1])
 	cmap = plt.cm.Spectral_r
 	cNorm = colors.Normalize(vmin=vmin, vmax=vmax)
-
+	for i in maze.obstacles:
+		value_array[i[1], i[0]] = np.nan
 	cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
 	ax1.pcolor(value_array, cmap=cmap, vmin = vmin, vmax = vmax)
 
