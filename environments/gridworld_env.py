@@ -83,7 +83,7 @@ class gridworld(object):
             self.port_shift = 'none'
 
         if self.maze_type == 'bar':
-            self.barheight 	= kwargs.get('barheight',11)
+            self.barheight 	= kwargs.get('barheight', grid_params['barheight'])
 
         # Generate the map of permissible occupancy locations
         self.grid, self.useable, self.obstacles = self.grid_maker()
@@ -94,7 +94,7 @@ class gridworld(object):
         # Reward Representation
         self.rwd_action 	= kwargs.get('rewarded_action', 'poke')
         self.rwd_mag        = kwargs.get('reward_size', 1)
-        self.step_penalization = kwargs.get('pen', 0)
+        self.step_penalization = kwargs.get('pen', grid_params['step_penaliz'])
 
 
         ## ************* is there a better way to do this? ******************************
