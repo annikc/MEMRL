@@ -12,10 +12,12 @@ to do
 '''
 # write a function for runs with episodic mem and without -- take use_EC as a param
 # assume just for conv inputs
+from __future__ import division
 import numpy as np
 import time
 import torch
 import sys
+
 sys.path.insert(0,'../rl_network/'); import actorcritic as ac;  import stategen as sg
 sys.path.insert(0,'../memory/'); import episodic as ec
 
@@ -94,7 +96,9 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
     reward    = 0
     timestamp = 0
 
-    ploss_scale = 0
+    ploss_scale = 0 # this is equivalent to calculating MF_confidence = sech(0) = 1
+    mfc_env =  ec.calc_env(halfmax=3.12) # 1.04 was the calculated standard deviation of policy loss after learning on open field gridworld task **** may need to change for different tasks
+    recency_env = ec.calc_env(halfmax = 20)
 
     for trial in range(NUM_TRIALS):
         # empty memory buffer
@@ -103,6 +107,13 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
         reward_sum   = 0
         # reset time since last reward
         tslr      = np.nan_to_num(np.inf)
+
+        if use_EC:
+            MF_cs =  EC.make_pvals(ploss_scale, envelope=mfc_env, shift = (maze.x/2)+(maze.y/2) ) #EC.make_pvals(tslr)
+            print(MF_cs, "confidence in model free")
+            if trial == 0:
+                print((maze.x/2)+(maze.y/2))
+
 
         # reset environment
         maze.reset()
@@ -119,14 +130,12 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
             if use_EC:
                 # get activity of linear layer for EC dict key
                 lin_act = tuple(np.round(lin_act_.data[0].numpy(),4))
-
-                MF_cs =  EC.make_pvals(ploss_scale) #EC.make_pvals(tslr)
                 pol_choice = np.random.choice([0,1], p=[MF_cs, 1-MF_cs])
                 #policies = ['mf_pol', 'ec_pol']
                 #print("chose policy: " ,policies[pol_choice])
                 if pol_choice == 1:
                     # get policy from EC
-                    pol = torch.from_numpy(EC.recall_mem(lin_act, timestamp, env=150)) ## check this env parameter -----------------------------------
+                    pol = torch.from_numpy(EC.recall_mem(lin_act, timestamp, env=recency_env)) ## check this env parameter -----------------------------------
 
                     choice, policy, value = ac.select_ec_action(MF, policy_, value_, pol)
                 else:
