@@ -129,3 +129,12 @@ def plot_softmax(x):
 	y = softmax(x)    
 	axarr[1].bar(np.arange(len(x)), y) 
 	plt.show()
+
+def calc_env(halfmax):
+	'''
+	:param halfmax: x value for which envelope will give sech(x/env) = 0.5
+	:return: envelope value
+	e^(x/env) = (2+np.sqrt(3)) for sech(x/env) = 0.5
+	Hence x/env = np.log(2+np.sqrt(3)) and env = x/ np.log(2+np.sqrt(3))
+	'''
+	return int(halfmax/np.log(2+np.sqrt(3)))
