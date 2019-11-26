@@ -2,12 +2,11 @@
 to do
 - in order to test moved reward, need to work on
     - recall of memory functions
-    - cosh function / envelopes
+        - test different envelopes to see what is most performant
     - weighting with similarity score?
     - bootstrapping from EC to MF
-        - function that controls switch from EC to MF?
-        - also a decay function, how to tune envelope parameter?
-
+        - to evaluate which policy to use, make it 1/pol_loss
+            how do we calculate moment to moment policy loss? or just use from last trial
 - genetic algorithms
 
 '''
@@ -95,6 +94,8 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
     reward    = 0
     timestamp = 0
 
+    ploss_scale = 0
+
     for trial in range(NUM_TRIALS):
         # empty memory buffer
         memory_buffer = [[],[],[],[], trial] # [timestamp, state_t, a_t, readable_state, trial]
@@ -116,24 +117,20 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
             policy_, value_, lin_act_ = MF(state)
 
             if use_EC:
-                '''
-                need a way to get back to using MF when it has learned the new successful strategy
-                    - possibly KLD ( mf_pol, ec_pol ) ?? 
-                    
-                '''
                 # get activity of linear layer for EC dict key
                 lin_act = tuple(np.round(lin_act_.data[0].numpy(),4))
-                # compute confidence in MF prediction
-                MF_cs = EC.make_pvals(tslr)
 
-                # get policy from EC
-                ec_pol = torch.from_numpy(EC.recall_mem(lin_act, timestamp, env=150)) ## check this env parameter -----------------------------------
-                candidate_policies = [policy_, ec_pol]
-
+                MF_cs =  EC.make_pvals(ploss_scale) #EC.make_pvals(tslr)
                 pol_choice = np.random.choice([0,1], p=[MF_cs, 1-MF_cs])
-                pol = candidate_policies[pol_choice]
-                choice, policy, value = ac.select_ec_action(MF, policy_, value_, pol)
+                #policies = ['mf_pol', 'ec_pol']
+                #print("chose policy: " ,policies[pol_choice])
+                if pol_choice == 1:
+                    # get policy from EC
+                    pol = torch.from_numpy(EC.recall_mem(lin_act, timestamp, env=150)) ## check this env parameter -----------------------------------
 
+                    choice, policy, value = ac.select_ec_action(MF, policy_, value_, pol)
+                else:
+                    choice, policy, value = ac.select_action(MF,policy_, value_)
                 # save data to memory buffer
                 memory_buffer[0].append(timestamp)
                 memory_buffer[1].append(lin_act)
@@ -169,6 +166,7 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
         else:
             p_loss, v_loss = ac.finish_trial(MF,agent_params['gamma'],opt)
 
+        ploss_scale = abs(p_loss.item())
         if save_data:
             run_dict['total_loss'][0].append(p_loss.item())
             run_dict['total_loss'][1].append(v_loss.item())
