@@ -459,7 +459,7 @@ def mem_snapshot(maze, EC, trial_timestamp,**kwargs):
 		times        = abs(trial_timestamp - memory[:,1])
 		pvals 		 = EC.make_pvals(times, envelope=envelope)
 
-		policy = softmax(  np.multiply(deltas, pvals), T=1) #np.multiply(sim,deltas))
+		policy = softmax(  np.multiply(deltas, pvals), T=0.1) #np.multiply(sim,deltas))
 		mpol_array[yval][xval] = tuple(policy)
 	return mpol_array
 
