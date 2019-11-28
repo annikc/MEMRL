@@ -109,6 +109,7 @@ def plot_env(maze, save=False):
 	if save:
 		plt.savefig('../data/figures/{}environment.svg'.format(maze.maze_type), format='svg', pad_inches=2)
 
+
 def plot_valmap(maze, value_array, save=False, **kwargs):
 	'''
 	:param maze: the environment object

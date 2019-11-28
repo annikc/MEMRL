@@ -100,8 +100,9 @@ class ep_mem(object):
 
 	def make_pvals(self, p, **kwargs):
 		envelope = kwargs.get('envelope', self.memory_envelope)
+		shift    = kwargs.get('shift', 0)
 
-		return np.round(1 / np.cosh(p / envelope), 8)
+		return np.round(1 / np.cosh(p / envelope) + shift, 8)
 
 	# retrieve relevant items from memory
 	def cosine_sim(self, key):
@@ -137,4 +138,4 @@ def calc_env(halfmax):
 	e^(x/env) = (2+np.sqrt(3)) for sech(x/env) = 0.5
 	Hence x/env = np.log(2+np.sqrt(3)) and env = x/ np.log(2+np.sqrt(3))
 	'''
-	return int(halfmax/np.log(2+np.sqrt(3)))
+	return halfmax/np.log(2+np.sqrt(3))
