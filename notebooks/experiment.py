@@ -64,6 +64,8 @@ def gen_input(maze, agt_dictionary, **kwargs):
 
 
 def run(run_dict, full=False, use_EC = False, **kwargs):
+    rec_mem = kwargs.get('rec_mem', False)
+
     # get run parameters from run_dict
     NUM_TRIALS = run_dict['NUM_TRIALS']
     NUM_EVENTS = run_dict['NUM_EVENTS']
@@ -88,10 +90,11 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
 
     if not full:
         run_dict['trial_length'] = []
-    if use_EC:
+    if rec_mem:
         EC = agent_params['EC']
         EC.reset_cache()
         print_trial_freq = 1
+
 
     reward    = 0
     timestamp = 0
@@ -126,6 +129,7 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
 
             # pass through AC network to get MF policy / value
             policy_, value_, lin_act_ = MF(state)
+            lin_act = tuple(np.round(lin_act_.data[0].numpy(),4))
 
             if use_EC:
                 # get activity of linear layer for EC dict key
@@ -140,6 +144,12 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
                     choice, policy, value = ac.select_ec_action(MF, policy_, value_, pol)
                 else:
                     choice, policy, value = ac.select_action(MF,policy_, value_)
+
+
+            else:
+                choice, policy, value = ac.select_action(MF,policy_, value_)
+
+            if rec_mem:
                 # save data to memory buffer
                 memory_buffer[0].append(timestamp)
                 memory_buffer[1].append(lin_act)
@@ -147,8 +157,6 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
                 memory_buffer[3].append(maze.cur_state)
                 memory_buffer[4] = trial
 
-            else:
-                choice, policy, value = ac.select_action(MF,policy_, value_)
 
             if event < NUM_EVENTS:
                 next_state, reward, done, info = maze.step(choice)
@@ -169,7 +177,7 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
                 if event == NUM_EVENTS-1:
                     run_dict['trial_length'].append(event)
 
-        if use_EC:
+        if rec_mem:
             p_loss, v_loss = ac.finish_trial(MF,agent_params['gamma'],opt,cache=EC, buffer=memory_buffer)
             print(f'{len(EC.cache_list)}/{EC.cache_limit}')
         else:
