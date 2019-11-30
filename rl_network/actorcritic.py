@@ -254,15 +254,73 @@ def conv_output(input_tuple, **kwargs):
 	
 	return (h_out, w_out, channels)
 
+# clean up this nonsense!!!
+def gen_input(maze, agt_dictionary, **kwargs):
+    state_type = kwargs.get('state_type', agt_dictionary['state_type'])
+    if state_type == 'pcs':
+        # place cell parameters
+        num_pc = 1000
+        fwhm = 0.05
+        pcs = PlaceCells(num_cells=num_pc, grid=maze, fwhm=fwhm)
+
+        agt_dictionary['pcs'] = pcs
+        agt_dictionary['input_dims'] = num_pc
+        agt_dictionary['hid_types']  = ['linear']
+        agt_dictionary['hid_dims']   = [500]
+
+
+    elif state_type == 'conv':
+        num_channels = 3
+        agt_dictionary['num_channels'] = num_channels
+        if maze.bound:
+            agt_dictionary['input_dims'] = (maze.y+2, maze.x+2, agt_dictionary['num_channels'])
+        else:
+            agt_dictionary['input_dims'] = (maze.y, maze.x, agt_dictionary['num_channels'])
+
+
+            hidden_layer_types = kwargs.get('hid_types', ['conv', 'pool', 'linear'])
+        agt_dictionary['hid_types'] = hidden_layer_types
+        for ind, i in enumerate(hidden_layer_types):
+            if ind == 0:
+                agt_dictionary['hid_dims'] = [conv_output(agt_dictionary['input_dims'])]
+            else:
+                if i == 'conv' or i == 'pool':
+                    agt_dictionary['hid_dims'].append(conv_output(agt_dictionary['hid_dims'][ind-1]))
+                elif i == 'linear':
+                    agt_dictionary['hid_dims'].append(agt_dictionary['lin_dims'])
+
+    agt_dictionary['maze'] = maze
+
+    return agt_dictionary
 
 # =====================================
-# FUNCTIONS FOR STATE INPUT GENERATION
+# reset ac network
 # =====================================
-# Place cell activity vector 
+def reset_agt(maze, agent_params):
+        ## some stupid reward placement shit -- replace later
+    if agent_params['load_model'] == True:
+        if agent_params['rwd_placement'] == 'training_loc':
+            maze.set_rwd([(int(maze.x/2), int(maze.y/2))])
+        if agent_params['rwd_placement'] == 'moved_loc':
+            maze.set_rwd([(int(3*maze.x/4),int(maze.y/4))])
+    else:
+        maze.set_rwd([(int(maze.x/2),int(maze.y/2))])
 
-# Gridworld frame tensor 
+    # make agent
+    agent_params = gen_input(maze, agent_params)
+    MF,opt = make_agent(agent_params, freeze=True)
 
+    run_dict = {}
+    run_dict = {
+        'NUM_EVENTS':   300,
+        'NUM_TRIALS':   2000,
+        'environment':  maze,
+        'agent':        MF,
+        'optimizer':    opt,
+        'agt_param':    agent_params
+    }
 
+    return run_dict
 
 # =====================================
 # FUNCTIONS FOR END OF TRIAL
@@ -409,7 +467,6 @@ def make_agent(agent_params, freeze=False):
 		MF = AC_Net(agent_params)
 
 	if freeze:
-
 		freeze = []
 		unfreeze = []
 		for i, nums in MF.named_parameters():
@@ -448,6 +505,7 @@ def snapshot(maze, agent):
 
 def mem_snapshot(maze, EC, trial_timestamp,**kwargs):
 	envelope = kwargs.get('decay', 50)
+	mem_temp = kwargs.get('mem_temp', 1)
 	mpol_array = np.zeros(maze.grid.shape, dtype=[('N', 'f8'), ('E', 'f8'), ('W', 'f8'), ('S', 'f8'), ('stay', 'f8'), ('poke', 'f8')])
 	# cycle through readable states
 	for i in EC.cache_list.values():
@@ -459,7 +517,7 @@ def mem_snapshot(maze, EC, trial_timestamp,**kwargs):
 		times        = abs(trial_timestamp - memory[:,1])
 		pvals 		 = EC.make_pvals(times, envelope=envelope)
 
-		policy = softmax(  np.multiply(deltas, pvals), T=0.1) #np.multiply(sim,deltas))
+		policy = softmax(  np.multiply(deltas, pvals), T=mem_temp) #np.multiply(sim,deltas))
 		mpol_array[yval][xval] = tuple(policy)
 	return mpol_array
 

@@ -22,50 +22,9 @@ sys.path.insert(0,'../rl_network/'); import actorcritic as ac;  import stategen 
 sys.path.insert(0,'../memory/'); import episodic as ec
 
 
-# clean up this nonsense!!!
-def gen_input(maze, agt_dictionary, **kwargs):
-    state_type = kwargs.get('state_type', agt_dictionary['state_type'])
-    if state_type == 'pcs':
-        # place cell parameters
-        num_pc = 1000
-        fwhm = 0.05
-        pcs = PlaceCells(num_cells=num_pc, grid=maze, fwhm=fwhm)
-
-        agt_dictionary['pcs'] = pcs
-        agt_dictionary['input_dims'] = num_pc
-        agt_dictionary['hid_types']  = ['linear']
-        agt_dictionary['hid_dims']   = [500]
-
-
-    elif state_type == 'conv':
-        num_channels = 3
-        agt_dictionary['num_channels'] = num_channels
-        if maze.bound:
-            agt_dictionary['input_dims'] = (maze.y+2, maze.x+2, agt_dictionary['num_channels'])
-        else:
-            agt_dictionary['input_dims'] = (maze.y, maze.x, agt_dictionary['num_channels'])
-
-
-            hidden_layer_types = kwargs.get('hid_types', ['conv', 'pool', 'linear'])
-        agt_dictionary['hid_types'] = hidden_layer_types
-        for ind, i in enumerate(hidden_layer_types):
-            if ind == 0:
-                agt_dictionary['hid_dims'] = [ac.conv_output(agt_dictionary['input_dims'])]
-            else:
-                if i == 'conv' or i == 'pool':
-                    agt_dictionary['hid_dims'].append(ac.conv_output(agt_dictionary['hid_dims'][ind-1]))
-                elif i == 'linear':
-                    agt_dictionary['hid_dims'].append(agt_dictionary['lin_dims'])
-
-    agt_dictionary['maze'] = maze
-
-    return agt_dictionary
-
-
-
 def run(run_dict, full=False, use_EC = False, **kwargs):
     rec_mem = kwargs.get('rec_mem', False)
-
+    print_trial_freq = kwargs.get('print_freq', 100)
     # get run parameters from run_dict
     NUM_TRIALS = run_dict['NUM_TRIALS']
     NUM_EVENTS = run_dict['NUM_EVENTS']
@@ -81,19 +40,18 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
     save_data  = kwargs.get('save', True)
 
     blocktime = time.time()
-    print_trial_freq = 100
 
     run_dict['total_loss']   = [[],[]]
     run_dict['total_reward'] = []
     run_dict['track_cs']     = [[],[]]
     run_dict['rpe']          = np.zeros(maze.grid.shape)
 
+    flag = False
     if not full:
         run_dict['trial_length'] = []
     if rec_mem:
         EC = agent_params['EC']
         EC.reset_cache()
-        print_trial_freq = 1
 
 
     reward    = 0
@@ -104,6 +62,8 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
     recency_env = ec.calc_env(halfmax = 20)
 
     for trial in range(NUM_TRIALS):
+        if flag == True:
+            break
         # empty memory buffer
         memory_buffer = [[],[],[],[], trial] # [timestamp, state_t, a_t, readable_state, trial]
         # reset reward tally
@@ -112,11 +72,8 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
         tslr      = np.nan_to_num(np.inf)
 
         if use_EC:
-            MF_cs =  EC.make_pvals(ploss_scale, envelope=mfc_env, shift = (maze.x/2)+(maze.y/2) ) #EC.make_pvals(tslr)
+            MF_cs =  EC.make_pvals(ploss_scale, envelope=mfc_env, shift =0 ) #EC.make_pvals(tslr)
             print(MF_cs, "confidence in model free")
-            if trial == 0:
-                print((maze.x/2)+(maze.y/2))
-
 
         # reset environment
         maze.reset()
@@ -139,7 +96,10 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
                 #print("chose policy: " ,policies[pol_choice])
                 if pol_choice == 1:
                     # get policy from EC
-                    pol = torch.from_numpy(EC.recall_mem(lin_act, timestamp, env=recency_env)) ## check this env parameter -----------------------------------
+                    pol = torch.from_numpy(EC.recall_mem(lin_act,
+                                                         timestamp,
+                                                         env=recency_env,
+                                                         mem_temp=agent_params['mem_temp'])) ## check this env parameter -----------------------------------
 
                     choice, policy, value = ac.select_ec_action(MF, policy_, value_, pol)
                 else:
@@ -169,6 +129,8 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
                 tslr = 0
                 if not full:
                     run_dict['trial_length'].append(event)
+                    flag = True
+                    print(f'rewarded at trial {trial}')
                     break
             else:
                 tslr += 1
@@ -179,7 +141,7 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
 
         if rec_mem:
             p_loss, v_loss = ac.finish_trial(MF,agent_params['gamma'],opt,cache=EC, buffer=memory_buffer)
-            print(f'{len(EC.cache_list)}/{EC.cache_limit}')
+            #print(f'{len(EC.cache_list)}/{EC.cache_limit}')
         else:
             p_loss, v_loss = ac.finish_trial(MF,agent_params['gamma'],opt)
 

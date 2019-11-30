@@ -79,6 +79,7 @@ class ep_mem(object):
 		confidence score = scaled by cosine sim
 
 		'''
+		mem_temp = kwargs.get('mem_temp', 1)
 		if len(self.cache_list) == 0:
 			random_policy = softmax(np.zeros(6))
 			return random_policy
@@ -95,14 +96,13 @@ class ep_mem(object):
 			deltas       = memory[:,0]
 			times        = abs(timestep - memory[:,1])
 			pvals 		 = self.make_pvals(times, envelope=envelope)
-			policy = softmax( similarity*np.multiply(deltas, pvals), T=1) #np.multiply(sim,deltas))
+			policy = softmax( similarity*np.multiply(deltas, pvals), T=mem_temp) #np.multiply(sim,deltas))
 			return policy
 
 	def make_pvals(self, p, **kwargs):
 		envelope = kwargs.get('envelope', self.memory_envelope)
-		shift    = kwargs.get('shift', 0)
 
-		return np.round(1 / np.cosh(p / envelope) + shift, 8)
+		return np.round(1 / np.cosh(p / envelope), 8)
 
 	# retrieve relevant items from memory
 	def cosine_sim(self, key):
