@@ -37,7 +37,6 @@ def softmax(x,T=1):
 	 e_x = np.exp((x - np.max(x))/T)
 	 return e_x / e_x.sum(axis=0) # only difference
 
-
 def make_arrows(action, probability):
 	'''
 	:param action:
@@ -117,16 +116,18 @@ def plot_valmap(maze, value_array, save=False, **kwargs):
 	:param save: bool. save figure in current directory
 	:return: None
 	'''
+	title = kwargs.get('title', 'State Value Estimates')
+	vals = value_array.copy()
 	fig = plt.figure()
 	ax1 = fig.add_axes([0, 0, 0.85, 0.85])
 	axc = fig.add_axes([0.75, 0, 0.05, 0.85])
-	vmin, vmax = kwargs.get('p_range', [0,1])
+	vmin, vmax = kwargs.get('v_range', [0,1])
 	cmap = plt.cm.Spectral_r
 	cNorm = colors.Normalize(vmin=vmin, vmax=vmax)
 	for i in maze.obstacles:
-		value_array[i[1], i[0]] = np.nan
+		vals[i[1], i[0]] = np.nan
 	cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
-	ax1.pcolor(value_array, cmap=cmap, vmin = vmin, vmax = vmax)
+	ax1.pcolor(vals, cmap=cmap, vmin = vmin, vmax = vmax)
 
 	ax1.invert_yaxis()
 
@@ -138,7 +139,7 @@ def plot_valmap(maze, value_array, save=False, **kwargs):
 
 	ax1.set_aspect('equal')
 	ax1.invert_yaxis()
-	plt.title('State Value Estimates')
+	plt.title(title)
 	plt.show()
 
 	if save:

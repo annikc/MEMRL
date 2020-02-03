@@ -507,6 +507,10 @@ def mem_snapshot(maze, EC, trial_timestamp,**kwargs):
 	envelope = kwargs.get('decay', 50)
 	mem_temp = kwargs.get('mem_temp', 1)
 	mpol_array = np.zeros(maze.grid.shape, dtype=[('N', 'f8'), ('E', 'f8'), ('W', 'f8'), ('S', 'f8'), ('stay', 'f8'), ('poke', 'f8')])
+	get_vals = kwargs.get('get_vals', False)
+	if get_vals:
+		mval_array = np.zeros(maze.grid.shape, dtype=[('N', 'f8'), ('E', 'f8'), ('W', 'f8'), ('S', 'f8'), ('stay', 'f8'), ('poke', 'f8')])
+
 	# cycle through readable states
 	for i in EC.cache_list.values():
 		xval = i[2][0]
@@ -519,7 +523,12 @@ def mem_snapshot(maze, EC, trial_timestamp,**kwargs):
 
 		policy = softmax(  np.multiply(deltas, pvals), T=mem_temp) #np.multiply(sim,deltas))
 		mpol_array[yval][xval] = tuple(policy)
-	return mpol_array
+		if get_vals:
+			mval_array[yval][xval] = tuple(deltas)
+	if get_vals:
+		return mpol_array, mval_array
+	else:
+		return mpol_array
 
 def softmax(x, T=1):
 	e_x = np.exp((x - np.max(x))/T)
