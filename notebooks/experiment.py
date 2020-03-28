@@ -37,6 +37,7 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
     rec_mem     = kwargs.get('rec_mem', False)
     print_freq  = kwargs.get('print_freq', 100)
     save_data   = kwargs.get('save', True)
+    saveplots   = kwargs.get('plots', False)
 
     if not full:
         run_dict['trial_length'] = []
@@ -118,13 +119,14 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
             run_dict['total_loss'][1].append(v_loss.item())
             run_dict['total_reward'].append(reward_sum)
 
-        vv, pp = ac.snapshot(agent=run_dict['agent'], maze =run_dict['environment'])
+        #if saveplots:
+            #vv, pp = ac.snapshot(agent=run_dict['agent'], maze =run_dict['environment'])
 
-        gp.plot_polmap(run_dict['environment'], pp, save=True, show=False, title=f"{trial}")
-        gp.plot_valmap(run_dict['environment'], vv, save=True, show=False, title=f"{trial}")
+            #gp.plot_polmap(run_dict['environment'], pp, save=True, show=False, title=f"{trial}")
+            #gp.plot_valmap(run_dict['environment'], vv, save=True, show=False, title=f"{trial}")
 
-        abcd = ac.mem_snapshot(run_dict['environment'], agent_params['EC'], trial_timestamp=trial, decay=recency_env, mem_temp=agent_params['mem_temp'], get_vals=False)
-        gp.plot_polmap(run_dict['environment'], abcd, threshold=0.4, save=True, show=False, title=f"EC_{trial}")
+            #abcd = ac.mem_snapshot(run_dict['environment'], agent_params['EC'], trial_timestamp=trial, decay=recency_env, mem_temp=agent_params['mem_temp'], get_vals=False)
+            #gp.plot_polmap(run_dict['environment'], abcd, threshold=0.4, save=True, show=False, title=f"EC_{trial}")
 
         if trial ==0 or trial%print_freq==0 or trial == NUM_TRIALS-1:
             print("[{0}]  Trial {1} TotRew = {2} ({3:.3f}s)".format(time.strftime("%H:%M:%S", time.localtime()), trial+1, reward_sum,time.time()-blocktime)) #print("[{0}]  Trial {1} total reward = {2} (Avg {3:.3f})".format(time.strftime("%H:%M:%S", time.localtime()), trial, reward_sum, float(reward_sum)/float(NUM_EVENTS)), "Block took {0:.3f}".format(time.time()-blocktime))
