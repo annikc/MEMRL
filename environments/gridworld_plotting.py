@@ -116,9 +116,11 @@ def plot_valmap(maze, value_array, save=False, **kwargs):
 	:param save: bool. save figure in current directory
 	:return: None
 	'''
+	show = kwargs.get('show', True)
 	title = kwargs.get('title', 'State Value Estimates')
+	filetype = kwargs.get('filetype', 'png')
 	vals = value_array.copy()
-	fig = plt.figure()
+	fig = plt.figure(figsize=(7,5))
 	ax1 = fig.add_axes([0, 0, 0.85, 0.85])
 	axc = fig.add_axes([0.75, 0, 0.05, 0.85])
 	vmin, vmax = kwargs.get('v_range', [0,1])
@@ -140,18 +142,25 @@ def plot_valmap(maze, value_array, save=False, **kwargs):
 	ax1.set_aspect('equal')
 	ax1.invert_yaxis()
 	plt.title(title)
-	plt.show()
+
 
 	if save:
-		plt.savefig('../data/figures/{}environment.svg'.format(maze.maze_type), format='svg', pad_inches=2)
+		plt.savefig(f'../data/figures/v_{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
+	if show:
+		plt.show()
 
-def plot_polmap(maze, policy_array, save=False):
+	plt.close()
+
+def plot_polmap(maze, policy_array, save=False, **kwargs):
 	'''
 	:param maze: the environment object
 	:param save: bool. save figure in current directory
 	:return: None
 	'''
-	fig = plt.figure()
+	show = kwargs.get('show', True)
+	title = kwargs.get('title', 'Most Likely Action from Policy')
+	filetype = kwargs.get('filetype', 'png')
+	fig = plt.figure(figsize=(7,5))
 	ax1 = fig.add_axes([0, 0, 0.85, 0.85])
 	axc = fig.add_axes([0.75, 0, 0.05, 0.85])
 
@@ -166,7 +175,7 @@ def plot_polmap(maze, policy_array, save=False):
 		rwd_y, rwd_x = rwd_loc
 		ax1.add_patch(plt.Rectangle((rwd_y, rwd_x), width=1, height=1, linewidth=1, ec='white', fill=False))
 
-	chance_threshold = 0.18 #np.round(1 / len(maze.actionlist), 6)
+	chance_threshold = kwargs.get('threshold',0.18)  #np.round(1 / len(maze.actionlist), 6)
 
 
 	cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
@@ -186,10 +195,13 @@ def plot_polmap(maze, policy_array, save=False):
 			else:
 				pass
 	ax1.set_aspect('equal')
-	plt.title('Most Likely Action from Policy')
-	plt.show()
+	plt.title(title)
+
 	if save:
-		plt.savefig('../data/figures/{}environment.svg'.format(maze.maze_type), format='svg', pad_inches=2)
+		plt.savefig(f'../data/figures/p_{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
+	if show:
+		plt.show()
+	plt.close()
 
 ### OLD CODE - PUT IN JUNKYARD AS OF OCT 2019
 class artist_instance:

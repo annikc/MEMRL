@@ -9,7 +9,6 @@ Author: Annik Carson
 # =====================================
 from __future__ import division, print_function
 import numpy as np
-
 import actorcritic as ac
 
 np.random.seed(12345)
@@ -95,4 +94,3 @@ def gen_input(maze, agt_dictionary, **kwargs):
     agt_dictionary['maze'] = maze
 
     return agt_dictionary
-	    

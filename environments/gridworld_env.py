@@ -89,7 +89,7 @@ class gridworld(object):
         self.grid, self.useable, self.obstacles = self.grid_maker()
 
         # Actions Representation
-        self.actionlist 	= kwargs.get('actionlist', ['N', 'E', 'W', 'S', 'stay', 'poke'])
+        self.actionlist 	= kwargs.get('actionlist', ['D', 'R', 'L', 'U', 'stay', 'poke'])
         self.action_space = spaces.Discrete(len(self.actionlist))
         # Reward Representation
         self.rwd_action 	= kwargs.get('rewarded_action', 'poke')
@@ -109,13 +109,15 @@ class gridworld(object):
 
         else:
             rwd_choice 			= np.random.choice(len(self.useable))
-            self.rwd_loc 		= [self.useable[rwd_choice]]
+            if 'rwd_loc' in grid_params.keys():
+                self.rwd_loc = grid_params['rwd_loc']
+            else:
+                self.rwd_loc = [self.useable[rwd_choice]]
             self.orig_rwd_loc 	= []
 
         # agent is initialized in a random location from the available states
-        around_reward = kwargs.get('around_reward', False)
-        self.reset(around_reward=around_reward) # <-- agent's starting location function is called within reset()
-
+        self.around_reward = kwargs.get('around_reward', False)
+        self.reset() # <-- agent's starting location function is called within reset()
         ## OpenAI gym bits
         self.action_space = action_wrapper(self.actionlist)
 
@@ -207,24 +209,25 @@ class gridworld(object):
 
         return grid, useable_grid, obstacles
 
-    def loc_picker(self, around_reward = False):
+    def loc_picker(self, around_reward):
         if around_reward:
             # pick starting location for agent in radius around reward location
             start_buffer = 5  # radius around reward
             get_start_loc = True
             while get_start_loc:
-                start_x = self.rwd_loc[0][0] + np.random.choice([-1, 1])*np.random.choice(start_buffer)
+                buf_x = np.random.choice(np.arange(start_buffer))
+                start_x = self.rwd_loc[0][0] + np.random.choice([-1, 1])*buf_x
                 if start_x < 0:
                     start_x = 0
                 elif start_x > self.grid.shape[1] - 1:
                     start_x = self.grid.shape[1] - 1
 
-                start_y = self.rwd_loc[0][1] + np.random.choice([-1, 1])*np.random.choice(start_buffer)
+                buf_y = np.random.choice(np.arange(start_buffer))
+                start_y = self.rwd_loc[0][1] + np.random.choice([-1, 1])*buf_y
                 if start_y < 0:
                     start_y = 0
                 elif start_y > self.grid.shape[1] - 1:
                     start_y = self.grid.shape[1] - 1
-
                 if (start_x, start_y) in self.useable:
                     get_start_loc = False
         else: # pick a random starting location for agent within the useable spaces
@@ -232,7 +235,9 @@ class gridworld(object):
             start_x = self.useable[get_start][0]
             start_y = self.useable[get_start][1]
 
-        return (start_x, start_y)
+        start_coord = (start_x, start_y)
+
+        return start_coord
 
     def set_rwd(self, rwd_loc):
         if not isinstance(rwd_loc, list):
@@ -243,19 +248,19 @@ class gridworld(object):
                 self.orig_rwd_loc.append(i)
 
     def move(self, action):
-        if action == 'N':
+        if action == 'D':
             next_state = (self.cur_state[0], self.cur_state[1]-1)
             if next_state in self.useable:
                 self.cur_state = next_state
-        elif action == 'E':
+        elif action == 'R':
             next_state = (self.cur_state[0]+1, self.cur_state[1])
             if next_state in self.useable:
                 self.cur_state = next_state
-        elif action == 'W':
+        elif action == 'L':
             next_state = (self.cur_state[0]-1, self.cur_state[1])
             if next_state in self.useable:
                 self.cur_state = next_state
-        elif action == 'S':
+        elif action == 'U':
             next_state = (self.cur_state[0], self.cur_state[1]+1)
             if next_state in self.useable:
                 self.cur_state = next_state
@@ -265,8 +270,7 @@ class gridworld(object):
         return self.cur_state
 
     def reset(self, **kwargs):
-        around_reward = kwargs.get('around_reward', False)
-        self.start_loc = self.loc_picker(around_reward=around_reward)
+        self.start_loc = self.loc_picker(around_reward=self.around_reward)
         self.cur_state = self.start_loc
         self.observation = self.get_frame()
 
@@ -281,7 +285,7 @@ class gridworld(object):
             self.reward_tally[i] = 0
 
     def get_reward(self, action):
-        if (action == 'poke') & (self.cur_state in self.rwd_loc):
+        if self.cur_state in self.rwd_loc: #if (action == 'poke') & (self.cur_state in self.rwd_loc):
             self.rwd = self.rwd_mag
             self.done = True
             if self.maze_type == 'tmaze':

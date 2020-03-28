@@ -1,56 +1,29 @@
-#### Model Free Agent 
-
-'''
-Object Classes and Relevant Functions for Actor Critic Agent
-Author: Annik Carson 
---  Oct 2019
-'''
+# =============================================================================
+# Object Classes and Relevant Functions for Actor Critic Agent
+# Author Annik Carson
+# Updated Feb 2020
+# =============================================================================
 
 # =====================================
 #           IMPORT MODULES            #
 # =====================================
 from __future__ import division, print_function
-
 import numpy as np
-
 import torch 
 from torch.autograd import Variable
 from torch import autograd, optim, nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
-
 from collections import namedtuple
-
 import stategen as sg
 
 # =====================================
-# CLASSES
+#       ACTOR CRITIC NETWORK CLASS
 # =====================================
-# Network Class
 class AC_Net(nn.Module):
-	'''
-	An actor-critic neural network class. Takes sensory inputs and generates a policy and a value estimate.
-	'''
-
-	# ================================
 	def __init__(self, agent_params, **kwargs):
-		input_dimensions  = kwargs.get('input_dimensions', agent_params['input_dims'])
-		action_dimensions = kwargs.get('action_dimensions', agent_params['action_dims'])
-		batch_size        = kwargs.get('batch_size', 4)
-		hidden_types      = kwargs.get('hidden_types', agent_params['hid_types'])
-		hidden_dimensions = kwargs.get('hidden_dimensions', agent_params['hid_dims'])
-		rfsize            = kwargs.get('rfsize', 4)
-		padding           = kwargs.get('padding', 1)
-		stride            = kwargs.get('stride', 1)
-		
 		'''
-		def __init__(self, input_dimensions, action_dimensions, 
-		batch_size=4, hidden_types=[], hidden_dimensions=[],
-		rfsize=4, padding=1, stride=1):
-		
-		AC_Net(input_dimensions, action_dimensions, hidden_types=[], hidden_dimensions=[])
-
-		Create an actor-critic network class.
+		Create an actor-critic network class
 
 		Required arguments:
 			- input_dimensions (int): the dimensions of the input space
@@ -65,8 +38,36 @@ class AC_Net(nn.Module):
 												equal length to hidden_types (default = []).
 			- TODO insert new args
 		'''
-	   
-		# call the super-class init 
+		input_dimensions  = kwargs.get('input_dimensions',  agent_params['input_dims'])
+		action_dimensions = kwargs.get('action_dimensions', agent_params['action_dims'])
+		hidden_types      = kwargs.get('hidden_types',      agent_params['hid_types'])
+		hidden_dimensions = kwargs.get('hidden_dimensions', agent_params['hid_dims'])
+
+		### Is this the most sensible way to set these parameters
+		if 'rfsize' not in agent_params.keys():  # kernel size
+			self.rfsize        = kwargs.get('rfsize', 1)
+		else:
+			self.rfsize        = agent_params['rfsize']
+		if 'padding' not in agent_params.keys():
+			self.padding       = kwargs.get('padding', 1)
+		else:
+			self.padding 	   = agent_params['padding']
+
+		if 'dilation' not in agent_params.keys():
+			self.dilation  	   = 1
+		else:
+			self.dilation      = kwargs.get('dilation', 1)
+		if 'stride' not in agent_params.keys():
+			self.stride        = kwargs.get('stride', 1)
+		else:
+			self.stride        = agent_params['stride']
+		if 'batch_size' not in agent_params.keys():
+			self.batch_size   = kwargs.get('batch_size', 4)
+		else:
+			self.batch_size    = agent_params['batch_size']
+
+
+		# call the super-class init
 		super(AC_Net, self).__init__()
 
 		# store the input dimensions
@@ -79,15 +80,11 @@ class AC_Net(nn.Module):
 			assert (hidden_types[0] == 'conv' or hidden_types[0] == 'pool')
 			self.input_type = 'frame'
 
-		# store the batch size
-		self.batch_size = batch_size
-
 		# check that the correct number of hidden dimensions are specified
 		assert len(hidden_types) is len(hidden_dimensions)
-		
+
 		# check whether we're using hidden layers
 		if not hidden_types:
-
 			self.layers = [input_dimensions,action_dimensions]
 
 			# no hidden layers, only input to output, create the actor and critic layers
@@ -98,11 +95,11 @@ class AC_Net(nn.Module):
 			# to store a record of the last hidden states
 			self.hx = []
 			self.cx = []
-		
+
 			# create the hidden layers
 			self.hidden = nn.ModuleList()
 			for i,htype in enumerate(hidden_types):
-				
+
 				# check that the type is an accepted one
 				assert htype in ['linear','lstm','gru', 'conv', 'pool']
 
@@ -121,19 +118,19 @@ class AC_Net(nn.Module):
 				elif htype in ['conv','pool']:
 					output_d = list((0,0,0))
 					if htype is 'conv':
-						output_d[0] = int(np.floor((input_d[0] + 2*padding - rfsize)/stride) + 1)
-						output_d[1] = int(np.floor((input_d[1] + 2*padding - rfsize)/stride) + 1)
+						output_d[0] = int(np.floor((input_d[0] + 2*self.padding - self.dilation*(self.rfsize-1) - 1)/self.stride) + 1)
+						output_d[1] = int(np.floor((input_d[1] + 2*self.padding - self.dilation*(self.rfsize-1) - 1)/self.stride) + 1)
 						assert output_d[0] == hidden_dimensions[i][0], (hidden_dimensions[i][0], output_d[0])
 						assert output_d[1] == hidden_dimensions[i][1]
 						output_d[2] = hidden_dimensions[i][2]
 					elif htype is 'pool':
-						output_d[0] = int(np.floor((input_d[0] +2*padding - (rfsize-1) -1)/stride  +1 ))
-						output_d[1] = int(np.floor((input_d[1] +2*padding - (rfsize-1) -1)/stride  +1 ))
+						output_d[0] = int(np.floor((input_d[0] +2*self.padding - self.dilation*(self.rfsize-1) -1)/self.stride  +1 ))
+						output_d[1] = int(np.floor((input_d[1] +2*self.padding - self.dilation*(self.rfsize-1) -1)/self.stride  +1 ))
 						assert output_d[0] == hidden_dimensions[i][0]
 						assert output_d[1] == hidden_dimensions[i][1]
 						output_d[2] = hidden_dimensions[i][2]
 					output_d = tuple(output_d)
-				
+
 				# construct the layer
 				if htype is 'linear':
 					self.hidden.append(nn.Linear(input_d, output_d))
@@ -148,11 +145,11 @@ class AC_Net(nn.Module):
 					self.hx.append(Variable(torch.zeros(self.batch_size,output_d)))
 					self.cx.append(None)
 				elif htype is 'conv':
-					self.hidden.append(nn.Conv2d(input_d[2],output_d[2],rfsize,padding=padding,stride=stride))
+					self.hidden.append(nn.Conv2d(input_d[2],output_d[2],kernel_size=self.rfsize,padding=self.padding,stride=self.stride,dilation=self.dilation))
 					self.hx.append(None)
 					self.cx.append(None)
 				elif htype is 'pool':
-					self.hidden.append(nn.MaxPool2d(rfsize,padding=padding,stride=stride))
+					self.hidden.append(nn.MaxPool2d(kernel_size=self.rfsize,padding=self.padding,stride=self.stride,dilation=self.dilation))
 					self.hx.append(None)
 					self.cx.append(None)
 
@@ -165,22 +162,11 @@ class AC_Net(nn.Module):
 		# store the output dimensions
 		self.output_d = output_d
 
-		# to store a record of actions and rewards	
+		# to store a record of actions and rewards
 		self.saved_actions = []
 		self.rewards = []
 
-
-	# ================================
 	def forward(self, x, temperature=1):
-		'''
-		forward(x):
-
-		Runs a forward pass through the network to get a policy and value.
-
-		Required arguments:
-			- x (torch.Tensor): sensory input to the network, should be of size batch x input_d
-		'''
-
 		# check the inputs
 		if type(self.input_d) == int:
 			assert x.shape[-1] == self.input_d
@@ -209,23 +195,23 @@ class AC_Net(nn.Module):
 				self.hx[i] = x.clone()
 			elif isinstance(layer, nn.Conv2d):
 				x = F.relu(layer(x))
+				self.conv = x
 			elif isinstance(layer, nn.MaxPool2d):
 				x = layer(x)
 		# pass to the output layers
 		policy = F.softmax(self.output[0](x), dim=1)
 		value  = self.output[1](x)
-		
+
 		if isinstance(self.hidden[-1], nn.Linear):
 			return policy, value, lin_activity
 		else:
 			return policy, value
 
-	# ===============================
 	def reinit_hid(self):
 		# to store a record of the last hidden states
 		self.hx = []
 		self.cx = []
-	
+
 		for i, layer in enumerate(self.hidden):
 			if isinstance(layer, nn.Linear):
 				pass
@@ -240,140 +226,123 @@ class AC_Net(nn.Module):
 			elif isinstance(layer, nn.MaxPool2d):
 				pass
 
-	#def calc_conv_dims(self, )
+def reset_agt(maze, agent_params, **kwargs):
+	if agent_params['load_model'] == True:
+		if agent_params['rwd_placement'] == 'training_loc':
+			rwd_placement = [(int(maze.x / 2), int(maze.y / 2))]
+		if agent_params['rwd_placement'] == 'moved_loc':
+			rwd_placement = [(int(3 * maze.x / 4), int(maze.y / 4))]
+	else:
+		rwd_placement = [(int(maze.x / 2), int(maze.y / 2))]
 
-def conv_output(input_tuple, **kwargs): 
+	rwd_location = kwargs.get('rwd_placement', rwd_placement)
+	freeze = kwargs.get('freeze_weights', False)
+	maze.set_rwd(rwd_location)
+
+	# make agent
+
+	agent_params = gen_input(maze, agent_params)
+	MF, opt = make_agent(agent_params, freeze)
+
+	run_dict = {
+		'NUM_EVENTS': 300,
+		'NUM_TRIALS': 2000,
+		'environment': maze,
+		'agent': MF,
+		'optimizer': opt,
+		'agt_param': agent_params
+	}
+	return run_dict
+# =====================================
+#              FUNCTIONS
+# =====================================
+def softmax(x, T=1):
+	e_x = np.exp((x - np.max(x))/T)
+	return np.round(e_x / e_x.sum(axis=0),8) # only difference
+
+def discount_rwds(r, gamma = 0.99):
+	disc_rwds = np.zeros_like(r)
+	running_add = 0
+	for t in reversed(range(0, r.size)):
+		running_add = running_add*gamma + r[t]
+		disc_rwds[t] = running_add
+	return disc_rwds
+
+def conv_output(input_tuple, **kwargs):
 	h_in, w_in, channels = input_tuple
 	padding = kwargs.get('padding', 1) ## because this is 1 in MF, default 0
 	dilation = kwargs.get('dilation', 1) # default 1
 	kernel_size = kwargs.get('rfsize', 4 ) # set in MF
-	stride = kwargs.get('stride', 1) # set in MF, default 1 
-	
+	stride = kwargs.get('stride', 1) # set in MF, default 1
+
 	h_out = int(np.floor(((h_in +2*padding - dilation*(kernel_size-1) - 1)/stride)+1))
 	w_out = int(np.floor(((w_in +2*padding - dilation*(kernel_size-1) - 1)/stride)+1))
-	
+
 	return (h_out, w_out, channels)
 
-# clean up this nonsense!!!
 def gen_input(maze, agt_dictionary, **kwargs):
-    state_type = kwargs.get('state_type', agt_dictionary['state_type'])
-    if state_type == 'pcs':
-        # place cell parameters
-        num_pc = 1000
-        fwhm = 0.05
-        pcs = PlaceCells(num_cells=num_pc, grid=maze, fwhm=fwhm)
+	num_channels = 3
+	agt_dictionary['num_channels'] = num_channels
+	hidden_layer_types = kwargs.get('hid_types', ['conv', 'pool', 'linear'])
 
-        agt_dictionary['pcs'] = pcs
-        agt_dictionary['input_dims'] = num_pc
-        agt_dictionary['hid_types']  = ['linear']
-        agt_dictionary['hid_dims']   = [500]
+	if maze.bound:
+		agt_dictionary['input_dims'] = (maze.y+2, maze.x+2, agt_dictionary['num_channels'])
+	else:
+		agt_dictionary['input_dims'] = (maze.y, maze.x, agt_dictionary['num_channels'])
+
+	agt_dictionary['hid_types'] = hidden_layer_types
+	for ind, i in enumerate(hidden_layer_types):
+		if ind == 0:
+			agt_dictionary['hid_dims'] = [conv_output(agt_dictionary['input_dims'], rfsize=agt_dictionary['rfsize'])]
+		else:
+			if i == 'conv' or i == 'pool':
+				agt_dictionary['hid_dims'].append(conv_output(agt_dictionary['hid_dims'][ind-1], rfsize=agt_dictionary['rfsize']))
+			elif i == 'linear':
+				agt_dictionary['hid_dims'].append(agt_dictionary['lin_dims'])
+
+	agt_dictionary['maze'] = maze
+
+	return agt_dictionary
 
 
-    elif state_type == 'conv':
-        num_channels = 3
-        agt_dictionary['num_channels'] = num_channels
-        if maze.bound:
-            agt_dictionary['input_dims'] = (maze.y+2, maze.x+2, agt_dictionary['num_channels'])
-        else:
-            agt_dictionary['input_dims'] = (maze.y, maze.x, agt_dictionary['num_channels'])
-
-
-            hidden_layer_types = kwargs.get('hid_types', ['conv', 'pool', 'linear'])
-        agt_dictionary['hid_types'] = hidden_layer_types
-        for ind, i in enumerate(hidden_layer_types):
-            if ind == 0:
-                agt_dictionary['hid_dims'] = [conv_output(agt_dictionary['input_dims'])]
-            else:
-                if i == 'conv' or i == 'pool':
-                    agt_dictionary['hid_dims'].append(conv_output(agt_dictionary['hid_dims'][ind-1]))
-                elif i == 'linear':
-                    agt_dictionary['hid_dims'].append(agt_dictionary['lin_dims'])
-
-    agt_dictionary['maze'] = maze
-
-    return agt_dictionary
-
-# =====================================
-# reset ac network
-# =====================================
-def reset_agt(maze, agent_params):
-        ## some stupid reward placement shit -- replace later
-    if agent_params['load_model'] == True:
-        if agent_params['rwd_placement'] == 'training_loc':
-            maze.set_rwd([(int(maze.x/2), int(maze.y/2))])
-        if agent_params['rwd_placement'] == 'moved_loc':
-            maze.set_rwd([(int(3*maze.x/4),int(maze.y/4))])
-    else:
-        maze.set_rwd([(int(maze.x/2),int(maze.y/2))])
-
-    # make agent
-    agent_params = gen_input(maze, agent_params)
-    MF,opt = make_agent(agent_params, freeze=True)
-
-    run_dict = {}
-    run_dict = {
-        'NUM_EVENTS':   300,
-        'NUM_TRIALS':   2000,
-        'environment':  maze,
-        'agent':        MF,
-        'optimizer':    opt,
-        'agt_param':    agent_params
-    }
-
-    return run_dict
-
-# =====================================
-# FUNCTIONS FOR END OF TRIAL
-# =====================================
 SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
 def select_action(model,policy_, value_):
 	a = Categorical(policy_)
 	action = a.sample()
 	model.saved_actions.append(SavedAction(a.log_prob(action), value_))
-	
 	return action.item(), policy_.data[0], value_.item()
-
 
 def select_ec_action(model, mf_policy_, mf_value_, ec_policy_):
 	a = Categorical(ec_policy_)
 	b = Categorical(mf_policy_)
 	action = a.sample()
 	model.saved_actions.append(SavedAction(b.log_prob(action), mf_value_))
-
 	return action.item(), mf_policy_.data[0], mf_value_.item()
 
 
 # Functions for computing relevant terms for weight updates after trial runs
 def finish_trial(model, discount_factor, optimizer, **kwargs):
-	'''
-	finish_trial(model
-	Finishes a given training trial and backpropagates.
-	'''
-
-	# set the return to zero
-	R = 0
-	returns_ = discount_rwds(np.asarray(model.rewards), gamma=discount_factor)
-	saved_actions = model.saved_actions
-	
 	policy_losses = []
-	value_losses = []
-	
-	returns_ = torch.Tensor(returns_)
+	value_losses  = []
+	saved_actions = model.saved_actions
+	returns_ 	  = torch.Tensor(discount_rwds(np.asarray(model.rewards), gamma=discount_factor))
 
-	EC = kwargs.get('cache', None)
-	memory_buffer = kwargs.get('buffer', None)
+	EC     = kwargs.get('cache', None)
+	buffer = kwargs.get('buffer', None)
 
 	if EC is not None:
-		if memory_buffer is not None:
-			timesteps = memory_buffer[0]
-			states    = memory_buffer[1]
-			actions   = memory_buffer[2]
-			readable  = memory_buffer[3]
-			trial 	  = memory_buffer[4]
-			mem_dict  = {}
+		if buffer is not None:
+			mem_dict = {}
+			timesteps, states, actions, readable, trial = buffer
+			#timesteps = buffer[0]
+			#states    = buffer[1]
+			#actions   = buffer[2]
+			#readable  = buffer[3]
+			#trial 	  = buffer[4]
 		else:
 			raise Exception('No memory buffer provided for kwarg "buffer=" ')
+
 		for (log_prob, value), r, t_, s_, a_, rdbl in zip(saved_actions, returns_, timesteps, states, actions, readable):
 			rpe = r - value.item()
 			policy_losses.append(-log_prob * rpe)
@@ -385,22 +354,16 @@ def finish_trial(model, discount_factor, optimizer, **kwargs):
 			mem_dict['timestamp']= t_
 			mem_dict['readable'] = rdbl
 			mem_dict['trial']    = trial
-			#print(f"agent at {rdbl}: takes action {a_}, delta: {rpe.item()} ({r} - {value.item()})" )
 			EC.add_mem(mem_dict)
-
 	else:
 		for (log_prob, value), r in zip(saved_actions, returns_):
 			rpe = r - value.item()
 			policy_losses.append(-log_prob * rpe)
 			value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
-			#value_losses.append(F.mse_loss(value, Variable(torch.Tensor([[r]]))))
+
 	optimizer.zero_grad()
-
-	p_loss = (torch.cat(policy_losses).sum())
-	v_loss = (torch.cat(value_losses).sum())
-
+	p_loss, v_loss = torch.cat(policy_losses).sum(), torch.cat(value_losses).sum()
 	total_loss = p_loss + v_loss
-
 	total_loss.backward(retain_graph=False)
 	optimizer.step()
 
@@ -409,45 +372,35 @@ def finish_trial(model, discount_factor, optimizer, **kwargs):
 
 	return p_loss, v_loss
 
-def discount_rwds(r, gamma = 0.99): 
-	disc_rwds = np.zeros_like(r)
-	running_add = 0
-	for t in reversed(range(0, r.size)): 
-		running_add = running_add*gamma + r[t]
-		disc_rwds[t] = running_add
-	return disc_rwds
+
 
 def generate_values(maze, model):
 	value_map = maze.empty_map
-
 	for loc in maze.useable:
 		state = Variable(torch.FloatTensor(sg.get_frame(maze,agtlocation=loc)))
 		policy, value = sample_select_action(model,state)[1:3]
 		value_map[loc[1]][loc[0]] = value
-		
 	return value_map
-	
+
 def generate_values_old(maze, model,**kwargs):
 	value_map = maze.empty_map
 	EC = kwargs.get('EC', None)
 	pcs = kwargs.get('pcs', None)
-	if EC!=None:
+	if EC is not None:
 		EC_pol_map = maze.make_map(maze.grid, pol=True)
 		MF_pol_map = maze.make_map(maze.grid, pol=True)
 	for loc in maze.useable:
 		if model.input_type == 'vector':
 			state = Variable(torch.FloatTensor(pcs.activity(loc)))
 			policy, value = sample_select_action(model,state)[1:3]
-		
 		elif model.input_type == 'frame':
 			state = Variable(torch.FloatTensor(sg.get_frame(maze,agtlocation=loc)))
 			if isinstance (model.hidden[-1], nn.Linear):
 				policy, value, lin_act = sample_select_action(model,state, getlin=True)[1:4]
-			else: 
+			else:
 				policy, value = sample_select_action(model,state)[1:3]
-		
 		value_map[loc[1]][loc[0]] = value
-		if EC != None:
+		if EC is not None:
 			if model.input_type == 'vector':
 				EC_pol = EC.recall_mem(tuple(state.data[0]))
 			elif model.input_type == 'frame':
@@ -459,9 +412,9 @@ def generate_values_old(maze, model,**kwargs):
 		return value_map
 	else:
 		return EC_pol_map, MF_pol_map
-	
+
 def make_agent(agent_params, freeze=False):
-	if agent_params['load_model']: 
+	if agent_params['load_model']:
 		MF = torch.load(agent_params['load_dir']) # load previously saved model
 	else:
 		MF = AC_Net(agent_params)
@@ -474,7 +427,6 @@ def make_agent(agent_params, freeze=False):
 				unfreeze.append(nums)
 			else:
 				freeze.append(nums)
-
 		opt = optim.Adam([{'params': freeze, 'lr': 0.0}, {'params': unfreeze, 'lr': agent_params['eta']}], lr=0.0)
 	else:
 		critic = []
@@ -530,6 +482,3 @@ def mem_snapshot(maze, EC, trial_timestamp,**kwargs):
 	else:
 		return mpol_array
 
-def softmax(x, T=1):
-	e_x = np.exp((x - np.max(x))/T)
-	return np.round(e_x / e_x.sum(axis=0),8) # only difference

@@ -1,4 +1,3 @@
-@
 #### Episodic Memory Cache
 
 '''
@@ -102,8 +101,14 @@ class ep_mem(object):
 
 	def make_pvals(self, p, **kwargs):
 		envelope = kwargs.get('envelope', self.memory_envelope)
-
-		return np.round(1 / np.cosh(p / envelope), 8)
+		if isinstance(p,int):
+			print(p, envelope)
+			print(p/envelope)
+			ratio = p/envelope
+			return np.round(1 / np.cosh(ratio), 8)
+		else:
+			ratio = np.around(p/envelope, 8)
+			return np.round(1 / np.cosh(ratio), 8)
 
 	# retrieve relevant items from memory
 	def cosine_sim(self, key):
