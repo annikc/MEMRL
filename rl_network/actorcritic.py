@@ -18,9 +18,25 @@ from collections import namedtuple
 import stategen as sg
 
 # =====================================
+#              FUNCTIONS
+# =====================================
+def softmax(x, T=1):
+	e_x = np.exp((x - np.max(x))/T)
+	return np.round(e_x / e_x.sum(axis=0),8) # only difference
+
+def discount_rwds(r, gamma = 0.99):
+	disc_rwds = np.zeros_like(r)
+	running_add = 0
+	for t in reversed(range(0, r.size)):
+		running_add = running_add*gamma + r[t]
+		disc_rwds[t] = running_add
+	return disc_rwds
+
+# =====================================
 #       ACTOR CRITIC NETWORK CLASS
 # =====================================
 class AC_Net(nn.Module):
+	SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 	def __init__(self, agent_params, **kwargs):
 		'''
 		Create an actor-critic network class
@@ -41,18 +57,21 @@ class AC_Net(nn.Module):
 		input_dimensions  = kwargs.get('input_dimensions',  agent_params['input_dims'])
 		action_dimensions = kwargs.get('action_dimensions', agent_params['action_dims'])
 		hidden_types      = kwargs.get('hidden_types',      agent_params['hid_types'])
-		hidden_dimensions = kwargs.get('hidden_dimensions', agent_params['hid_dims'])
+		lin_dims 		  = kwargs.get('linear_dimensions', agent_params['lin_dims'])
 
-		### Is this the most sensible way to set these parameters
+		if 'num_channels' not in agent_params.keys():
+			self.num_channels  = kwargs.get('num_channels', 3)
+		else:
+			self.num_channels  = agent_params['num_channels']
+
 		if 'rfsize' not in agent_params.keys():  # kernel size
-			self.rfsize        = kwargs.get('rfsize', 1)
+			self.rfsize        = kwargs.get('rfsize', 4)
 		else:
 			self.rfsize        = agent_params['rfsize']
 		if 'padding' not in agent_params.keys():
 			self.padding       = kwargs.get('padding', 1)
 		else:
 			self.padding 	   = agent_params['padding']
-
 		if 'dilation' not in agent_params.keys():
 			self.dilation  	   = 1
 		else:
@@ -62,10 +81,9 @@ class AC_Net(nn.Module):
 		else:
 			self.stride        = agent_params['stride']
 		if 'batch_size' not in agent_params.keys():
-			self.batch_size   = kwargs.get('batch_size', 4)
+			self.batch_size   = kwargs.get('batch_size', 1)
 		else:
 			self.batch_size    = agent_params['batch_size']
-
 
 		# call the super-class init
 		super(AC_Net, self).__init__()
@@ -81,7 +99,7 @@ class AC_Net(nn.Module):
 			self.input_type = 'frame'
 
 		# check that the correct number of hidden dimensions are specified
-		assert len(hidden_types) is len(hidden_dimensions)
+		assert len(lin_dims) is sum(1 for p in hidden_types if p in ['linear', 'lstm', 'gru'])
 
 		# check whether we're using hidden layers
 		if not hidden_types:
@@ -98,8 +116,9 @@ class AC_Net(nn.Module):
 
 			# create the hidden layers
 			self.hidden = nn.ModuleList()
+			self.hidden_dimensions = []
+			j = 0
 			for i,htype in enumerate(hidden_types):
-
 				# check that the type is an accepted one
 				assert htype in ['linear','lstm','gru', 'conv', 'pool']
 
@@ -108,28 +127,28 @@ class AC_Net(nn.Module):
 					input_d  = input_dimensions
 				else:
 					if hidden_types[i-1] in ['conv','pool'] and not htype in ['conv','pool']:
-						input_d = int(np.prod(hidden_dimensions[i-1]))
+						input_d = int(np.prod(self.hidden_dimensions[i-1]))
+
 					else:
-						input_d = hidden_dimensions[i-1]
+						input_d = self.hidden_dimensions[i-1]
 
 				# get the output dimensions
 				if not htype in ['conv','pool']:
-					output_d = hidden_dimensions[i]
+					output_d = lin_dims[j]
+					j += 1
 				elif htype in ['conv','pool']:
 					output_d = list((0,0,0))
 					if htype is 'conv':
 						output_d[0] = int(np.floor((input_d[0] + 2*self.padding - self.dilation*(self.rfsize-1) - 1)/self.stride) + 1)
 						output_d[1] = int(np.floor((input_d[1] + 2*self.padding - self.dilation*(self.rfsize-1) - 1)/self.stride) + 1)
-						assert output_d[0] == hidden_dimensions[i][0], (hidden_dimensions[i][0], output_d[0])
-						assert output_d[1] == hidden_dimensions[i][1]
-						output_d[2] = hidden_dimensions[i][2]
+						output_d[2] = self.num_channels
 					elif htype is 'pool':
 						output_d[0] = int(np.floor((input_d[0] +2*self.padding - self.dilation*(self.rfsize-1) -1)/self.stride  +1 ))
 						output_d[1] = int(np.floor((input_d[1] +2*self.padding - self.dilation*(self.rfsize-1) -1)/self.stride  +1 ))
-						assert output_d[0] == hidden_dimensions[i][0]
-						assert output_d[1] == hidden_dimensions[i][1]
-						output_d[2] = hidden_dimensions[i][2]
+						output_d[2] = self.num_channels
 					output_d = tuple(output_d)
+
+				self.hidden_dimensions.append(output_d)
 
 				# construct the layer
 				if htype is 'linear':
@@ -154,7 +173,7 @@ class AC_Net(nn.Module):
 					self.cx.append(None)
 
 			# create the actor and critic layers
-			self.layers = [input_dimensions]+hidden_dimensions+[action_dimensions]
+			self.layers = [input_dimensions]+self.hidden_dimensions+[action_dimensions]
 			self.output = nn.ModuleList([
 				nn.Linear(output_d, action_dimensions), #actor
 				nn.Linear(output_d, 1)                  #critic
@@ -165,6 +184,8 @@ class AC_Net(nn.Module):
 		# to store a record of actions and rewards
 		self.saved_actions = []
 		self.rewards = []
+
+		self.optimizer = None
 
 	def forward(self, x, temperature=1):
 		# check the inputs
@@ -226,100 +247,54 @@ class AC_Net(nn.Module):
 			elif isinstance(layer, nn.MaxPool2d):
 				pass
 
-def reset_agt(maze, agent_params, **kwargs):
-	if agent_params['load_model'] == True:
-		if agent_params['rwd_placement'] == 'training_loc':
-			rwd_placement = [(int(maze.x / 2), int(maze.y / 2))]
-		if agent_params['rwd_placement'] == 'moved_loc':
-			rwd_placement = [(int(3 * maze.x / 4), int(maze.y / 4))]
-	else:
-		rwd_placement = [(int(maze.x / 2), int(maze.y / 2))]
+	def select_action(self, policy, value):
+		a = Categorical(policy)
+		action = a.sample()
+		self.saved_actions.append(SavedAction(a.log_prob(action), value))
+		return action.item(), policy.data[0], value.item()
 
-	rwd_location = kwargs.get('rwd_placement', rwd_placement)
-	freeze = kwargs.get('freeze_weights', False)
-	maze.set_rwd(rwd_location)
+	def select_ec_action(self, model, mf_policy_, mf_value_, ec_policy_):
+		a = Categorical(ec_policy_)
+		b = Categorical(mf_policy_)
+		action = a.sample()
+		self.saved_actions.append(SavedAction(b.log_prob(action), mf_value_))
+		return action.item(), mf_policy_.data[0], mf_value_.item()
 
-	# make agent
+def make_agent(agent_params):
+    if 'freeze_weights' in agent_params.keys():
+        freeze_weights = agent_params['freeze_w']
+    else:
+        freeze_weights = False
 
-	agent_params = gen_input(maze, agent_params)
-	MF, opt = make_agent(agent_params, freeze)
+    if agent_params['load_model']:
+        MF = torch.load(agent_params['load_dir']) # load previously saved model
+    else:
+        MF = AC_Net(agent_params)
 
-	run_dict = {
-		'NUM_EVENTS': 300,
-		'NUM_TRIALS': 2000,
-		'environment': maze,
-		'agent': MF,
-		'optimizer': opt,
-		'agt_param': agent_params
-	}
-	return run_dict
-# =====================================
-#              FUNCTIONS
-# =====================================
-def softmax(x, T=1):
-	e_x = np.exp((x - np.max(x))/T)
-	return np.round(e_x / e_x.sum(axis=0),8) # only difference
+    if 'optimizer' in agent_params.keys():
+        optimizer = agent_params['optimizer']
+    else:
+        optimizer = optim.Adam
 
-def discount_rwds(r, gamma = 0.99):
-	disc_rwds = np.zeros_like(r)
-	running_add = 0
-	for t in reversed(range(0, r.size)):
-		running_add = running_add*gamma + r[t]
-		disc_rwds[t] = running_add
-	return disc_rwds
-
-def conv_output(input_tuple, **kwargs):
-	h_in, w_in, channels = input_tuple
-	padding = kwargs.get('padding', 1) ## because this is 1 in MF, default 0
-	dilation = kwargs.get('dilation', 1) # default 1
-	kernel_size = kwargs.get('rfsize', 4 ) # set in MF
-	stride = kwargs.get('stride', 1) # set in MF, default 1
-
-	h_out = int(np.floor(((h_in +2*padding - dilation*(kernel_size-1) - 1)/stride)+1))
-	w_out = int(np.floor(((w_in +2*padding - dilation*(kernel_size-1) - 1)/stride)+1))
-
-	return (h_out, w_out, channels)
-
-def gen_input(maze, agt_dictionary, **kwargs):
-	num_channels = 3
-	agt_dictionary['num_channels'] = num_channels
-	hidden_layer_types = kwargs.get('hid_types', ['conv', 'pool', 'linear'])
-
-	if maze.bound:
-		agt_dictionary['input_dims'] = (maze.y+2, maze.x+2, agt_dictionary['num_channels'])
-	else:
-		agt_dictionary['input_dims'] = (maze.y, maze.x, agt_dictionary['num_channels'])
-
-	agt_dictionary['hid_types'] = hidden_layer_types
-	for ind, i in enumerate(hidden_layer_types):
-		if ind == 0:
-			agt_dictionary['hid_dims'] = [conv_output(agt_dictionary['input_dims'], rfsize=agt_dictionary['rfsize'])]
-		else:
-			if i == 'conv' or i == 'pool':
-				agt_dictionary['hid_dims'].append(conv_output(agt_dictionary['hid_dims'][ind-1], rfsize=agt_dictionary['rfsize']))
-			elif i == 'linear':
-				agt_dictionary['hid_dims'].append(agt_dictionary['lin_dims'])
-
-	agt_dictionary['maze'] = maze
-
-	return agt_dictionary
-
-
-SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
-
-def select_action(model,policy_, value_):
-	a = Categorical(policy_)
-	action = a.sample()
-	model.saved_actions.append(SavedAction(a.log_prob(action), value_))
-	return action.item(), policy_.data[0], value_.item()
-
-def select_ec_action(model, mf_policy_, mf_value_, ec_policy_):
-	a = Categorical(ec_policy_)
-	b = Categorical(mf_policy_)
-	action = a.sample()
-	model.saved_actions.append(SavedAction(b.log_prob(action), mf_value_))
-	return action.item(), mf_policy_.data[0], mf_value_.item()
-
+    if freeze_weights:
+        freeze = []
+        unfreeze = []
+        for i, nums in MF.named_parameters():
+            if i[0:6] == 'output':
+                unfreeze.append(nums)
+            else:
+                freeze.append(nums)
+        opt = optimizer([{'params': freeze, 'lr': 0.0}, {'params': unfreeze, 'lr': agent_params['eta']}], lr=0.0)
+    else:
+        critic = []
+        others = []
+        for i, nums in MF.named_parameters():
+            if i[0:8] == 'output.1': #critic
+                critic.append(nums)
+            else:
+                others.append(nums)
+        opt = optimizer(MF.parameters(), lr= agent_params['eta'])
+    return MF, opt
 
 # Functions for computing relevant terms for weight updates after trial runs
 def finish_trial(model, discount_factor, optimizer, **kwargs):
@@ -361,11 +336,11 @@ def finish_trial(model, discount_factor, optimizer, **kwargs):
 			policy_losses.append(-log_prob * rpe)
 			value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
 
-	optimizer.zero_grad()
+	model.optimizer.zero_grad()
 	p_loss, v_loss = torch.cat(policy_losses).sum(), torch.cat(value_losses).sum()
 	total_loss = p_loss + v_loss
 	total_loss.backward(retain_graph=False)
-	optimizer.step()
+	model.optimizer.step()
 
 	del model.rewards[:]
 	del model.saved_actions[:]
@@ -413,13 +388,19 @@ def generate_values_old(maze, model,**kwargs):
 	else:
 		return EC_pol_map, MF_pol_map
 
-def make_agent(agent_params, freeze=False):
+def make_agent(agent_params, **kwargs):
+	opt = kwargs.get('optimizer_type', optim.Adam)
+	if 'freeze_weights' in agent_params.keys():
+		freeze_weights = agent_params['freeze_weights']
+	else:
+		freeze_weights = False
+
 	if agent_params['load_model']:
 		MF = torch.load(agent_params['load_dir']) # load previously saved model
 	else:
 		MF = AC_Net(agent_params)
 
-	if freeze:
+	if freeze_weights:
 		freeze = []
 		unfreeze = []
 		for i, nums in MF.named_parameters():
@@ -427,7 +408,7 @@ def make_agent(agent_params, freeze=False):
 				unfreeze.append(nums)
 			else:
 				freeze.append(nums)
-		opt = optim.Adam([{'params': freeze, 'lr': 0.0}, {'params': unfreeze, 'lr': agent_params['eta']}], lr=0.0)
+		MF.optimizer = opt([{'params': freeze, 'lr': 0.0}, {'params': unfreeze, 'lr': agent_params['eta']}], lr=0.0)
 	else:
 		critic = []
 		others = []
@@ -436,8 +417,8 @@ def make_agent(agent_params, freeze=False):
 				critic.append(nums)
 			else:
 				others.append(nums)
-		opt = optim.Adam(MF.parameters(), lr= agent_params['eta'])
-	return MF, opt
+		MF.optimizer = op(MF.parameters(), lr= agent_params['eta'])
+	return MF
 
 
 def snapshot(maze, agent):
@@ -482,3 +463,69 @@ def mem_snapshot(maze, EC, trial_timestamp,**kwargs):
 	else:
 		return mpol_array
 
+
+
+#### JUNKYARD
+def reset_agt(maze, agent_params, **kwargs):
+	if agent_params['load_model'] == True:
+		if agent_params['rwd_placement'] == 'training_loc':
+			rwd_placement = [(int(maze.x / 2), int(maze.y / 2))]
+		if agent_params['rwd_placement'] == 'moved_loc':
+			rwd_placement = [(int(3 * maze.x / 4), int(maze.y / 4))]
+	else:
+		rwd_placement = [(int(maze.x / 2), int(maze.y / 2))]
+
+	rwd_location = kwargs.get('rwd_placement', rwd_placement)
+	freeze = kwargs.get('freeze_weights', False)
+	maze.set_rwd(rwd_location)
+
+	# make agent
+
+	agent_params = gen_input(maze, agent_params)
+	MF, opt = make_agent(agent_params, freeze)
+
+	run_dict = {
+		'NUM_EVENTS': 300,
+		'NUM_TRIALS': 2000,
+		'environment': maze,
+		'agent': MF,
+		'optimizer': opt,
+		'agt_param': agent_params
+	}
+	return run_dict
+
+def conv_output(input_tuple, **kwargs):
+	h_in, w_in, channels = input_tuple
+	padding = kwargs.get('padding', 1) ## because this is 1 in MF, default 0
+	dilation = kwargs.get('dilation', 1) # default 1
+	kernel_size = kwargs.get('rfsize', 4 ) # set in MF
+	stride = kwargs.get('stride', 1) # set in MF, default 1
+
+	h_out = int(np.floor(((h_in +2*padding - dilation*(kernel_size-1) - 1)/stride)+1))
+	w_out = int(np.floor(((w_in +2*padding - dilation*(kernel_size-1) - 1)/stride)+1))
+
+	return (h_out, w_out, channels)
+
+def gen_input(maze, agt_dictionary, **kwargs):
+	num_channels = 3
+	agt_dictionary['num_channels'] = num_channels
+	hidden_layer_types = kwargs.get('hid_types', ['conv', 'pool', 'linear'])
+
+	if maze.bound:
+		agt_dictionary['input_dims'] = (maze.y+2, maze.x+2, agt_dictionary['num_channels'])
+	else:
+		agt_dictionary['input_dims'] = (maze.y, maze.x, agt_dictionary['num_channels'])
+
+	agt_dictionary['hid_types'] = hidden_layer_types
+	for ind, i in enumerate(hidden_layer_types):
+		if ind == 0:
+			agt_dictionary['hid_dims'] = [conv_output(agt_dictionary['input_dims'], rfsize=agt_dictionary['rfsize'])]
+		else:
+			if i == 'conv' or i == 'pool':
+				agt_dictionary['hid_dims'].append(conv_output(agt_dictionary['hid_dims'][ind-1], rfsize=agt_dictionary['rfsize']))
+			elif i == 'linear':
+				agt_dictionary['hid_dims'].append(agt_dictionary['lin_dims'])
+
+	agt_dictionary['maze'] = maze
+
+	return agt_dictionary
