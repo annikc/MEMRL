@@ -77,10 +77,10 @@ class GridWorld(object):
         if terminals is not None:
             if isinstance(terminals, tuple):
                 self.terminal2D = [terminals]
-                self.terminal = [twoD2oneD(terminals,self.shape)]
+                self.terminal = [self.twoD2oneD(terminals,self.shape)]
             else:
                 self.terminal2D = terminals
-                self.terminal = [twoD2oneD((r,c),self.shape) for r,c in terminals]
+                self.terminal = [self.twoD2oneD((r,c),self.shape) for r,c in terminals]
         else:
             self.terminal2D = []
             self.terminal = []
@@ -89,8 +89,8 @@ class GridWorld(object):
         # populate list of jump states
         if jumps is not None:
             self.jump = jumps
-            self.jump_from = [twoD2oneD((r,c),self.shape) for r,c in list(jumps.keys())]
-            self.jump_to = [twoD2oneD((r,c),self.shape) for r,c in list(jumps.values())]
+            self.jump_from = [self.twoD2oneD((r,c),self.shape) for r,c in list(jumps.keys())]
+            self.jump_to = [self.twoD2oneD((r,c),self.shape) for r,c in list(jumps.values())]
         else:
             self.jump = None
             self.jump_from = []
@@ -125,6 +125,13 @@ class GridWorld(object):
 
         # TODO - reset environment including initializing start state
         self.resetEnvironment()
+
+    def oneD2twoD(self, idx, shape):
+        return (int(idx / shape[1]),np.mod(idx,shape[1]))
+
+    def twoD2oneD(self, coord_tuple, shape):
+        r,c = coord_tuple
+        return (r * shape[1]) + c
 
     def buildGrid(self, bound=False): #formerly grid_maker()
         env_types = [None, 'bar','room','tmaze', 'triple_reward']
@@ -200,7 +207,7 @@ class GridWorld(object):
 
                 obstacles = list(zip(np.where(grid==1)[1], np.where(grid==1)[0]))
                 self.obstacle2D = obstacles
-                self.obstacle = [twoD2oneD((r,c), self.shape) for r,c in obstacles]
+                self.obstacle = [self.twoD2oneD((r,c), self.shape) for r,c in obstacles]
             else:
                 self.obstacle2D = []
                 self.obstacle = []
@@ -210,10 +217,10 @@ class GridWorld(object):
                     self.obstacles_list.remove(reward_loc)
             if isinstance(self.obstacles_list, tuple):
                 self.obstacle2D = [self.obstacles_list]
-                self.obstacle = [twoD2oneD(self.obstacles_list, self.shape)]
+                self.obstacle = [self.twoD2oneD(self.obstacles_list, self.shape)]
             else:
                 self.obstacle2D = self.obstacles_list
-                self.obstacle = [twoD2oneD((r,c), self.shape) for r,c in self.obstacles_list]
+                self.obstacle = [self.twoD2oneD((r,c), self.shape) for r,c in self.obstacles_list]
                 for coord in self.obstacles_list:
                     grid[coord] = 1
 
@@ -233,12 +240,12 @@ class GridWorld(object):
             self.R = self.step_penalization*np.ones((self.nstates, len(self.action_list)))
             action = self.action_list.index(self.rwd_action)
             for r,c in list(self.rewards.keys()):
-                self.R[twoD2oneD((r,c),self.shape), action] = self.rewards[(r,c)]
+                self.R[self.twoD2oneD((r,c),self.shape), action] = self.rewards[(r,c)]
         else:
             # specify reward function
             self.R = self.step_penalization*np.ones((self.nstates,))  # rewards received upon leaving state
             for r,c in list(self.rewards.keys()):
-                self.R[twoD2oneD((r,c),self.shape)] = self.rewards[(r,c)]
+                self.R[self.twoD2oneD((r,c),self.shape)] = self.rewards[(r,c)]
 
     def buildTransitionMatrices(self):
         # initialize
@@ -274,9 +281,12 @@ class GridWorld(object):
             self.start = self.get_start_location(around_reward=self.around_reward)
         else:
             self.start = self.useable[0]
-        self.state = twoD2oneD(self.start, self.shape)
+        self.state = self.twoD2oneD(self.start, self.shape)
+
+        self.observation = self.get_frame()
 
         self.done = False
+        #self.rwd = 0
 
     def get_start_location(self, around_reward):
         if around_reward:
@@ -343,6 +353,21 @@ class GridWorld(object):
 
         return reward
 
+    def get_frame(self, **kwargs):
+        agent_location  = kwargs.get('agtlocation', self.oneD2twoD(self.state,self.shape))
+        reward_location = kwargs.get('rwdlocation', self.rewards)
+
+        #location of reward
+        rwd_position = np.zeros_like(self.grid)
+        for reward in reward_location:
+            rwd_position[reward] = 1
+
+        #location of agent
+        agt_position = np.zeros_like(self.grid)
+        agt_position[agent_location] = 1
+
+        return np.array([self.grid, rwd_position, agt_position])
+
     def shift_reward(self,shift): # TODO fix for kirth
         port_rwd_probabilities = [0.333, 0.333, 0.333]
         current_rewarded_port = self.rewards.keys()[0]
@@ -395,9 +420,11 @@ class GridWorld(object):
 
 
 #======================================================================================================================
-def plotWorld(world, plotNow=False, current_state = False):
+def plotWorld(world, plotNow=False, current_state = False, **kwargs):
+    scale = kwargs.get('scale', 1)
     r,c = world.shape
-    fig = plt.figure(figsize=(c, r))
+
+    fig = plt.figure(figsize=(c*scale, r*scale))
 
     gridMat = np.zeros(world.shape)
     for i, j in world.obstacle2D:
@@ -461,42 +488,4 @@ def make_arrows(action):
 env = GridWorld(rows=4, cols=6, rewards={(0,1):10, (2,2):-1}, obstacles=[(0,2), (2,4)])
 
 
-print(env.state, oneD2twoD(env.state, env.shape))
-fig = plotWorld(env,current_state=False)
 
-num_steps = 10
-moves = True
-if moves:
-    for _ in range(num_steps):
-        if _ == 0:
-            action_choice = ""
-        start_at = oneD2twoD(env.state, env.shape)
-        # draw state
-        agent_y, agent_x = oneD2twoD(env.state, env.shape)
-        agent_dot = plt.Circle((agent_x + .5, agent_y + .5), 0.35, fc='b')
-        fig.gca().add_artist(agent_dot)
-
-        # select action
-        action_choice = random_policy(env)
-        env.move(action_choice)
-
-        print(f"{start_at}:{action_choice} --> {oneD2twoD(env.state, env.shape)}")
-        text = plt.gcf().text(0.1, 0.9, f'Agent Chooses: {action_choice}', fontsize=14)
-
-        plt.pause(1)
-        plt.draw()
-        dx1, dy1, head_w, head_l = make_arrows(env.action_dict[action_choice])
-        if action_choice == 'P':
-            arrow = plt.text(agent_x+0.49, agent_y+0.6, "*", {'color': 'white', 'fontsize': 24, 'ha': 'center', 'va': 'center'})
-        else:
-            arrow = plt.arrow(agent_x+0.5, agent_y+0.5, dx1, dy1, head_width=0.3, head_length=0.2, color="cyan")
-
-
-        plt.pause(.5)
-        plt.draw()
-
-        if _ < num_steps-1:
-            agent_dot.remove()
-            arrow.remove()
-            text.remove()
-plt.show()
