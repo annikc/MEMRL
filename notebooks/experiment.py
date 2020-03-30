@@ -142,12 +142,11 @@ class Experiment(object):
         self.gamma = discount_factor
 
         # set up memory
-        self.mem_size = 0.75*env.nstates*len(action_list)
-        self.episodic = ec.ep_mem(self.agent, cache_limit=mem_size)
+        self.mem_size = 0.75*environment.nstates*len(environment.action_list)
+        self.episodic = ec.ep_mem(self.agent, cache_limit=self.mem_size)
         self.record_memory = kwargs.get('rec_mem', False)
         self.use_memory = kwargs.get('use_mem', False)
         self.mem_policy_entropy = kwargs.get('EC_entropy', 0.3)
-
 
         self.full = kwargs.get('full', False)
         if not self.full:
@@ -162,7 +161,7 @@ class Experiment(object):
         self.saveplots   = kwargs.get('plots', False)
 
     def reset(self, trial):
-        self.env.reset()
+        self.env.resetEnvironment()
         self.agent.reinit_hid()
 
         if self.record_memory:
@@ -170,8 +169,8 @@ class Experiment(object):
 
         if self.use_memory:
                 self.MF_cs = self.episodic.make_pvals(self.ploss_scale, envelope=self.mfc_env)
-            else:
-                self.MF_cs = 1
+        else:
+            self.MnF_cs = 1
 
         self.memory_buffer = [[], [], [], [], trial]  # [timestamp, state_t, a_t, readable_state, trial]
         self.reward_sum = 0
@@ -211,7 +210,7 @@ class Experiment(object):
 
         blocktime   = time.time()
         for trial in range(NUM_TRIALS):
-            if done:
+            if is_done:
                 break
 
             self.reset(trial)
@@ -247,11 +246,11 @@ class Experiment(object):
             else:
                 p_loss, v_loss = ac.finish_trial(self.agent,self.gamma)
 
-            ploss_scale = abs(p_loss.item())
+            self.ploss_scale = abs(p_loss.item())
             if save_data:
                 self.total_policy_loss.append(p_loss.item())
                 self.total_value_loss.append(v_loss.item())
-                self.total_reward.append(reward_sum)
+                self.total_reward.append(self.reward_sum)
 
 
             #if saveplots:
