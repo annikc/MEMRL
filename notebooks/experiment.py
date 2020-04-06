@@ -7,16 +7,62 @@ import time
 import torch
 import sys
 # import modules from other folders in the tree
-sys.path.insert(0,'../rl_network/'); import actorcritic as ac;  import stategen as sg
+sys.path.insert(0,'../rl_network/'); import ac;  import stategen as sg
 sys.path.insert(0,'../memory/'); import episodic as ec
-sys.path.insert(0,'../environments/'); import gridworld_plotting as gp
-
+sys.path.insert(0,'../environments/'); import gw; import gridworld_plotting as gp
+from scipy.stats import entropy
+# temp
+import matplotlib.pyplot as plt
+import time
+#/temp
 def run(run_dict, full=False, use_EC = False, **kwargs):
     '''
     :param run_dict: dictionary storing data frames and run parameters
     :param full: boolean -- True: trials run for entire NUM_EVENTS, False: trials run until first reward collected
     :param use_EC: boolean, whether to use episodic system or not
     '''
+    KLD = False
+    if KLD:
+        run_dict['kld'] = []
+        maze= run_dict['environment']
+        reward_c, reward_r = maze.rwd_loc[0]
+        pol_array = np.zeros(maze.grid.shape,
+                             dtype=[('N', 'f8'), ('E', 'f8'), ('W', 'f8'), ('S', 'f8'), ('stay', 'f8'), ('poke', 'f8')])
+        mag = 100
+        for i in range(pol_array.shape[0]):  # rows
+            for j in range(pol_array.shape[1]):  # columns
+                # D: N
+                # U: S
+                # L: W
+                # R: E
+                if i < reward_r:
+                    D = 0
+                    U = mag
+                elif i > reward_r:
+                    D = mag
+                    U = 0
+                else:
+                    D = 0
+                    U = 0
+                if j < reward_c:
+                    R = mag
+                    L = 0
+                elif j > reward_c:
+                    R = 0
+                    L = mag
+                else:
+                    R = 0
+                    L = 0
+                stay = 0
+                poke = 0
+                if i == reward_r and j == reward_c:
+                    poke = mag
+
+                actions = [D, R, L, U, stay, poke]
+                policy = ac.softmax(actions)
+                pol_array[i][j] = tuple(policy)
+
+
 
     # get run parameters from run_dict
     NUM_TRIALS  = run_dict['NUM_TRIALS']
@@ -53,6 +99,7 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
     is_done     = False
     blocktime   = time.time()
 
+    vvs = []
     ### RUN THE TRIALS
     for trial in range(NUM_TRIALS):
         if is_done == True:
@@ -108,6 +155,14 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
                 if event == NUM_EVENTS-1:
                     run_dict['trial_length'].append(event)
 
+        ### some policy bullshit at reward location
+        #check_policy.append(MF(torch.Tensor(maze.get_frame(agtlocation=(12, 12))))[0].data[0])
+        #if trial == 2500:
+        #vv, pp = ac.snapshot(agent=run_dict['agent'], maze=run_dict['environment'])
+        #vvs.append(vv)
+        #    gp.plot_polmap(run_dict['environment'], pp)
+        #    gp.plot_valmap(run_dict['environment'], vv, v_range=[0, 1])
+        #    run_dict['environment'].rwd_loc = [(12,12)]
         if rec_mem:
             p_loss, v_loss = ac.finish_trial(MF,agent_params['gamma'],opt,cache=EC, buffer=memory_buffer)
         else:
@@ -119,14 +174,32 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
             run_dict['total_loss'][1].append(v_loss.item())
             run_dict['total_reward'].append(reward_sum)
 
-        #if saveplots:
-            #vv, pp = ac.snapshot(agent=run_dict['agent'], maze =run_dict['environment'])
+        if KLD:
+            ec_policies = ac.mem_snapshot(run_dict['environment'], agent_params['EC'], trial_timestamp=50, decay=recency_env, mem_temp=0.3)
+            # __, mf_pols = ac.snapshot(agent=run_dict['agent'], maze=run_dict['environment'])
+            mf_policies = pol_array #np.vstack(mf_pols)
 
-            #gp.plot_polmap(run_dict['environment'], pp, save=True, show=False, title=f"{trial}")
-            #gp.plot_valmap(run_dict['environment'], vv, save=True, show=False, title=f"{trial}")
+            kld = np.zeros(ec_policies.shape)
+            for i in range(ec_policies.shape[0]):
+                for j in range(ec_policies.shape[1]):
+                    if sum([e for e in ec_policies[i][j]]) == 0.0:
+                        kld[i][j] = np.nan
+                    else:
+                        mf_pol = ac.softmax([m for m in mf_policies[i][j]])
+                        ec_pol = ac.softmax([e for e in ec_policies[i][j]])
+                        kld[i][j] = entropy(ec_pol, mf_pol)
+            run_dict['kld'].append(kld)
+        run_dict['pp']= vvs
 
-            #abcd = ac.mem_snapshot(run_dict['environment'], agent_params['EC'], trial_timestamp=trial, decay=recency_env, mem_temp=agent_params['mem_temp'], get_vals=False)
-            #gp.plot_polmap(run_dict['environment'], abcd, threshold=0.4, save=True, show=False, title=f"EC_{trial}")
+
+        if saveplots:
+            vv, pp = ac.snapshot(agent=run_dict['agent'], maze =run_dict['environment'])
+
+            gp.plot_polmap(run_dict['environment'], pp, save=True, show=False, title=f"{trial}")
+            gp.plot_valmap(run_dict['environment'], vv, save=True, show=False, title=f"{trial}")
+
+            abcd = ac.mem_snapshot(run_dict['environment'], agent_params['EC'], trial_timestamp=trial, decay=recency_env, mem_temp=agent_params['mem_temp'], get_vals=False)
+            gp.plot_polmap(run_dict['environment'], abcd, threshold=0.22, save=True, show=False, title=f"EC_{trial}")
 
         if trial ==0 or trial%print_freq==0 or trial == NUM_TRIALS-1:
             print("[{0}]  Trial {1} TotRew = {2} ({3:.3f}s)".format(time.strftime("%H:%M:%S", time.localtime()), trial+1, reward_sum,time.time()-blocktime)) #print("[{0}]  Trial {1} total reward = {2} (Avg {3:.3f})".format(time.strftime("%H:%M:%S", time.localtime()), trial, reward_sum, float(reward_sum)/float(NUM_EVENTS)), "Block took {0:.3f}".format(time.time()-blocktime))
@@ -170,7 +243,7 @@ class Experiment(object):
         if self.use_memory:
                 self.MF_cs = self.episodic.make_pvals(self.ploss_scale, envelope=self.mfc_env)
         else:
-            self.MnF_cs = 1
+            self.MF_cs = 1
 
         self.memory_buffer = [[], [], [], [], trial]  # [timestamp, state_t, a_t, readable_state, trial]
         self.reward_sum = 0
@@ -265,3 +338,128 @@ class Experiment(object):
             if trial ==0 or trial%print_freq==0 or trial == NUM_TRIALS-1:
                 print("[{0}]  Trial {1} TotRew = {2} ({3:.3f}s)".format(time.strftime("%H:%M:%S", time.localtime()), trial+1, reward_sum,time.time()-blocktime)) #print("[{0}]  Trial {1} total reward = {2} (Avg {3:.3f})".format(time.strftime("%H:%M:%S", time.localtime()), trial, reward_sum, float(reward_sum)/float(NUM_EVENTS)), "Block took {0:.3f}".format(time.time()-blocktime))
                 blocktime = time.time()
+
+
+
+######################################################################3
+def get_snapshot(env, agent):
+    # get sample observations from all useable spaces in environment
+    samples, states = env.get_sample_obs()
+
+    # forward pass through network
+    pols, vals = agent(torch.Tensor(samples))
+
+    # initialize empty data frames
+    pol_grid = np.zeros(env.shape, dtype=[('N', 'f8'), ('E', 'f8'), ('W', 'f8'), ('S', 'f8'), ('stay', 'f8'), ('poke', 'f8')])
+    val_grid = np.empty(env.shape)
+
+    # populate with data from network
+    for s, p, v in zip(states, pols, vals):
+        pol_grid[s] = p.data[0].numpy()
+        val_grid[s] = v.item()
+
+    return pol_grid, val_grid
+
+def make_agent(agent_params, freeze=False):
+    if agent_params['load_model']:
+        # load previously saved model
+        MF = torch.load(agent_params['load_dir'])
+    else:
+        MF = ac.ActorCritic(agent_params)
+
+    if freeze:
+        freeze = []
+        unfreeze = []
+        for i, nums in MF.named_parameters():
+            if i[0:6] == 'output':
+                unfreeze.append(nums)
+            else:
+                freeze.append(nums)
+        MF.optimizer = optim.Adam([{'params': freeze, 'lr': 0.0}, {'params': unfreeze, 'lr': agent_params['eta']}], lr=0.0)
+    else:
+        MF.optimizer = optim.Adam(MF.parameters(), lr= agent_params['eta'])
+    return MF
+
+rows, columns = 20, 20
+env = gw.GridWorld(rows=rows,cols=columns,
+                   rewards={(int(rows/2),int(columns/2)):1},
+                   step_penalization=-0.01,
+                   rho=0.0)
+agent_params = {
+    'load_model':  False,
+    'load_dir':     f'../data/outputs/gridworld/openfield{rows}{columns}.pt',
+    'freeze_w':    False,
+
+    'input_dims':  env.observation.shape,
+    'action_dims': len(env.action_list),
+    'hidden_types':['conv','pool','linear'],
+    'hidden_dims': [None, None, 500],
+
+    'rfsize':      5,
+    'stride':      1,
+    'padding':     1,
+    'dilation':    1,
+
+    'gamma':       0.98,
+    'eta':         5e-4,
+
+    'use_EC':      True,
+    'EC':          {},
+    'cachelim':    300,
+    'mem_temp':    0.3
+}
+
+## Parameters
+NUM_TRIALS = 1000
+NUM_EVENTS = 300
+agent = ac.ActorCritic(agent_params)
+
+def run_expt(NUM_TRIALS, NUM_EVENTS, env, agent,
+               **kwargs):
+    total_reward = []
+    loss = []
+    print_freq = kwargs.get('printfreq', 0.1)
+    t = time.time()
+    for trial in range(NUM_TRIALS):
+        sar = []
+        reward_sum = 0
+        for event in range(NUM_EVENTS):
+            #get state observation
+            observation = torch.Tensor(np.expand_dims(env.get_observation(), axis=0))
+
+            #pass observation through network
+            policy_, value_ = agent(observation)
+
+            #select action from policy
+            choice = agent.select_action(policy_, value_)
+            action = env.action_list[choice][0]
+
+            #take a step in the environment
+
+            s_1d, reward, isdone = env.move(action)
+
+            agent.saved_rewards.append(reward)
+            reward_sum += reward
+            ###optional
+            #sar.append(env.state, action, reward) ## tracking oneD states
+            if isdone:
+                print(f'trial finished after {event+1} steps')
+                break
+
+        p_loss, v_loss = agent.finish_trial()
+
+        total_reward.append(reward_sum)
+        loss.append((p_loss, v_loss))
+
+        if trial % int(print_freq*NUM_TRIALS)==0:
+            print(f"{trial}: {reward_sum} ({time.time()-t}s)")
+            t = time.time()
+
+    return total_reward, loss
+
+print(int(0.1*NUM_TRIALS))
+total_reward = run_expt(NUM_TRIALS, NUM_EVENTS, env, agent)
+
+plt.plot(total_reward)
+plt.show()
+
