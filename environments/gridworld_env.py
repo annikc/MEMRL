@@ -285,14 +285,13 @@ class gridworld(object):
             self.reward_tally[i] = 0
 
     def get_reward(self, action):
-        if self.cur_state in self.rwd_loc: #if (action == 'poke') & (self.cur_state in self.rwd_loc):
+        if (action == 'poke') & (self.cur_state in self.rwd_loc): #if self.cur_state in self.rwd_loc: #
             self.rwd = self.rwd_mag
             self.done = True
             if self.maze_type == 'tmaze':
                 if self.port_shift in ['equal', 'left', 'right']:
                     self.shift_rwd(self.port_shift)
-            self.reward_tally[self.cur_state] += 1
-
+            #self.reward_tally[self.cur_state] += 1
         else:
             self.rwd = self.step_penalization
             self.done = False

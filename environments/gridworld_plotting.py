@@ -126,22 +126,22 @@ def plot_valmap(maze, value_array, save=False, **kwargs):
 	vmin, vmax = kwargs.get('v_range', [0,1])
 	cmap = plt.cm.Spectral_r
 	cNorm = colors.Normalize(vmin=vmin, vmax=vmax)
-	for i in maze.obstacles:
-		vals[i[1], i[0]] = np.nan
+	for i in maze.obstacles_list:
+		vals[i] = np.nan
 	cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
 	ax1.pcolor(vals, cmap=cmap, vmin = vmin, vmax = vmax)
 
 	ax1.invert_yaxis()
 
 	# add patch for reward location/s (red)
-	for rwd_loc in maze.rwd_loc:
+	for rwd_loc in maze.rewards:
 		rwd_y, rwd_x = rwd_loc
 		ax1.add_patch(plt.Rectangle((rwd_y, rwd_x), width=.95, height=1, linewidth=1, ec='white', fill=False))
 
 
 	ax1.set_aspect('equal')
 	ax1.invert_yaxis()
-	plt.title(title)
+	ax1.set_title(title)
 
 
 	if save:
@@ -171,7 +171,7 @@ def plot_polmap(maze, policy_array, save=False, **kwargs):
 	# make base grid
 	ax1.pcolor(maze.grid, vmin=0, vmax=1, cmap='bone')
 	# add patch for reward location/s (red)
-	for rwd_loc in maze.rwd_loc:
+	for rwd_loc in maze.rewards:
 		rwd_y, rwd_x = rwd_loc
 		ax1.add_patch(plt.Rectangle((rwd_y, rwd_x), width=1, height=1, linewidth=1, ec='white', fill=False))
 
@@ -180,8 +180,8 @@ def plot_polmap(maze, policy_array, save=False, **kwargs):
 
 	cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
 
-	for i in range(0, maze.grid.shape[1]):
-		for j in range(0, maze.grid.shape[0]):
+	for i in range(maze.c):
+		for j in range(maze.r):
 			action = np.argmax(tuple(policy_array[i][j]))
 			prob = max(policy_array[i][j])
 
@@ -195,7 +195,7 @@ def plot_polmap(maze, policy_array, save=False, **kwargs):
 			else:
 				pass
 	ax1.set_aspect('equal')
-	plt.title(title)
+	ax1.set_title(title)
 
 	if save:
 		plt.savefig(f'../data/figures/p_{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')

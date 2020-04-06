@@ -126,12 +126,12 @@ class GridWorld(object):
         # TODO - reset environment including initializing start state
         self.resetEnvironment()
 
-    def oneD2twoD(self, idx):
-        return (int(idx / self.shape[1]),np.mod(idx,self.shape[1]))
+    def oneD2twoD(self, idx, shape):
+        return (int(idx / shape[1]),np.mod(idx,shape[1]))
 
-    def twoD2oneD(self, coord_tuple):
+    def twoD2oneD(self, coord_tuple, shape):
         r,c = coord_tuple
-        return (r * self.shape[1]) + c
+        return (r * shape[1]) + c
 
     def buildGrid(self, bound=False): #formerly grid_maker()
         env_types = [None, 'bar','room','tmaze', 'triple_reward']
@@ -207,7 +207,7 @@ class GridWorld(object):
 
                 obstacles = list(zip(np.where(grid==1)[1], np.where(grid==1)[0]))
                 self.obstacle2D = obstacles
-                self.obstacle = [self.twoD2oneD((r,c)) for r,c in obstacles]
+                self.obstacle = [self.twoD2oneD((r,c), self.shape) for r,c in obstacles]
             else:
                 self.obstacle2D = []
                 self.obstacle = []
@@ -217,10 +217,10 @@ class GridWorld(object):
                     self.obstacles_list.remove(reward_loc)
             if isinstance(self.obstacles_list, tuple):
                 self.obstacle2D = [self.obstacles_list]
-                self.obstacle = [self.twoD2oneD(self.obstacles_list)]
+                self.obstacle = [self.twoD2oneD(self.obstacles_list, self.shape)]
             else:
                 self.obstacle2D = self.obstacles_list
-                self.obstacle = [self.twoD2oneD((r,c)) for r,c in self.obstacles_list]
+                self.obstacle = [self.twoD2oneD((r,c), self.shape) for r,c in self.obstacles_list]
                 for coord in self.obstacles_list:
                     grid[coord] = 1
 
@@ -240,12 +240,12 @@ class GridWorld(object):
             self.R = self.step_penalization*np.ones((self.nstates, len(self.action_list)))
             action = self.action_list.index(self.rwd_action)
             for r,c in list(self.rewards.keys()):
-                self.R[self.twoD2oneD((r,c)), action] = self.rewards[(r,c)]
+                self.R[self.twoD2oneD((r,c),self.shape), action] = self.rewards[(r,c)]
         else:
             # specify reward function
             self.R = self.step_penalization*np.ones((self.nstates,))  # rewards received upon leaving state
             for r,c in list(self.rewards.keys()):
-                self.R[self.twoD2oneD((r,c))] = self.rewards[(r,c)]
+                self.R[self.twoD2oneD((r,c),self.shape)] = self.rewards[(r,c)]
 
     def buildTransitionMatrices(self):
         # initialize
@@ -281,9 +281,9 @@ class GridWorld(object):
             self.start = self.get_start_location(around_reward=self.around_reward)
         else:
             self.start = self.useable[0]
-        self.state = self.twoD2oneD(self.start)
+        self.state = self.twoD2oneD(self.start, self.shape)
 
-        self.observation = self.get_observation()
+        self.observation = self.get_frame()
 
         self.done = False
         #self.rwd = 0
@@ -353,8 +353,8 @@ class GridWorld(object):
 
         return reward
 
-    def get_observation(self, **kwargs):
-        agent_location  = kwargs.get('agtlocation', self.oneD2twoD(self.state))
+    def get_frame(self, **kwargs):
+        agent_location  = kwargs.get('agtlocation', self.oneD2twoD(self.state,self.shape))
         reward_location = kwargs.get('rwdlocation', self.rewards)
 
         #location of reward
@@ -367,15 +367,6 @@ class GridWorld(object):
         agt_position[agent_location] = 1
 
         return np.array([self.grid, rwd_position, agt_position])
-
-    def get_sample_obs(self):
-        env_sample = [[],[]]
-        for i in self.useable:
-            observation = self.get_observation(agtlocation = i)
-            env_sample[0].append(observation)
-            env_sample[1].append(i)
-
-        return env_sample
 
     def shift_reward(self,shift): # TODO fix for kirth
         port_rwd_probabilities = [0.333, 0.333, 0.333]
@@ -415,8 +406,7 @@ class GridWorld(object):
 
         # check if move is valid, and then move
         if not self.get_actions()[self.action_dict[action]]:
-            #raise Exception('Agent has tried an invalid action!')
-            pass
+            raise Exception('Agent has tried an invalid action!')
         else:
             self.transition_probs = self.P[self.action_dict[action], self.state,:]
             self.state = np.nonzero(self.P[self.action_dict[action],self.state,:])[0][0]  # update to new state
@@ -433,7 +423,11 @@ class GridWorld(object):
 def plotWorld(world, plotNow=False, current_state = False, **kwargs):
     scale = kwargs.get('scale', 1)
     r,c = world.shape
+<<<<<<< HEAD
+    
+=======
 
+>>>>>>> ff24dc14baa33692ed9e1465c6416f63405794cc
     fig = plt.figure(figsize=(c*scale, r*scale))
 
     gridMat = np.zeros(world.shape)
@@ -466,7 +460,7 @@ def plotWorld(world, plotNow=False, current_state = False, **kwargs):
         plt.gca().add_patch(plt.Rectangle((rwd_c, rwd_r), width=1, height=1, linewidth=2, facecolor=colorcode, alpha=0.5))
 
     if current_state:
-        agent_r, agent_c = world.oneD2twoD(world.state)
+        agent_r, agent_c = oneD2twoD(world.state, world.shape)
         agent_dot = plt.Circle((agent_c + .5, agent_r + .5), 0.35, fc='b') ## plot functions use x,y we use row(y), col(x)
         plt.gca().add_patch(agent_dot)
     plt.xticks(np.arange(c) + 0.5, np.arange(c))
@@ -492,6 +486,10 @@ def make_arrows(action):
     dx,dy = offsets[action]
     head_w, head_l = 0.1, 0.1
     return dx, dy, head_w, head_l
+
+
+
+env = GridWorld(rows=4, cols=6, rewards={(0,1):10, (2,2):-1}, obstacles=[(0,2), (2,4)])
 
 
 
