@@ -20,6 +20,7 @@ import stategen as sg
 # =====================================
 #              FUNCTIONS
 # =====================================
+SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
 def softmax(x, T=1):
 	e_x = np.exp((x - np.max(x))/T)
@@ -43,7 +44,7 @@ def make_agent(agent_params, **kwargs):
 	if agent_params['load_model']:
 		MF = torch.load(agent_params['load_dir']) # load previously saved model
 	else:
-		MF = AC_Net(agent_params)
+		MF = ActorCritic(agent_params)
 
 	if freeze_weights:
 		freeze = []
@@ -171,8 +172,6 @@ class ActorCritic(nn.Module):
 										 nn.Linear(input_dimensions, 1)])  # CRITIC
 		self.output_d = self.hidden_dims[-1]
 
-		self.SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
-
 		self.saved_actions = []
 		self.saved_rewards = []
 
@@ -226,15 +225,18 @@ class ActorCritic(nn.Module):
 				self.conv = x
 			elif isinstance(layer, nn.MaxPool2d):
 				x = layer(x)
+			if i == get_lin_act:
+				lin_activity = x
 		# pass to the output layers
 		policy = F.softmax(self.output[0](x), dim=1)
 		value  = self.output[1](x)
 
 		if get_lin_act is not None:
-			if isinstance(self.hidden[get_lin_act], nn.Linear):
-				return policy, value, lin_activity
-			else:
-				raise Exception('Layer Specified by parameter lin_act is not a linear layer')
+			return policy, value, lin_activity
+			#if isinstance(self.hidden[get_lin_act], nn.Linear):
+			#	return policy, value, lin_activity
+			#else:
+			#	raise Exception('Layer Specified by parameter lin_act is not a linear layer')
 		else:
 			return policy, value
 
@@ -260,14 +262,14 @@ class ActorCritic(nn.Module):
 	def select_action(self, policy, value):
 		a = Categorical(policy)
 		action = a.sample()
-		self.saved_actions.append(self.SavedAction(a.log_prob(action), value))
+		self.saved_actions.append(SavedAction(a.log_prob(action), value))
 		return action.item() #, policy.data[0], value.item()
 
 	def select_ec_action(self, mf_policy_, mf_value_, ec_policy_):
 		a = Categorical(ec_policy_)
 		b = Categorical(mf_policy_)
 		action = a.sample()
-		self.saved_actions.append(self.SavedAction(b.log_prob(action), mf_value_))
+		self.saved_actions.append(SavedAction(b.log_prob(action), mf_value_))
 		return action.item() #, mf_policy_.data[0], mf_value_.item()
 
 	# Functions for computing relevant terms for weight updates after trial runs
@@ -284,7 +286,6 @@ class ActorCritic(nn.Module):
 			value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
 
 		self.optimizer.zero_grad()
-
 		p_loss, v_loss = torch.cat(policy_losses).sum(), torch.cat(value_losses).sum()
 		total_loss = p_loss + v_loss
 		total_loss.backward(retain_graph=False)
@@ -295,7 +296,56 @@ class ActorCritic(nn.Module):
 		del self.saved_actions[:]
 		return p_loss, v_loss
 
+	def finish_trial_EC(self, **kwargs):
+		policy_losses = []
+		value_losses = []
+		saved_actions = self.saved_actions
+		returns_ = torch.Tensor(discount_rwds(np.asarray(self.saved_rewards), gamma=self.gamma))
 
+		EC = kwargs.get('cache', None)
+		buffer = kwargs.get('buffer', None)
+
+		if EC is not None:
+			if buffer is not None:
+				mem_dict = {}
+				timesteps, states, actions, readable, trial = buffer
+			# timesteps = buffer[0]
+			# states    = buffer[1]
+			# actions   = buffer[2]
+			# readable  = buffer[3]
+			# trial 	  = buffer[4]
+			else:
+				raise Exception('No memory buffer provided for kwarg "buffer=" ')
+
+			for (log_prob, value), r, t_, s_, a_, rdbl in zip(saved_actions, returns_, timesteps, states, actions,
+															  readable):
+				rpe = r - value.item()
+				policy_losses.append(-log_prob * rpe)
+				value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
+
+				mem_dict['activity'] = s_
+				mem_dict['action'] = a_
+				mem_dict['delta'] = r  ## trial change
+				mem_dict['timestamp'] = t_
+				mem_dict['readable'] = rdbl
+				mem_dict['trial'] = trial
+				EC.add_mem(mem_dict)
+		else:
+			for (log_prob, value), r in zip(saved_actions, returns_):
+				rpe = r - value.item()
+				policy_losses.append(-log_prob * rpe)
+				value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
+
+		self.optimizer.zero_grad()
+		p_loss, v_loss = torch.cat(policy_losses).sum(), torch.cat(value_losses).sum()
+		total_loss = p_loss + v_loss
+		total_loss.backward(retain_graph=False)
+		self.optimizer.step()
+
+		del self.saved_rewards[:]
+		del self.saved_actions[:]
+
+		return p_loss, v_loss
 
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -378,20 +428,3 @@ def mem_snapshot(maze, EC, trial_timestamp,**kwargs):
 	else:
 		return mpol_array
 
-#++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-
-def main():
-	agent_params = {'input_dims': (3,10,10),
-					'action_dims': 6,
-					'hidden_types': ['conv','pool','conv','pool','linear','linear'],
-					'hidden_dims':  [None, None, None, None, 500, 200],
-					'gamma':        0.98
-				   }
-	t = Agent(agent_params)
-
-	state_container = []
-	state = torch.Tensor(np.random.randn(1,3,10,10))
-	policy, value = t(state)
-	print(policy.data[0], value[0])
