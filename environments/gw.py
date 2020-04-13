@@ -77,10 +77,10 @@ class GridWorld(object):
         if terminals is not None:
             if isinstance(terminals, tuple):
                 self.terminal2D = [terminals]
-                self.terminal = [self.twoD2oneD(terminals,self.shape)]
+                self.terminal = [self.twoD2oneD(terminals)]
             else:
                 self.terminal2D = terminals
-                self.terminal = [self.twoD2oneD((r,c),self.shape) for r,c in terminals]
+                self.terminal = [self.twoD2oneD((r,c)) for r,c in terminals]
         else:
             self.terminal2D = []
             self.terminal = []
@@ -89,8 +89,8 @@ class GridWorld(object):
         # populate list of jump states
         if jumps is not None:
             self.jump = jumps
-            self.jump_from = [self.twoD2oneD((r,c),self.shape) for r,c in list(jumps.keys())]
-            self.jump_to = [self.twoD2oneD((r,c),self.shape) for r,c in list(jumps.values())]
+            self.jump_from = [self.twoD2oneD((r,c)) for r,c in list(jumps.keys())]
+            self.jump_to = [self.twoD2oneD((r,c)) for r,c in list(jumps.values())]
         else:
             self.jump = None
             self.jump_from = []
@@ -124,7 +124,7 @@ class GridWorld(object):
             self.start_loc      = self.starter
 
         # TODO - reset environment including initializing start state
-        self.resetEnvironment()
+        self.resetEnvironment(around_reward=True)
 
     def oneD2twoD(self, idx):
         return (int(idx / self.shape[1]),np.mod(idx,self.shape[1]))
@@ -277,8 +277,9 @@ class GridWorld(object):
     def resetEnvironment(self, random_start=True, **kwargs):
         self.random_start = random_start
         self.around_reward = kwargs.get('around_rwd', False)
+        rad = kwargs.get('radius', 5)
         if self.random_start:
-            self.start = self.get_start_location(around_reward=self.around_reward)
+            self.start = self.get_start_location(around_reward=self.around_reward, rad=rad)
         else:
             self.start = self.useable[0]
         self.state = self.twoD2oneD(self.start)
@@ -288,33 +289,35 @@ class GridWorld(object):
         self.done = False
         #self.rwd = 0
 
-    def get_start_location(self, around_reward):
+    def get_start_location(self, around_reward, **kwargs):
         if around_reward:
+            radius = kwargs.get('rad', 5)
             # pick starting location for agent in radius around reward location
-            start_buffer = 5  # radius around reward
+            start_buffer = radius  # radius around reward
+            starting_reward = list(self.rewards.keys())[np.random.choice(np.arange(len(self.rewards.keys())))]
             get_start_loc = True
             while get_start_loc:
-                buf_x = np.random.choice(np.arange(start_buffer))
-                start_x = self.rwd_loc[0][0] + np.random.choice([-1, 1])*buf_x
-                if start_x < 0:
-                    start_x = 0
-                elif start_x > self.grid.shape[1] - 1:
-                    start_x = self.grid.shape[1] - 1
+                buf_r = np.random.choice(np.arange(start_buffer))
+                start_r = starting_reward[0] + np.random.choice([-1, 1])*buf_r
+                if start_r < 0:
+                    start_r = 0
+                elif start_r > self.grid.shape[0] - 1:
+                    start_r = self.grid.shape[0] - 1
 
-                buf_y = np.random.choice(np.arange(start_buffer))
-                start_y = self.rwd_loc[0][1] + np.random.choice([-1, 1])*buf_y
-                if start_y < 0:
-                    start_y = 0
-                elif start_y > self.grid.shape[1] - 1:
-                    start_y = self.grid.shape[1] - 1
-                if (start_x, start_y) in self.useable:
+                buf_c = np.random.choice(np.arange(start_buffer))
+                start_c = starting_reward[1] + np.random.choice([-1, 1])*buf_c
+                if start_c < 0:
+                    start_c = 0
+                elif start_c > self.grid.shape[1] - 1:
+                    start_c = self.grid.shape[1] - 1
+                if (start_r, start_c) in self.useable:
                     get_start_loc = False
         else: # pick a random starting location for agent within the useable spaces
             get_start = np.random.choice(len(self.useable))
-            start_x = self.useable[get_start][0]
-            start_y = self.useable[get_start][1]
+            start_r = self.useable[get_start][0]
+            start_c = self.useable[get_start][1]
 
-        start_coord = (start_x, start_y)
+        start_coord = (start_r, start_c)
 
         return start_coord
 
@@ -337,13 +340,13 @@ class GridWorld(object):
         # recalculate reward function
 
     def get_reward(self, action):
-        finish_after_first_reward = False
+        finish_after_first_reward = True
 
         if len(self.R.shape) > 1:
             reward = self.R[self.state,self.action_dict[action]]
         else:
             reward = self.R[self.state]
-        if finish_after_first_reward and reward > 0:
+        if finish_after_first_reward and reward > 0: # TODO make this more robust using self.rewards
             self.done = True
 
         # TODO: fix for kirth
@@ -414,19 +417,26 @@ class GridWorld(object):
         """
 
         # check if move is valid, and then move
+        x = self.get_actions()
         if not self.get_actions()[self.action_dict[action]]:
             #raise Exception('Agent has tried an invalid action!')
             pass
         else:
-            self.transition_probs = self.P[self.action_dict[action], self.state,:]
-            self.state = np.nonzero(self.P[self.action_dict[action],self.state,:])[0][0]  # update to new state
+            transition_probs = self.P[self.action_dict[action], self.state,:]
+            self.state = np.nonzero(transition_probs)[0][0]  # update to new state
 
         reward = self.get_reward(action)
 
         # check if this is a terminal state
-        is_terminal = True if self.state in self.terminal else False
+        #is_terminal = True if self.state in self.terminal else False
+        is_terminal = self.done
 
         return (self.state, reward, is_terminal)
+
+
+
+
+
 
 
 #======================================================================================================================

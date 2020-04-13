@@ -70,6 +70,28 @@ def make_arrows(action, probability):
 
 	return dx, dy, head_w, head_l
 
+def make_arrows_new(action, probability):
+	'''
+	:param action:
+	:param probability:
+	:return:
+	'''
+	if probability == 0:
+		dx, dy = 0, 0
+		head_w, head_l = 0, 0
+	else:
+		dxdy = [(0.0, 0.25),  #D
+				(0.0, -0.25), #U
+				(0.25, 0.0),  #R
+				(-0.25, 0.0), #L
+				(0.1,-0.1), # points right and up #J
+				(-0.1,0.1), # points left and down # P
+				]
+		dx,dy = dxdy[action]
+
+		head_w, head_l = 0.1, 0.1
+
+	return dx, dy, head_w, head_l
 
 # =====================================
 #          PLOTTING FUNCTIONS
@@ -118,7 +140,9 @@ def plot_valmap(maze, value_array, save=False, **kwargs):
 	'''
 	show = kwargs.get('show', True)
 	title = kwargs.get('title', 'State Value Estimates')
+	directory = kwargs.get('directory', '../data/figures/')
 	filetype = kwargs.get('filetype', 'png')
+	rewards = kwargs.get('rwds', maze.rewards)
 	vals = value_array.copy()
 	fig = plt.figure(figsize=(7,5))
 	ax1 = fig.add_axes([0, 0, 0.85, 0.85])
@@ -131,21 +155,18 @@ def plot_valmap(maze, value_array, save=False, **kwargs):
 	cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
 	ax1.pcolor(vals, cmap=cmap, vmin = vmin, vmax = vmax)
 
-	ax1.invert_yaxis()
-
 	# add patch for reward location/s (red)
-	for rwd_loc in maze.rewards:
-		rwd_y, rwd_x = rwd_loc
-		ax1.add_patch(plt.Rectangle((rwd_y, rwd_x), width=.95, height=1, linewidth=1, ec='white', fill=False))
+	for rwd_loc in rewards:
+		rwd_r, rwd_c = rwd_loc
+		ax1.add_patch(plt.Rectangle((rwd_c, rwd_r), width=0.99, height=1, linewidth=1, ec='white', fill=False))
 
 
 	ax1.set_aspect('equal')
 	ax1.invert_yaxis()
 	ax1.set_title(title)
 
-
 	if save:
-		plt.savefig(f'../data/figures/v_{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
+		plt.savefig(f'{directory}{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
 	if show:
 		plt.show()
 
@@ -159,7 +180,9 @@ def plot_polmap(maze, policy_array, save=False, **kwargs):
 	'''
 	show = kwargs.get('show', True)
 	title = kwargs.get('title', 'Most Likely Action from Policy')
+	directory = kwargs.get('directory', '../data/figures/')
 	filetype = kwargs.get('filetype', 'png')
+	rewards = kwargs.get('rwds', maze.rewards)
 	fig = plt.figure(figsize=(7,5))
 	ax1 = fig.add_axes([0, 0, 0.85, 0.85])
 	axc = fig.add_axes([0.75, 0, 0.05, 0.85])
@@ -171,21 +194,20 @@ def plot_polmap(maze, policy_array, save=False, **kwargs):
 	# make base grid
 	ax1.pcolor(maze.grid, vmin=0, vmax=1, cmap='bone')
 	# add patch for reward location/s (red)
-	for rwd_loc in maze.rewards:
-		rwd_y, rwd_x = rwd_loc
-		ax1.add_patch(plt.Rectangle((rwd_y, rwd_x), width=1, height=1, linewidth=1, ec='white', fill=False))
+	for rwd_loc in rewards:
+		rwd_r, rwd_c = rwd_loc
+		ax1.add_patch(plt.Rectangle((rwd_c, rwd_r), width=0.99, height=1, linewidth=1, ec='white', fill=False))
 
 	chance_threshold = kwargs.get('threshold',0.18)  #np.round(1 / len(maze.actionlist), 6)
 
 
 	cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
-
 	for i in range(maze.c):
 		for j in range(maze.r):
 			action = np.argmax(tuple(policy_array[i][j]))
 			prob = max(policy_array[i][j])
 
-			dx1, dy1, head_w, head_l = make_arrows(action, prob)
+			dx1, dy1, head_w, head_l = make_arrows_new(action, prob)
 			if prob > chance_threshold:
 				if (dx1, dy1) == (0, 0):
 					pass
@@ -196,9 +218,10 @@ def plot_polmap(maze, policy_array, save=False, **kwargs):
 				pass
 	ax1.set_aspect('equal')
 	ax1.set_title(title)
+	ax1.invert_yaxis()
 
 	if save:
-		plt.savefig(f'../data/figures/p_{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
+		plt.savefig(f'{directory}{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
 	if show:
 		plt.show()
 	plt.close()
