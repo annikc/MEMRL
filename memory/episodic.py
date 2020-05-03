@@ -11,6 +11,7 @@ Author: Annik Carson
 # =====================================
 from __future__ import division, print_function
 import numpy as np
+import time
 
 class ep_mem(object):
 	def __init__(self, model, cache_limit,**kwargs):
@@ -44,7 +45,7 @@ class ep_mem(object):
 			# Case 1a: key does not yet exist
 			if activity not in self.cache_list.keys(): # if no key for this state exists already, add new one
 				mem_entry = np.empty((self.n_actions, 2))
-				mem_entry[:,0] = np.nan # initialize deltas to nan
+				mem_entry[:,0] = np.NINF # initialize deltas to nan
 				mem_entry[:,1] = np.inf # initialize timestamps to inf
 				self.cache_list[activity] = [mem_entry, np.inf, None]
 			# Case 1b: key exists, add or replace relevant info in mem container
@@ -64,7 +65,7 @@ class ep_mem(object):
 
 				# add new mem container
 				mem_entry = np.empty((self.n_actions, 2))
-				mem_entry[:,0] = np.nan
+				mem_entry[:,0] = np.NINF
 				mem_entry[:,1] = np.inf # initialize entries to nan
 				self.cache_list[activity] = [mem_entry, np.inf, None]
 			# Case2b: key exists, add or replace relevant info in mem container
@@ -94,16 +95,15 @@ class ep_mem(object):
 			memory       = np.nan_to_num(self.cache_list[lin_act][0])
 
 			deltas       = memory[:,0]
-			times        = abs(timestep - memory[:,1])
-			pvals 		 = self.make_pvals(times, envelope=envelope)
-			policy = softmax( similarity*np.multiply(deltas, pvals), T=mem_temp) #np.multiply(sim,deltas))
+			#times        = abs(timestep - memory[:,1])
+			#pvals 		 = self.make_pvals(times, envelope=envelope)
+			policy = softmax( similarity*deltas, T=mem_temp) #np.multiply(sim,deltas))
 			return policy
+
 
 	def make_pvals(self, p, **kwargs):
 		envelope = kwargs.get('envelope', self.memory_envelope)
 		if isinstance(p,int):
-			print(p, envelope)
-			print(p/envelope)
 			ratio = p/envelope
 			return np.round(1 / np.cosh(ratio), 8)
 		else:

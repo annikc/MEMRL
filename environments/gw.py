@@ -198,6 +198,7 @@ class GridWorld(object):
                         self.possible_ports.append((h1,i))
 
         if self.obstacles_list is None:
+            print('rho', type(self.rho))
             if self.rho != 0:
                 maze = np.vstack([[np.random.choice([0,1], p = [1-self.rho, self.rho]) for _ in range(self.c)] for _ in range(self.r)])
                 grid = grid + maze
@@ -205,12 +206,10 @@ class GridWorld(object):
                     if grid[reward_loc[1], reward_loc[0]] == 1:
                         grid[reward_loc[1], reward_loc[0]] = 0
 
-                obstacles = list(zip(np.where(grid==1)[1], np.where(grid==1)[0]))
-                self.obstacle2D = obstacles
-                self.obstacle = [self.twoD2oneD((r,c)) for r,c in obstacles]
-            else:
-                self.obstacle2D = []
-                self.obstacle = []
+            obstacles = list(zip(np.where(grid==1)[1], np.where(grid==1)[0]))
+            self.obstacle2D = obstacles
+            self.obstacle = [self.twoD2oneD((r,c)) for r,c in obstacles]
+
         else:
             for reward_loc in self.rewards:
                 if reward_loc in self.obstacles_list:
@@ -442,6 +441,10 @@ class GridWorld(object):
 #======================================================================================================================
 def plotWorld(world, plotNow=False, current_state = False, **kwargs):
     scale = kwargs.get('scale', 1)
+    title = kwargs.get('title', 'Grid World')
+    ax_labels = kwargs.get('ax_labels', False)
+    state_labels = kwargs.get('states', False)
+
     r,c = world.shape
 
     fig = plt.figure(figsize=(c*scale, r*scale))
@@ -479,11 +482,21 @@ def plotWorld(world, plotNow=False, current_state = False, **kwargs):
         agent_r, agent_c = world.oneD2twoD(world.state)
         agent_dot = plt.Circle((agent_c + .5, agent_r + .5), 0.35, fc='b') ## plot functions use x,y we use row(y), col(x)
         plt.gca().add_patch(agent_dot)
+
+    if state_labels:
+        for (i,j) in world.useable:
+            # i = row, j = col
+            plt.annotate(f'{world.twoD2oneD((i,j))}', (j+0.3,i+0.7))
+
+
     plt.xticks(np.arange(c) + 0.5, np.arange(c))
     plt.yticks(np.arange(r) + 0.5, np.arange(r))
     plt.gca().invert_yaxis()
     plt.gca().set_aspect('equal')
-    plt.title('Grid World')
+    if not ax_labels:
+        plt.gca().get_xaxis().set_ticks([])
+        plt.gca().get_yaxis().set_ticks([])
+    plt.title(title)
     if plotNow:
         plt.show()
     return fig

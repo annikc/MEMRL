@@ -404,25 +404,24 @@ def snapshot(maze, agent):
 def mem_snapshot(maze, EC, trial_timestamp,**kwargs):
 	envelope = kwargs.get('decay', 50)
 	mem_temp = kwargs.get('mem_temp', 1)
-	mpol_array = np.zeros(maze.grid.shape, dtype=[('N', 'f8'), ('E', 'f8'), ('W', 'f8'), ('S', 'f8'), ('stay', 'f8'), ('poke', 'f8')])
+	mpol_array = np.zeros(maze.grid.shape, dtype=[('D', 'f8'), ('U', 'f8'), ('R', 'f8'), ('L', 'f8'), ('J', 'f8'), ('P', 'f8')])
 	get_vals = kwargs.get('get_vals', False)
 	if get_vals:
-		mval_array = np.zeros(maze.grid.shape, dtype=[('N', 'f8'), ('E', 'f8'), ('W', 'f8'), ('S', 'f8'), ('stay', 'f8'), ('poke', 'f8')])
-
+		mval_array = np.zeros(maze.grid.shape, dtype=[('D', 'f8'), ('U', 'f8'), ('R', 'f8'), ('L', 'f8'), ('J', 'f8'), ('P', 'f8')])
+		mval_array[:] = np.nan
 	# cycle through readable states
 	for i in EC.cache_list.values():
-		xval = i[2][0]
-		yval = i[2][1]
+		row, col = i[2]
 
 		memory       = np.nan_to_num(i[0])
-		deltas       = memory[:,0]
-		times        = abs(trial_timestamp - memory[:,1])
-		pvals 		 = EC.make_pvals(times, envelope=envelope)
+		deltas       = i[0][:,0]
+		#times        = abs(trial_timestamp - memory[:,1])
+		#pvals 		 = EC.make_pvals(times, envelope=envelope)
 
-		policy = softmax(  np.multiply(deltas, pvals), T=mem_temp) #np.multiply(sim,deltas))
-		mpol_array[yval][xval] = tuple(policy)
+		policy = softmax( np.nan_to_num(deltas), T=mem_temp) #np.multiply(sim,deltas))
+		mpol_array[row, col] = tuple(policy)
 		if get_vals:
-			mval_array[yval][xval] = tuple(deltas)
+			mval_array[row,col] = tuple(deltas)
 	if get_vals:
 		return mpol_array, mval_array
 	else:
