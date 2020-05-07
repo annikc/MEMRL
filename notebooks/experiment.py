@@ -16,16 +16,15 @@ import matplotlib.pyplot as plt
 import time
 #/
 ####################################################
-def get_snapshot(sample_obs, env, agent):
+def sample_PV(sample_obs, env, agent):
+    # initialize empty data frames
+    pol_grid = np.zeros(env.shape, dtype=[('D', 'f8'), ('U', 'f8'), ('R', 'f8'), ('L', 'f8'), ('J', 'f8'), ('P', 'f8')])
+    val_grid = np.empty(env.shape)
     # get sample observations from all useable spaces in environment
     samples, states = sample_obs
 
     # forward pass through network
     pols, vals = agent(torch.Tensor(samples))
-
-    # initialize empty data frames
-    pol_grid = np.zeros(env.shape, dtype=[('N', 'f8'), ('E', 'f8'), ('W', 'f8'), ('S', 'f8'), ('stay', 'f8'), ('poke', 'f8')])
-    val_grid = np.empty(env.shape)
 
     # populate with data from network
     for s, p, v in zip(states, pols, vals):
@@ -33,6 +32,201 @@ def get_snapshot(sample_obs, env, agent):
         val_grid[s] = v.item()
 
     return pol_grid, val_grid
+
+def run_expt(NUM_TRIALS, NUM_EVENTS, env, agent, data, **kwargs):
+    print_freq = kwargs.get('printfreq', 0.1)
+
+    get_samples = kwargs.get('get_samples', False)
+    if get_samples:
+        sample_observations = env.get_sample_obs()
+
+    around_reward = kwargs.get('around_reward', True)
+    start_radius = kwargs.get('radius', 5)
+
+    start_locs = kwargs.get('room', None)
+
+    t = time.time()
+    data['start_count'] = np.zeros(env.shape)
+    for trial in range(NUM_TRIALS):
+        # reset environment, reinitialize agent in environment
+        env.resetEnvironment(around_rwd=around_reward, radius=start_radius)
+
+        if start_locs is not None:
+            # st = np.random.choice(len(start_locs))
+            st = start_locs[trial]
+            env.set_state(env.twoD2oneD(st))
+
+        loc1 = env.oneD2twoD(env.state)
+        data['start_count'][loc1[0], loc1[1]] += 1
+        # env.set_state(env.twoD2oneD((19,19)))
+        # clear hidden layer cache if using lstm or gru cells
+        agent.reinit_hid()
+        reward_sum = 0
+
+        for event in range(NUM_EVENTS):
+            # get state observation
+            observation = torch.Tensor(np.expand_dims(env.get_observation(), axis=0))
+
+            # pass observation through network
+            # policy_, value_ = agent(observation)
+            policy_, value_, lin_act_ = agent(observation, lin_act=4)
+            lin_act = tuple(lin_act_.data[0].numpy())
+            agent.saved_psi.append(lin_act)
+
+            # select action from policy
+            choice = agent.select_action(policy_, value_)
+            action = env.action_list[choice][0]
+
+            # take a step in the environment
+
+            s_1d, reward, isdone = env.move(action)
+
+            agent.saved_rewards.append(reward)
+            reward_sum += reward
+            ###optional
+            # sar.append(env.state, action, reward) ## tracking oneD states
+            if isdone:
+                break
+
+        p_loss, v_loss ,q_loss = agent.finish_trial()
+        data['trial_length'].append(event)
+        data['total_reward'].append(reward_sum)
+        data['loss'][0].append(p_loss.item())
+        data['loss'][1].append(v_loss.item())
+        data['trials_run_to_date'] += 1
+        if get_samples:
+            pol_grid, val_grid = sample_PV(sample_observations, env, agent)
+            data['pol_tracking'].append(pol_grid)
+            data['val_tracking'].append(val_grid)
+            data['t'].append(trial)
+
+        if trial == 0 or trial % int(print_freq * NUM_TRIALS) == 0 or trial == NUM_TRIALS - 1:
+            print(f"{trial}: start at {loc1} {reward_sum} ({time.time() - t}s)")
+
+            # num_states = len(env.useable)
+            # cos_sim = np.zeros((num_states,num_states))
+
+            # observations = env.get_sample_obs()
+            # p,v,lin_acts4 = agent(torch.Tensor(observations[0]), lin_act=4)
+
+            # LA4 = lin_acts4.data.numpy()
+
+            # cs4 = cosine_similarity(LA4,LA4)
+
+            # plt.figure(0)
+            # plt.pcolor(cs4)
+            # plt.show()
+            t = time.time()
+
+        if around_reward and trial > 0 and trial == int(
+                NUM_TRIALS / 2):  # np.mean(data['trial_length'][-20:])< 2*start_radius:
+            print(trial)
+            # around_reward = False
+
+def run_mem_expt(NUM_TRIALS, NUM_EVENTS, env, agent, episodic, data, **kwargs):
+    print_freq = kwargs.get('printfreq', 0.1)
+
+    get_samples = kwargs.get('get_samples', False)
+    if get_samples:
+        sample_observations = env.get_sample_obs()
+
+    around_reward = kwargs.get('around_reward', True)
+    start_radius = kwargs.get('radius', 5)
+
+    episodic.reset_cache()  ##NEW
+    ploss_scale = 0  ##NEW
+    mfc_env = ec.calc_env(halfmax=3.12)  ##NEW
+    recency_env = ec.calc_env(halfmax=2000)  ##NEW
+    mem_entropy = kwargs.get('mem_entropy', 1)  ##NEW
+    timestamp = 0  ##NEW
+
+    t = time.time()
+    f_ = False
+    for trial in range(NUM_TRIALS):
+        # reset environment, reinitialize agent in environment
+        env.resetEnvironment(around_rwd=around_reward, radius=start_radius)
+
+        # clear hidden layer cache if using lstm or gru cells
+        agent.reinit_hid()
+        reward_sum = 0
+
+        MF_confidence = episodic.make_pvals(ploss_scale, envelope=mfc_env)  ##NEW
+        data['mfcs'].append(MF_confidence)
+        memory_buffer = [[], [], [], [], trial]  ##NEW
+
+        print(trial, "trial")
+
+        for event in range(NUM_EVENTS):
+            # get state observation
+            observation = torch.Tensor(np.expand_dims(env.get_observation(), axis=0))
+
+            # pass observation through network
+            policy_, value_, lin_act_ = agent(observation, lin_act=2)
+            lin_act = tuple(np.round(lin_act_.data[0].numpy(), 4))  ##NEW
+
+            # choose which policy to use based on MF confidence
+            which_pol = np.random.choice(['MF', 'EC'], p=[MF_confidence, 1 - MF_confidence])
+
+            if which_pol == 'EC':
+                memory_policy = torch.from_numpy(episodic.recall_mem(lin_act,
+                                                                     timestamp,
+                                                                     env=recency_env,
+                                                                     mem_temp=mem_entropy))
+                choice = agent.select_ec_action(policy_, value_, memory_policy)
+
+            else:
+                # select action from policy
+                choice = agent.select_action(policy_, value_)
+
+            action = env.action_list[choice][0]
+
+            memory_buffer[0].append(timestamp)
+            memory_buffer[1].append(lin_act)
+            memory_buffer[2].append(choice)
+            memory_buffer[3].append(env.oneD2twoD(env.state))
+
+            # take a step in the environment
+            s_1d, reward, isdone = env.move(action)
+
+            agent.saved_rewards.append(reward)
+            reward_sum += reward
+
+            timestamp += 1
+            print(event, reward)
+
+            if isdone:
+                f_ = True
+                break
+
+        p_loss, v_loss = agent.finish_trial_EC(cache=episodic, buffer=memory_buffer)
+        ploss_scale = abs(p_loss.item())
+        data['trial_length'].append(event)
+        data['total_reward'].append(reward_sum)
+        data['loss'][0].append(p_loss.item())
+        data['loss'][1].append(v_loss.item())
+        data['trials_run_to_date'] += 1
+        if get_samples:
+            pol_grid, val_grid = expt.get_snapshot(sample_observations, env, agent)
+            mem_grid = ac.mem_snapshot(env, episodic_memory, trial_timestamp=trial,
+                                       decay=recency_env, mem_temp=mem_entropy, get_vals=False)
+            data['ec_tracking'].append(mem_grid)
+            data['pol_tracking'].append(pol_grid)
+            data['val_tracking'].append(val_grid)
+            data['t'].append(trial)
+
+        if trial == 0 or trial == NUM_TRIALS - 1:  # or trial % int(print_freq*NUM_TRIALS)==0
+            print(f"{trial}: {reward_sum} ({time.time() - t}s)")
+            t = time.time()
+
+        if around_reward and trial > 0 and trial == int(
+                NUM_TRIALS / 2):  # np.mean(data['trial_length'][-20:])< 2*start_radius:
+            print(trial)
+            around_reward = False
+        if f_:
+            break
+
+
+
 
 
 ######################################################
