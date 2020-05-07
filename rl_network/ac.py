@@ -46,6 +46,7 @@ def make_agent(agent_params, **kwargs):
 	else:
 		MF = ActorCritic(agent_params)
 
+	# todo update to include psi loss function
 	if freeze_weights:
 		freeze = []
 		unfreeze = []
@@ -174,6 +175,7 @@ class ActorCritic(nn.Module):
 
 		self.saved_actions = []
 		self.saved_rewards = []
+		self.saved_psi     = []
 
 		self.optimizer = optim.Adam(self.parameters(), lr=agent_params['eta'])
 
@@ -277,7 +279,9 @@ class ActorCritic(nn.Module):
 	def finish_trial(self, **kwargs):
 		policy_losses = []
 		value_losses  = []
+		psi_losses = []
 		saved_actions = self.saved_actions
+		psi = self.saved_psi
 		returns_ 	  = torch.Tensor(discount_rwds(np.asarray(self.saved_rewards), gamma=self.gamma))
 
 		for (log_prob, value), r in zip(saved_actions, returns_):
@@ -285,16 +289,24 @@ class ActorCritic(nn.Module):
 			policy_losses.append(-log_prob * rpe)
 			value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
 
+		for ind, obj in enumerate(psi):
+			if ind == 0:
+				pl = torch.Tensor(obj).pow(2).mul(0.5).mean()
+			else:
+				pl = (torch.Tensor(obj) - torch.Tensor(psi[ind-1])).pow(2).mul(0.5).mean()
+			psi_losses.append(pl)
+
 		self.optimizer.zero_grad()
-		p_loss, v_loss = torch.cat(policy_losses).sum(), torch.cat(value_losses).sum()
-		total_loss = p_loss + v_loss
+		p_loss, v_loss, psi_loss = torch.cat(policy_losses).sum(), torch.cat(value_losses).sum(), torch.cat(psi_losses).sum()
+		total_loss = p_loss + v_loss + psi_loss
 		total_loss.backward(retain_graph=False)
 
 		self.optimizer.step()
 
 		del self.saved_rewards[:]
 		del self.saved_actions[:]
-		return p_loss, v_loss
+		del self.saved_psi[:]
+		return p_loss, v_loss, psi_loss
 
 	def finish_trial_EC(self, **kwargs):
 		policy_losses = []

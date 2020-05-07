@@ -198,7 +198,6 @@ class GridWorld(object):
                         self.possible_ports.append((h1,i))
 
         if self.obstacles_list is None:
-            print('rho', type(self.rho))
             if self.rho != 0:
                 maze = np.vstack([[np.random.choice([0,1], p = [1-self.rho, self.rho]) for _ in range(self.c)] for _ in range(self.r)])
                 grid = grid + maze

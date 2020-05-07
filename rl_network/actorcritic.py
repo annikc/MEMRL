@@ -226,33 +226,6 @@ class AC_Net(nn.Module):
 			elif isinstance(layer, nn.MaxPool2d):
 				pass
 
-def reset_agt(maze, agent_params, **kwargs):
-	if agent_params['load_model'] == True:
-		if agent_params['rwd_placement'] == 'training_loc':
-			rwd_placement = [(int(maze.x / 2), int(maze.y / 2))]
-		if agent_params['rwd_placement'] == 'moved_loc':
-			rwd_placement = [(int(3 * maze.x / 4), int(maze.y / 4))]
-	else:
-		rwd_placement = [(int(maze.x / 2), int(maze.y / 2))]
-
-	rwd_location = kwargs.get('rwd_placement', rwd_placement)
-	freeze = kwargs.get('freeze_weights', False)
-	maze.set_rwd(rwd_location)
-
-	# make agent
-
-	agent_params = gen_input(maze, agent_params)
-	MF, opt = make_agent(agent_params, freeze)
-
-	run_dict = {
-		'NUM_EVENTS': 300,
-		'NUM_TRIALS': 2000,
-		'environment': maze,
-		'agent': MF,
-		'optimizer': opt,
-		'agt_param': agent_params
-	}
-	return run_dict
 # =====================================
 #              FUNCTIONS
 # =====================================
@@ -482,3 +455,32 @@ def mem_snapshot(maze, EC, trial_timestamp,**kwargs):
 	else:
 		return mpol_array
 
+
+#### Junkyard
+def reset_agt(maze, agent_params, **kwargs):
+	if agent_params['load_model'] == True:
+		if agent_params['rwd_placement'] == 'training_loc':
+			rwd_placement = [(int(maze.x / 2), int(maze.y / 2))]
+		if agent_params['rwd_placement'] == 'moved_loc':
+			rwd_placement = [(int(3 * maze.x / 4), int(maze.y / 4))]
+	else:
+		rwd_placement = [(int(maze.x / 2), int(maze.y / 2))]
+
+	rwd_location = kwargs.get('rwd_placement', rwd_placement)
+	freeze = kwargs.get('freeze_weights', False)
+	maze.set_rwd(rwd_location)
+
+	# make agent
+
+	agent_params = gen_input(maze, agent_params)
+	MF, opt = make_agent(agent_params, freeze)
+
+	run_dict = {
+		'NUM_EVENTS': 300,
+		'NUM_TRIALS': 2000,
+		'environment': maze,
+		'agent': MF,
+		'optimizer': opt,
+		'agt_param': agent_params
+	}
+	return run_dict
