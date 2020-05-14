@@ -35,37 +35,26 @@ def discount_rwds(r, gamma = 0.99):
 	return disc_rwds
 
 def make_agent(agent_params, **kwargs):
-	opt = kwargs.get('optimizer_type', optim.Adam)
-	if 'freeze_weights' in agent_params.keys():
-		freeze_weights = agent_params['freeze_weights']
+	if agent_params.load_model:
+		agent = torch.load(agent_params.load_dir)
+	else:
+		agent = ActorCritic(agent_params)
+
+	if 'freeze_weights' in dir(agent_params):
+		freeze_weights = agent_params.freeze_weights
 	else:
 		freeze_weights = False
 
-	if agent_params['load_model']:
-		MF = torch.load(agent_params['load_dir']) # load previously saved model
-	else:
-		MF = ActorCritic(agent_params)
-
-	# todo update to include psi loss function
 	if freeze_weights:
 		freeze = []
 		unfreeze = []
-		for i, nums in MF.named_parameters():
+		for i, nums in agent.named_parameters():
 			if i[0:6] == 'output':
 				unfreeze.append(nums)
 			else:
 				freeze.append(nums)
-		MF.optimizer = opt([{'params': freeze, 'lr': 0.0}, {'params': unfreeze, 'lr': agent_params['eta']}], lr=0.0)
-	else:
-		critic = []
-		others = []
-		for i, nums in MF.named_parameters():
-			if i[0:8] == 'output.1': #critic
-				critic.append(nums)
-			else:
-				others.append(nums)
-		MF.optimizer = opt(MF.parameters(), lr= agent_params['eta'])
-	return MF
+		agent.optimizer = agent_params.opt([{'params': freeze, 'lr': 0.0}, {'params': unfreeze, 'lr': agent_params.eta}], lr=0.0)
+	return agent
 
 
 
@@ -77,42 +66,47 @@ class ActorCritic(nn.Module):
 	def __init__(self, agent_params, **kwargs):
 		# call the super-class init
 		super(ActorCritic, self).__init__()
-		self.gamma = agent_params['gamma'] # discount factor
+		self.gamma = agent_params.gamma # discount factor
 
-		self.input_dims  = agent_params['input_dims']
-		self.action_dims = agent_params['action_dims']
+		self.input_dims  = agent_params.input_dims
+		self.action_dims = agent_params.action_dims
 
-		if 'rfsize' not in agent_params.keys():
+		if 'rfsize' not in dir(agent_params):
 			self.rfsize  = kwargs.get('rfsize', 4)
 		else:
-			self.rfsize  = agent_params['rfsize']
-		if 'padding' not in agent_params.keys():
+			self.rfsize  = agent_params.rfsize
+		if 'padding' not in dir(agent_params):
 			self.padding = kwargs.get('padding', 1)
 		else:
-			self.padding = agent_params['padding']
-		if 'dilation' not in agent_params.keys():
+			self.padding = agent_params.padding
+		if 'dilation' not in dir(agent_params):
 			self.dilation= 1
 		else:
-			self.dilation= kwargs.get('dilation', 1)
-		if 'stride' not in agent_params.keys():
+			self.dilation= agent_params.dilation
+		if 'stride' not in dir(agent_params):
 			self.stride  = kwargs.get('stride', 1)
 		else:
-			self.stride  = agent_params['stride']
-		if 'batch_size' not in agent_params.keys():
+			self.stride  = agent_params.stride
+		if 'batch_size' not in dir(agent_params):
 			self.batch_size= kwargs.get('batch_size', 1)
 		else:
-			self.batch_size= agent_params['batch_size']
+			self.batch_size= agent_params.batch_size
 
+		self.use_EC = agent_params.use_EC
 
-		if 'hidden_types' in agent_params.keys():
+		if 'opt' in dir(agent_params):
+			opt = agent_params.opt
+		else:
+			opt = optim.Adam
 
-			if len(agent_params['hidden_dims']) != len(agent_params['hidden_types']):
+		if 'hidden_types' in dir(agent_params):
+			if len(agent_params.hidden_dims) != len(agent_params.hidden_types):
 				raise Exception('Incorrect specification of hidden layer dimensions')
 
-			hidden_types = agent_params['hidden_types']
+			hidden_types = agent_params.hidden_types
 			# create lists for tracking hidden layers
 			self.hidden = nn.ModuleList()
-			self.hidden_dims   = agent_params['hidden_dims']
+			self.hidden_dims   = agent_params.hidden_dims
 
 			self.hx = []
 			self.cx = []
@@ -166,6 +160,9 @@ class ActorCritic(nn.Module):
 				nn.Linear(output_d, self.action_dims), #actor
 				nn.Linear(output_d, 1)                 #critic
 			])
+			if self.use_EC:
+				self.SR = nn.Linear(output_d, output_d) # number of different states
+
 
 		else:
 			self.layers = [self.input_dims, self.action_dims]
@@ -175,9 +172,22 @@ class ActorCritic(nn.Module):
 
 		self.saved_actions = []
 		self.saved_rewards = []
+		self.saved_phi     = []
 		self.saved_psi     = []
 
-		self.optimizer = optim.Adam(self.parameters(), lr=agent_params['eta'])
+		if self.use_EC:
+			main_params = []
+			SR_params   = []
+			for name, para in self.named_parameters():
+				if name[0:2] == 'SR':
+					SR_params.append(para)
+				else:
+					main_params.append(para)
+
+			self.SR_opt    = opt([{'params':SR_params, 'lr':0.01*agent_params.eta}]) # opt([{'params': freeze, 'lr': 0.0}, {'params': unfreeze, 'lr': agent_params['eta']}], lr=0.0)
+			self.optimizer = opt(main_params, lr=agent_params.eta)
+		else:
+			self.optimizer = opt(self.parameters(), lr=agent_params.eta)
 
 	def conv_output(self, input_tuple, **kwargs):
 		channels, h_in, w_in = input_tuple
@@ -192,7 +202,6 @@ class ActorCritic(nn.Module):
 		return (channels, h_out, w_out)
 
 	def forward(self, x, temperature=1, **kwargs):
-		get_lin_act = kwargs.get('lin_act', None)
 		# check the inputs
 		if type(self.input_dims) == int:
 			assert x.shape[-1] == self.input_dims
@@ -213,8 +222,6 @@ class ActorCritic(nn.Module):
 			# run input through the layer depending on type
 			if isinstance(layer, nn.Linear):
 				x = F.relu(layer(x))
-				if i == get_lin_act:
-					lin_activity = x
 			elif isinstance(layer, nn.LSTMCell):
 				x, cx = layer(x, (self.hx[i], self.cx[i]))
 				self.hx[i] = x.clone()
@@ -227,18 +234,15 @@ class ActorCritic(nn.Module):
 				self.conv = x
 			elif isinstance(layer, nn.MaxPool2d):
 				x = layer(x)
-			if i == get_lin_act:
-				lin_activity = x
+
 		# pass to the output layers
 		policy = F.softmax(self.output[0](x), dim=1)
 		value  = self.output[1](x)
 
-		if get_lin_act is not None:
-			return policy, value, lin_activity
-			#if isinstance(self.hidden[get_lin_act], nn.Linear):
-			#	return policy, value, lin_activity
-			#else:
-			#	raise Exception('Layer Specified by parameter lin_act is not a linear layer')
+		if self.use_EC:
+			phi = x
+			SR = self.SR(x)
+			return policy, value, phi, SR
 		else:
 			return policy, value
 
@@ -277,36 +281,58 @@ class ActorCritic(nn.Module):
 	# Functions for computing relevant terms for weight updates after trial runs
 	# TODO
 	def finish_trial(self, **kwargs):
-		policy_losses = []
-		value_losses  = []
-		psi_losses = []
 		saved_actions = self.saved_actions
-		psi = self.saved_psi
 		returns_ 	  = torch.Tensor(discount_rwds(np.asarray(self.saved_rewards), gamma=self.gamma))
 
+		policy_losses = []
+		value_losses = []
 		for (log_prob, value), r in zip(saved_actions, returns_):
 			rpe = r - value.item()
 			policy_losses.append(-log_prob * rpe)
 			value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
 
-		for ind, obj in enumerate(psi):
-			if ind == 0:
-				pl = torch.Tensor(obj).pow(2).mul(0.5).mean()
-			else:
-				pl = (torch.Tensor(obj) - torch.Tensor(psi[ind-1])).pow(2).mul(0.5).mean()
-			psi_losses.append(pl)
-
 		self.optimizer.zero_grad()
-		p_loss, v_loss, psi_loss = torch.cat(policy_losses).sum(), torch.cat(value_losses).sum(), torch.cat(psi_losses).sum()
-		total_loss = p_loss + v_loss + psi_loss
-		total_loss.backward(retain_graph=False)
+		p_loss, v_loss = torch.cat(policy_losses).sum(), torch.cat(value_losses).sum()
 
-		self.optimizer.step()
+		total_loss = p_loss + v_loss
 
-		del self.saved_rewards[:]
-		del self.saved_actions[:]
-		del self.saved_psi[:]
-		return p_loss, v_loss, psi_loss
+		if self.use_EC:
+			total_loss.backward(retain_graph=True)  # retain graph???
+			self.optimizer.step()
+
+			phis = self.saved_phi
+			psis = self.saved_psi
+
+			psi_losses = []
+
+			for t in range(len(phis[:-1])):
+				next_psi = psis[t+1]
+				psi_hat = phis[t] + self.gamma*next_psi
+				loss = nn.MSELoss(reduction='mean')
+				l_psi = loss(psi_hat, psis[t]).view(-1)
+
+				psi_losses.append(l_psi)
+			psi_loss = torch.cat(psi_losses).sum()
+
+			self.SR_opt.zero_grad()
+			psi_loss.backward()
+			self.SR_opt.step()
+			del self.saved_rewards[:]
+			del self.saved_actions[:]
+			del self.saved_phi[:]
+			del self.saved_psi[:]
+
+			return p_loss, v_loss, psi_loss
+
+		else:
+			total_loss.backward(retain_graph=False)  # retain graph???
+			self.optimizer.step()
+			del self.saved_rewards[:]
+			del self.saved_actions[:]
+			del self.saved_phi[:]
+			del self.saved_psi[:]
+
+			return p_loss, v_loss
 
 	def finish_trial_EC(self, **kwargs):
 		policy_losses = []
