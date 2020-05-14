@@ -13,9 +13,42 @@ sys.path.insert(0,'../environments/'); import gw; import gridworld_plotting as g
 from scipy.stats import entropy
 # temp
 import matplotlib.pyplot as plt
+from torch import optim
+
 import time
 #/
 ####################################################
+class Parameters(object):
+    def __init__(self, env, **kwargs):
+        self.load_model = kwargs.get('load_model', False)
+        if self.load_model:
+            self.load_dir = kwargs.get('load_dir', '../data/outputs/')
+        else:
+            self.input_dims = env.observation.shape
+            self.action_dims = len(env.action_list)
+
+            self.hidden_types = kwargs.get('hidden_types', ['conv','pool','conv', 'pool', 'linear','linear'])
+            self.hidden_dims  = kwargs.get('hidden_dims', [None, None, None, None, 200, 100])
+
+            self.rfsize = kwargs.get('rfsize', 5)
+            self.stride = kwargs.get('stride', 1)
+            self.padding = kwargs.get('padding', 1)
+            self.dilation = kwargs.get('dilation', 1)
+
+            self.gamma = kwargs.get('gamma', 0.98)
+            self.eta = kwargs.get('eta', 5e-4)
+
+            self.opt = kwargs.get('optimizer', optim.Adam)
+
+        self.freeze_weights = kwargs.get('freeze', False)
+
+
+        self.use_EC = kwargs.get('use_EC', False)
+        if self.use_EC:
+            self.cache_lim = 300
+            self.mem_temp = 1
+
+
 def sample_PV(sample_obs, env, agent):
     # initialize empty data frames
     pol_grid = np.zeros(env.shape, dtype=[('D', 'f8'), ('U', 'f8'), ('R', 'f8'), ('L', 'f8'), ('J', 'f8'), ('P', 'f8')])
@@ -43,22 +76,11 @@ def run_expt(NUM_TRIALS, NUM_EVENTS, env, agent, data, **kwargs):
     around_reward = kwargs.get('around_reward', True)
     start_radius = kwargs.get('radius', 5)
 
-    start_locs = kwargs.get('room', None)
-
     t = time.time()
-    data['start_count'] = np.zeros(env.shape)
     for trial in range(NUM_TRIALS):
         # reset environment, reinitialize agent in environment
         env.resetEnvironment(around_rwd=around_reward, radius=start_radius)
 
-        if start_locs is not None:
-            # st = np.random.choice(len(start_locs))
-            st = start_locs[trial]
-            env.set_state(env.twoD2oneD(st))
-
-        loc1 = env.oneD2twoD(env.state)
-        data['start_count'][loc1[0], loc1[1]] += 1
-        # env.set_state(env.twoD2oneD((19,19)))
         # clear hidden layer cache if using lstm or gru cells
         agent.reinit_hid()
         reward_sum = 0
@@ -66,12 +88,14 @@ def run_expt(NUM_TRIALS, NUM_EVENTS, env, agent, data, **kwargs):
         for event in range(NUM_EVENTS):
             # get state observation
             observation = torch.Tensor(np.expand_dims(env.get_observation(), axis=0))
-
+            loc1 = env.oneD2twoD(env.state)
             # pass observation through network
-            # policy_, value_ = agent(observation)
-            policy_, value_, lin_act_ = agent(observation, lin_act=4)
-            lin_act = tuple(lin_act_.data[0].numpy())
-            agent.saved_psi.append(lin_act)
+            if agent.use_EC:
+                policy_, value_, phi_, psi_ = agent(observation)
+                agent.saved_phi.append(phi_)
+                agent.saved_psi.append(psi_)
+            else:
+                policy_, value_ = agent(observation)
 
             # select action from policy
             choice = agent.select_action(policy_, value_)
@@ -83,12 +107,20 @@ def run_expt(NUM_TRIALS, NUM_EVENTS, env, agent, data, **kwargs):
 
             agent.saved_rewards.append(reward)
             reward_sum += reward
-            ###optional
-            # sar.append(env.state, action, reward) ## tracking oneD states
-            if isdone:
-                break
 
-        p_loss, v_loss ,q_loss = agent.finish_trial()
+            if isdone:
+                if agent.use_EC:
+                    agent.saved_phi.append(phi_)
+                    agent.saved_psi.append(psi_)
+                break
+        if agent.use_EC:
+            data['sample_psi_infos'][0].append(loc1)
+            data['sample_psi_infos'][1].append(agent.saved_phi[-1].detach().numpy()-agent.saved_psi[-2].detach().numpy())
+            #data['sample_psi_infos'][2].append()
+            p_loss, v_loss, psi_loss = agent.finish_trial()
+            data['psi_loss'].append(psi_loss)
+        else:
+            p_loss, v_loss = agent.finish_trial()
         data['trial_length'].append(event)
         data['total_reward'].append(reward_sum)
         data['loss'][0].append(p_loss.item())
@@ -102,20 +134,6 @@ def run_expt(NUM_TRIALS, NUM_EVENTS, env, agent, data, **kwargs):
 
         if trial == 0 or trial % int(print_freq * NUM_TRIALS) == 0 or trial == NUM_TRIALS - 1:
             print(f"{trial}: start at {loc1} {reward_sum} ({time.time() - t}s)")
-
-            # num_states = len(env.useable)
-            # cos_sim = np.zeros((num_states,num_states))
-
-            # observations = env.get_sample_obs()
-            # p,v,lin_acts4 = agent(torch.Tensor(observations[0]), lin_act=4)
-
-            # LA4 = lin_acts4.data.numpy()
-
-            # cs4 = cosine_similarity(LA4,LA4)
-
-            # plt.figure(0)
-            # plt.pcolor(cs4)
-            # plt.show()
             t = time.time()
 
         if around_reward and trial > 0 and trial == int(
@@ -154,7 +172,6 @@ def run_mem_expt(NUM_TRIALS, NUM_EVENTS, env, agent, episodic, data, **kwargs):
         data['mfcs'].append(MF_confidence)
         memory_buffer = [[], [], [], [], trial]  ##NEW
 
-        print(trial, "trial")
 
         for event in range(NUM_EVENTS):
             # get state observation
@@ -192,10 +209,9 @@ def run_mem_expt(NUM_TRIALS, NUM_EVENTS, env, agent, episodic, data, **kwargs):
             reward_sum += reward
 
             timestamp += 1
-            print(event, reward)
 
             if isdone:
-                f_ = True
+                #f_ = True
                 break
 
         p_loss, v_loss = agent.finish_trial_EC(cache=episodic, buffer=memory_buffer)
