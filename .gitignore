@@ -1,0 +1,9 @@
+# ignore folders in MEMRL that aren't part of the general case 
+./Blake\ Meeting/
+./data/
+./venv/
+
+# ignore common folders
+*/__pycache__/*
+*/.idea/*
+*/.ipynb_checkpoints/*
