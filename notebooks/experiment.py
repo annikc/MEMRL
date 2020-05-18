@@ -34,8 +34,133 @@ def get_snapshot(sample_obs, env, agent):
 
     return pol_grid, val_grid
 
+class test_expt(object):
+    def __init__(self,agent,environment):
+        self.agent = agent
+        self.env = environment
 
+    def run(self, NUM_TRIALS, NUM_EVENTS, data, **kwargs):
+        print_freq    = kwargs.get('printfreq', 0.1)
+        get_samples   = kwargs.get('get_samples', False)
+        around_reward = kwargs.get('around_reward', True)
+        start_radius  = kwargs.get('radius', 5)
+
+        t = time.time()
+
+        if get_samples:
+            sample_observations = self.env.get_sample_obs()
+        for trial in range(NUM_TRIALS):
+            # reset environment, reinitialize agent in environment
+            self.env.resetEnvironment(around_rwd=around_reward, radius=start_radius)
+            # clear hidden layer cache if using lstm or gru cells
+            self.agent.reinit_hid()
+            reward_sum = 0
+
+            for event in range(NUM_EVENTS):
+                # get state observation
+                observation = torch.Tensor(np.expand_dims(self.env.get_observation(), axis=0))
+
+                # pass observation through network
+                policy_, value_ = self.agent(observation)
+
+                # select action from policy
+                choice = self.agent.select_action(policy_, value_)
+                action = self.env.action_list[choice][0]
+
+                # take a step in the environment
+                s_1d, reward, isdone = self.env.move(action)
+
+                self.agent.saved_rewards.append(reward)
+                reward_sum += reward
+
+                if isdone:
+                    break
+
+            p_loss, v_loss = self.agent.finish_trial()
+            data['trial_length'].append(event)
+            data['total_reward'].append(reward_sum)
+            data['loss'][0].append(p_loss.item())
+            data['loss'][1].append(v_loss.item())
+            data['trials_run_to_date'] += 1
+            if get_samples:
+                pol_grid, val_grid = get_snapshot(sample_observations, self.env, self.agent)
+                data['pol_tracking'].append(pol_grid)
+                data['val_tracking'].append(val_grid)
+                data['t'].append(trial)
+
+            if trial == 0 or trial % int(print_freq * NUM_TRIALS) == 0 or trial == NUM_TRIALS - 1:
+                print(f"{trial}: {reward_sum} ({time.time() - t}s)")
+                t = time.time()
+
+            if around_reward and trial > 0 and trial == int(NUM_TRIALS / 2):  # np.mean(data['trial_length'][-20:])< 2*start_radius:
+                print(trial)
+                # around_reward = False
+
+
+
+# Junkyard
 ######################################################
+def run_expt(NUM_TRIALS, NUM_EVENTS, env, agent, data,
+             **kwargs):
+    print_freq = kwargs.get('printfreq', 0.1)
+
+    get_samples = kwargs.get('get_samples', False)
+    if get_samples:
+        sample_observations = env.get_sample_obs()
+
+    around_reward = kwargs.get('around_reward', True)
+    start_radius = kwargs.get('radius', 5)
+
+    t = time.time()
+    for trial in range(NUM_TRIALS):
+        # reset environment, reinitialize agent in environment
+        env.resetEnvironment(around_rwd=around_reward, radius=start_radius)
+        # clear hidden layer cache if using lstm or gru cells
+        agent.reinit_hid()
+        reward_sum = 0
+
+        for event in range(NUM_EVENTS):
+            # get state observation
+            observation = torch.Tensor(np.expand_dims(env.get_observation(), axis=0))
+
+            # pass observation through network
+            policy_, value_ = agent(observation)
+
+            # select action from policy
+            choice = agent.select_action(policy_, value_)
+            action = env.action_list[choice][0]
+
+            # take a step in the environment
+
+            s_1d, reward, isdone = env.move(action)
+
+            agent.saved_rewards.append(reward)
+            reward_sum += reward
+
+            if isdone:
+                break
+
+        p_loss, v_loss = agent.finish_trial()
+        data['trial_length'].append(event)
+        data['total_reward'].append(reward_sum)
+        data['loss'][0].append(p_loss.item())
+        data['loss'][1].append(v_loss.item())
+        data['trials_run_to_date'] += 1
+        if get_samples:
+            pol_grid, val_grid = expt.get_snapshot(sample_observations, env, agent)
+            data['pol_tracking'].append(pol_grid)
+            data['val_tracking'].append(val_grid)
+            data['t'].append(trial)
+
+        if trial == 0 or trial % int(print_freq * NUM_TRIALS) == 0 or trial == NUM_TRIALS - 1:
+            print(f"{trial}: {reward_sum} ({time.time() - t}s)")
+            t = time.time()
+
+        if around_reward and trial > 0 and trial == int(NUM_TRIALS / 2):  # np.mean(data['trial_length'][-20:])< 2*start_radius:
+            print(trial)
+            # around_reward = False
+
+
 def run(run_dict, full=False, use_EC = False, **kwargs):
     '''
     :param run_dict: dictionary storing data frames and run parameters
@@ -228,7 +353,7 @@ def run(run_dict, full=False, use_EC = False, **kwargs):
 
 
 
-
+'''
 class Experiment(object):
     def __init__(self, environment, agent, learning_rate=5e-4, discount_factor=0.98, **kwargs):
         self.env = environment
@@ -311,7 +436,13 @@ class Experiment(object):
         return mf_policy, mf_value, lin_act
 
     def run(self, NUM_TRIALS, NUM_EVENTS, data_storage, **kwargs):
-        print_freq = kwargs.get('print_freq', self.print_freq)
+        print_freq = kwargs.get('printfreq', self.print_freq)
+        get_samples = kwargs.get('get_samples', False)
+        if get_samples:
+            sample_observations = env.get_sample_obs()
+
+        self.around_reward = kwargs.get('around_reward', True)
+        self.start_radius = kwargs.get('radius', 5)
 
         self.ploss_scale = 0  # this is equivalent to calculating MF_confidence = sech(0) = 1
         self.mfc_env = ec.calc_env(halfmax=3.12)  # 1.04 was the calculated standard deviation of policy loss after learning on open field gridworld task **** may need to change for different tasks
@@ -323,20 +454,29 @@ class Experiment(object):
         blocktime = time.time()
 
         for trial in range(NUM_TRIALS):
-            self.reset(trial)
+            # reset environment, reinitialize agent in environment
+            self.env.resetEnvironment(around_rwd=self.around_reward, radius=self.start_radius)
+            # clear hidden layer cache if using lstm or gru cells
+            self.agent.reinit_hid()
+            self.reward_sum = 0
+
+            #self.reset(trial)
 
             for event in range(NUM_EVENTS):
+                # get state observation
                 state = torch.Tensor(np.expand_dims(self.env.observation, axis=0))
-
+                # pass observation through network
                 mf_policy, mf_value, lin_act = self.forward_pass(state)
-
-                choice, policy, value = self.action_selection(mf_policy, mf_value, lin_act)
+                # select action from policy
+                ###choice, policy, value = self.action_selection(mf_policy, mf_value, lin_act)
+                choice = self.agent.select_action(mf_policy, mf_value)
                 action = self.env.action_list[choice][0]
+
                 if self.record_memory:
                     self.save_to_mem(self.timestamp, lin_act, choice, self.env.oneD2twoD(self.env.state), trial)
 
-                if event < NUM_EVENTS:
-                    next_state, reward, done = self.env.move(action)
+                # take a step in the environment
+                next_state, reward, done = self.env.move(action)
 
                 self.agent.saved_rewards.append(reward)
                 self.reward_sum += reward
@@ -356,59 +496,16 @@ class Experiment(object):
             data_storage['total_reward'].append(self.reward_sum)
             data_storage['loss'][0].append(p_loss.item())
             data_storage['loss'][1].append(v_loss.item())
-
-            # if saveplots:
-            # vv, pp = ac.snapshot(agent=run_dict['agent'], maze =run_dict['environment'])
-
-            # gp.plot_polmap(run_dict['environment'], pp, save=True, show=False, title=f"{trial}")
-            # gp.plot_valmap(run_dict['environment'], vv, save=True, show=False, title=f"{trial}")
-
-            # abcd = ac.mem_snapshot(run_dict['environment'], agent_params['EC'], trial_timestamp=trial, decay=recency_env, mem_temp=agent_params['mem_temp'], get_vals=False)
-            # gp.plot_polmap(run_dict['environment'], abcd, threshold=0.4, save=True, show=False, title=f"EC_{trial}")
+            data_storage['trials_run_to_date'] += 1
+            if get_samples:
+                pol_grid, val_grid = expt.get_snapshot(sample_observations, self.env, self.agent)
+                data_storage['pol_tracking'].append(pol_grid)
+                data_storage['val_tracking'].append(val_grid)
+                data_storage['t'].append(trial)
 
             if trial == 0 or trial % print_freq == 0 or trial == NUM_TRIALS - 1:
                 print("[{0}]  Trial {1} TotRew = {2} ({3:.3f}s)".format(time.strftime("%H:%M:%S", time.localtime()),
                                                                         trial + 1, self.reward_sum,
                                                                         time.time() - blocktime))  # print("[{0}]  Trial {1} total reward = {2} (Avg {3:.3f})".format(time.strftime("%H:%M:%S", time.localtime()), trial, reward_sum, float(reward_sum)/float(NUM_EVENTS)), "Block took {0:.3f}".format(time.time()-blocktime))
                 blocktime = time.time()
-
-
-
-# =========================================================================
-'''
-rows, columns = 20, 20
-env = gw.GridWorld(rows=rows,cols=columns,
-                   rewards = {(5,5):1},#rewards={(int(rows/2),int(columns/2)):1},#
-                   step_penalization=-0.01,
-                   rho=0.0)
-agent_params = {
-    'load_model':  True,
-    'load_dir':     f'../data/outputs/gridworld/openfield{rows}{columns}.pt',
-    'freeze_w':    False,
-
-    'input_dims':  env.observation.shape,
-    'action_dims': len(env.action_list),
-    'hidden_types':['conv','pool','conv','pool','linear','linear'],
-    'hidden_dims': [None, None, None, None, 500, 200],
-
-    'rfsize':      5,
-    'stride':      1,
-    'padding':     1,
-    'dilation':    1,
-
-    'gamma':       0.98,
-    'eta':         5e-4,
-
-    'use_EC':      True,
-    'EC':          {},
-    'cachelim':    300,
-    'mem_temp':    0.3
-}
-agent = ac.make_agent(agent_params)
-data = {'total_reward': [],
-        'loss': [[],[]],
-        'trial_length': [],
-        'trials_run_to_date':0}
-expt = Experiment(env, agent, use_ec=True)
-expt.run(NUM_TRIALS=10, NUM_EVENTS=200, data_storage=data)
 '''
