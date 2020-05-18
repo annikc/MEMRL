@@ -198,7 +198,6 @@ class GridWorld(object):
                         self.possible_ports.append((h1,i))
 
         if self.obstacles_list is None:
-            print('rho', type(self.rho))
             if self.rho != 0:
                 maze = np.vstack([[np.random.choice([0,1], p = [1-self.rho, self.rho]) for _ in range(self.c)] for _ in range(self.r)])
                 grid = grid + maze
@@ -345,7 +344,7 @@ class GridWorld(object):
             reward = self.R[self.state,self.action_dict[action]]
         else:
             reward = self.R[self.state]
-        if finish_after_first_reward and reward > 0: # TODO make this more robust using self.rewards
+        if finish_after_first_reward and reward != self.step_penalization: # TODO make this more robust using self.rewards
             self.done = True
 
         # TODO: fix for kirth
