@@ -21,7 +21,7 @@ def get_snapshot(sample_obs, env, agent):
     samples, states = sample_obs
 
     # forward pass through network
-    pols, vals = agent(torch.Tensor(samples))
+    pols, vals, _, __ = agent(torch.Tensor(samples))
 
     # initialize empty data frames
     pol_grid = np.zeros(env.shape, dtype=[('N', 'f8'), ('E', 'f8'), ('W', 'f8'), ('S', 'f8'), ('stay', 'f8'), ('poke', 'f8')])
@@ -61,7 +61,9 @@ class test_expt(object):
                 observation = torch.Tensor(np.expand_dims(self.env.get_observation(), axis=0))
 
                 # pass observation through network
-                policy_, value_ = self.agent(observation)
+                policy_, value_, phi_, psi_ = self.agent(observation)
+                self.agent.saved_phi.append(phi_)
+                self.agent.saved_psi.append(psi_)
 
                 # select action from policy
                 choice = self.agent.select_action(policy_, value_)
@@ -74,13 +76,16 @@ class test_expt(object):
                 reward_sum += reward
 
                 if isdone:
+                    self.agent.saved_phi.append(phi_)
+                    self.agent.saved_psi.append(psi_)
                     break
 
-            p_loss, v_loss = self.agent.finish_trial()
+            p_loss, v_loss, psi_loss = self.agent.finish_trial()
             data['trial_length'].append(event)
             data['total_reward'].append(reward_sum)
             data['loss'][0].append(p_loss.item())
             data['loss'][1].append(v_loss.item())
+            data['loss'][2].append(psi_loss.item())
             data['trials_run_to_date'] += 1
             if get_samples:
                 pol_grid, val_grid = get_snapshot(sample_observations, self.env, self.agent)
