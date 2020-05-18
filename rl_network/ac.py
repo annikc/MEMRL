@@ -165,6 +165,7 @@ class ActorCritic(nn.Module):
 				nn.Linear(output_d, self.action_dims), #actor
 				nn.Linear(output_d, 1)                 #critic
 			])
+			self.SR = nn.Linear(output_d, output_d) # psi
 
 		else:
 			self.layers = [self.input_dims, self.action_dims]
@@ -174,7 +175,21 @@ class ActorCritic(nn.Module):
 
 		self.saved_actions = []
 		self.saved_rewards = []
+		self.saved_phi     = []
+		self.saved_psi     = []
+		'''
+		main_params = []
+		SR_params = []
+		for name, para in self.named_parameters():
+			if name[0:2] == 'SR':
+				SR_params.append(para)
+			else:
+				main_params.append(para)
 
+		self.SR_opt = opt([{'params': SR_params,
+							'lr': 0.01 * agent_params.eta}])  # opt([{'params': freeze, 'lr': 0.0}, {'params': unfreeze, 'lr': agent_params['eta']}], lr=0.0)
+		self.optimizer = opt(main_params, lr=agent_params.eta)
+		'''
 		self.optimizer = optim.Adam(self.parameters(), lr=agent_params['eta'])
 
 	def conv_output(self, input_tuple, **kwargs):
@@ -190,7 +205,7 @@ class ActorCritic(nn.Module):
 		return (channels, h_out, w_out)
 
 	def forward(self, x, temperature=1, **kwargs):
-		get_lin_act = kwargs.get('lin_act', None)
+		use_SR = kwargs.get('useSR', True)
 		# check the inputs
 		if type(self.input_dims) == int:
 			assert x.shape[-1] == self.input_dims
@@ -211,8 +226,6 @@ class ActorCritic(nn.Module):
 			# run input through the layer depending on type
 			if isinstance(layer, nn.Linear):
 				x = F.relu(layer(x))
-				if i == get_lin_act:
-					lin_activity = x
 			elif isinstance(layer, nn.LSTMCell):
 				x, cx = layer(x, (self.hx[i], self.cx[i]))
 				self.hx[i] = x.clone()
@@ -225,18 +238,14 @@ class ActorCritic(nn.Module):
 				self.conv = x
 			elif isinstance(layer, nn.MaxPool2d):
 				x = layer(x)
-			if i == get_lin_act:
-				lin_activity = x
 		# pass to the output layers
 		policy = F.softmax(self.output[0](x), dim=1)
 		value  = self.output[1](x)
+		phi = x
+		psi = F.relu(self.SR(x))
 
-		if get_lin_act is not None:
-			return policy, value, lin_activity
-			#if isinstance(self.hidden[get_lin_act], nn.Linear):
-			#	return policy, value, lin_activity
-			#else:
-			#	raise Exception('Layer Specified by parameter lin_act is not a linear layer')
+		if use_SR:
+			return policy, value, phi, psi
 		else:
 			return policy, value
 
@@ -280,21 +289,35 @@ class ActorCritic(nn.Module):
 		saved_actions = self.saved_actions
 		returns_ 	  = torch.Tensor(discount_rwds(np.asarray(self.saved_rewards), gamma=self.gamma))
 
+		phis = self.saved_phi
+		psis = self.saved_psi
+		psi_losses = []
+
 		for (log_prob, value), r in zip(saved_actions, returns_):
 			rpe = r - value.item()
 			policy_losses.append(-log_prob * rpe)
 			value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
 
-		self.optimizer.zero_grad()
-		p_loss, v_loss = torch.cat(policy_losses).sum(), torch.cat(value_losses).sum()
-		total_loss = p_loss + v_loss
-		total_loss.backward(retain_graph=False)
+		for t in range(len(phis[:-1])):
+			next_psi = psis[t + 1]
+			psi_hat = phis[t] + self.gamma * next_psi
+			loss = nn.MSELoss(reduction='mean')
+			l_psi = loss(psi_hat, psis[t]).view(-1)
 
+			psi_losses.append(l_psi)
+
+		self.optimizer.zero_grad()
+		p_loss, v_loss, psi_loss =  torch.cat(policy_losses).sum(), torch.cat(value_losses).sum(), torch.cat(psi_losses).sum()
+		total_loss = p_loss + v_loss + psi_loss
+		total_loss.backward(retain_graph=False)
 		self.optimizer.step()
 
 		del self.saved_rewards[:]
 		del self.saved_actions[:]
-		return p_loss, v_loss
+		del self.saved_phi[:]
+		del self.saved_psi[:]
+
+		return p_loss, v_loss, psi_loss
 
 	def finish_trial_EC(self, **kwargs):
 		policy_losses = []
