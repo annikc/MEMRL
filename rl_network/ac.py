@@ -36,21 +36,22 @@ def discount_rwds(r, gamma = 0.99):
 
 def make_agent(agent_params, **kwargs):
 	opt = kwargs.get('optimizer_type', optim.Adam)
-	if 'freeze_weights' in agent_params.keys():
-		freeze_weights = agent_params['freeze_weights']
+	if 'freeze_w' in agent_params.keys():
+		freeze_weights = agent_params['freeze_w']
 	else:
 		freeze_weights = False
 
 	if agent_params['load_model']:
 		MF = torch.load(agent_params['load_dir']) # load previously saved model
 	else:
-		MF = ActorCritic(agent_params)
+		MF = ActorCritic(agent_params, use_SR=agent_params['use_SR'])
 
 	if freeze_weights:
 		freeze = []
 		unfreeze = []
 		for i, nums in MF.named_parameters():
-			if i[0:6] == 'output':
+			if i[0:6] == 'output' or i[0:2]=='SR':
+				print(i)
 				unfreeze.append(nums)
 			else:
 				freeze.append(nums)
@@ -77,7 +78,6 @@ class ActorCritic(nn.Module):
 		# call the super-class init
 		super(ActorCritic, self).__init__()
 		self.gamma = agent_params['gamma'] # discount factor
-
 		self.input_dims  = agent_params['input_dims']
 		self.action_dims = agent_params['action_dims']
 
@@ -101,6 +101,8 @@ class ActorCritic(nn.Module):
 			self.batch_size= kwargs.get('batch_size', 1)
 		else:
 			self.batch_size= agent_params['batch_size']
+
+		self.use_SR = kwargs.get('use_SR', True)
 
 
 		if 'hidden_types' in agent_params.keys():
@@ -165,7 +167,8 @@ class ActorCritic(nn.Module):
 				nn.Linear(output_d, self.action_dims), #actor
 				nn.Linear(output_d, 1)                 #critic
 			])
-			self.SR = nn.Linear(output_d, output_d) # psi
+			if self.use_SR:
+				self.SR = nn.Linear(output_d, output_d) # psi
 
 		else:
 			self.layers = [self.input_dims, self.action_dims]
@@ -205,7 +208,6 @@ class ActorCritic(nn.Module):
 		return (channels, h_out, w_out)
 
 	def forward(self, x, temperature=1, **kwargs):
-		use_SR = kwargs.get('useSR', True)
 		# check the inputs
 		if type(self.input_dims) == int:
 			assert x.shape[-1] == self.input_dims
@@ -241,13 +243,12 @@ class ActorCritic(nn.Module):
 		# pass to the output layers
 		policy = F.softmax(self.output[0](x), dim=1)
 		value  = self.output[1](x)
-		phi = x
-		psi = F.relu(self.SR(x))
-
-		if use_SR:
+		if self.use_SR:
+			phi = x
+			psi = self.SR(x)
 			return policy, value, phi, psi
 		else:
-			return policy, value
+			return policy, value , x
 
 	def reinit_hid(self):
 		# to store a record of the last hidden states
@@ -289,41 +290,60 @@ class ActorCritic(nn.Module):
 		saved_actions = self.saved_actions
 		returns_ 	  = torch.Tensor(discount_rwds(np.asarray(self.saved_rewards), gamma=self.gamma))
 
-		phis = self.saved_phi
-		psis = self.saved_psi
-		psi_losses = []
+		if self.use_SR:
+			phis = self.saved_phi
+			psis = self.saved_psi
+			psi_losses = []
 
 		for (log_prob, value), r in zip(saved_actions, returns_):
 			rpe = r - value.item()
 			policy_losses.append(-log_prob * rpe)
 			value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
+		if self.use_SR:
+			for t in range(len(phis[:-1])):
+				next_psi = psis[t + 1]
+				psi_hat = phis[t] + self.gamma * next_psi
+				loss = nn.MSELoss(reduction='mean')
+				l_psi = loss(psi_hat, psis[t]).view(-1)
 
-		for t in range(len(phis[:-1])):
-			next_psi = psis[t + 1]
-			psi_hat = phis[t] + self.gamma * next_psi
-			loss = nn.MSELoss(reduction='mean')
-			l_psi = loss(psi_hat, psis[t]).view(-1)
-
-			psi_losses.append(l_psi)
+				psi_losses.append(l_psi)
 
 		self.optimizer.zero_grad()
-		p_loss, v_loss, psi_loss =  torch.cat(policy_losses).sum(), torch.cat(value_losses).sum(), torch.cat(psi_losses).sum()
-		total_loss = p_loss + v_loss + psi_loss
-		total_loss.backward(retain_graph=False)
-		self.optimizer.step()
+		if self.use_SR:
+			p_loss, v_loss, psi_loss =  torch.cat(policy_losses).sum(), torch.cat(value_losses).sum(), torch.cat(psi_losses).sum()
+			total_loss = p_loss + v_loss + psi_loss
+			total_loss.backward(retain_graph=False)
+			self.optimizer.step()
 
-		del self.saved_rewards[:]
-		del self.saved_actions[:]
-		del self.saved_phi[:]
-		del self.saved_psi[:]
+			del self.saved_rewards[:]
+			del self.saved_actions[:]
+			del self.saved_phi[:]
+			del self.saved_psi[:]
 
-		return p_loss, v_loss, psi_loss
+			return p_loss, v_loss, psi_loss
+
+		else:
+			p_loss, v_loss = torch.cat(policy_losses).sum(), torch.cat(value_losses).sum()
+			total_loss = p_loss + v_loss
+			total_loss.backward(retain_graph=False)
+			self.optimizer.step()
+
+			del self.saved_rewards[:]
+			del self.saved_actions[:]
+			del self.saved_phi[:]
+			del self.saved_psi[:]
+
+			return p_loss, v_loss
 
 	def finish_trial_EC(self, **kwargs):
 		policy_losses = []
 		value_losses = []
 		saved_actions = self.saved_actions
 		returns_ = torch.Tensor(discount_rwds(np.asarray(self.saved_rewards), gamma=self.gamma))
+		if self.use_SR:
+			phis = self.saved_phi
+			psis = self.saved_psi
+			psi_losses = []
 
 		EC = kwargs.get('cache', None)
 		buffer = kwargs.get('buffer', None)
@@ -332,11 +352,6 @@ class ActorCritic(nn.Module):
 			if buffer is not None:
 				mem_dict = {}
 				timesteps, states, actions, readable, trial = buffer
-			# timesteps = buffer[0]
-			# states    = buffer[1]
-			# actions   = buffer[2]
-			# readable  = buffer[3]
-			# trial 	  = buffer[4]
 			else:
 				raise Exception('No memory buffer provided for kwarg "buffer=" ')
 
@@ -359,16 +374,42 @@ class ActorCritic(nn.Module):
 				policy_losses.append(-log_prob * rpe)
 				value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
 
+		if self.use_SR:
+			for t in range(len(phis[:-1])):
+				next_psi = psis[t + 1]
+				psi_hat = phis[t] + self.gamma * next_psi
+				loss = nn.MSELoss(reduction='mean')
+				l_psi = loss(psi_hat, psis[t]).view(-1)
+
+				psi_losses.append(l_psi)
+
 		self.optimizer.zero_grad()
-		p_loss, v_loss = torch.cat(policy_losses).sum(), torch.cat(value_losses).sum()
-		total_loss = p_loss + v_loss
-		total_loss.backward(retain_graph=False)
-		self.optimizer.step()
+		if self.use_SR:
+			p_loss, v_loss, psi_loss = torch.cat(policy_losses).sum(), torch.cat(value_losses).sum(), torch.cat(
+				psi_losses).sum()
+			total_loss = p_loss + v_loss + psi_loss
+			total_loss.backward(retain_graph=False)
+			self.optimizer.step()
 
-		del self.saved_rewards[:]
-		del self.saved_actions[:]
+			del self.saved_rewards[:]
+			del self.saved_actions[:]
+			del self.saved_phi[:]
+			del self.saved_psi[:]
 
-		return p_loss, v_loss
+			return p_loss, v_loss, psi_loss
+
+		else:
+			p_loss, v_loss = torch.cat(policy_losses).sum(), torch.cat(value_losses).sum()
+			total_loss = p_loss + v_loss
+			total_loss.backward(retain_graph=False)
+			self.optimizer.step()
+
+			del self.saved_rewards[:]
+			del self.saved_actions[:]
+			del self.saved_phi[:]
+			del self.saved_psi[:]
+
+			return p_loss, v_loss
 
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++
