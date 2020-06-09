@@ -45,7 +45,7 @@ class ep_mem(object):
 			# Case 1a: key does not yet exist
 			if activity not in self.cache_list.keys(): # if no key for this state exists already, add new one
 				mem_entry = np.empty((self.n_actions, 2))
-				mem_entry[:,0] = np.NINF # initialize deltas to nan
+				mem_entry[:,0] = np.nan # initialize deltas to nan
 				mem_entry[:,1] = np.inf # initialize timestamps to inf
 				self.cache_list[activity] = [mem_entry, np.inf, None]
 			# Case 1b: key exists, add or replace relevant info in mem container
@@ -65,7 +65,7 @@ class ep_mem(object):
 
 				# add new mem container
 				mem_entry = np.empty((self.n_actions, 2))
-				mem_entry[:,0] = np.NINF
+				mem_entry[:,0] = np.nan
 				mem_entry[:,1] = np.inf # initialize entries to nan
 				self.cache_list[activity] = [mem_entry, np.inf, None]
 			# Case2b: key exists, add or replace relevant info in mem container
@@ -80,9 +80,10 @@ class ep_mem(object):
 		confidence score = scaled by cosine sim
 
 		'''
-		mem_temp = kwargs.get('mem_temp', 1)
+		self.mem_temp = kwargs.get('mem_temp', 0.1)
+
 		if len(self.cache_list) == 0:
-			random_policy = softmax(np.zeros(6))
+			random_policy = softmax(np.zeros(self.n_actions))
 			return random_policy
 		else:
 			#specify decay envelope for memory relevance calculation
@@ -90,14 +91,12 @@ class ep_mem(object):
 
 			# returns the most similar key, as well as the cosine similarity measure
 			lin_act, similarity = self.cosine_sim(key)
-
-
 			memory       = np.nan_to_num(self.cache_list[lin_act][0])
-
 			deltas       = memory[:,0]
 			#times        = abs(timestep - memory[:,1])
 			#pvals 		 = self.make_pvals(times, envelope=envelope)
-			policy = softmax( similarity*deltas, T=mem_temp) #np.multiply(sim,deltas))
+			policy = softmax( similarity*deltas, T=self.mem_temp) #np.multiply(sim,deltas))
+
 			return policy
 
 
@@ -114,6 +113,7 @@ class ep_mem(object):
 	def cosine_sim(self, key):
 		# make list of memory keys
 		mem_cache = np.asarray(list(self.cache_list.keys()))
+
 		entry = np.asarray(key)
 		# compute cosine similarity measure
 		mqt = np.dot(mem_cache, entry)

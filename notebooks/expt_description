@@ -1,0 +1,46 @@
+Questions
+-----------------
+ i) How do frozen/unfrozen weights compare on testing?
+     - Arch B
+     - Train (0) 
+     - Test w/ MF only, EC only (psi)
+     - Compare: 
+         MF only frozen (1)
+         MF only unfrozen (4)
+         EC only frozen (2 or 3)
+         EC only unfrozen (5 or 6) 
+ii) 
+
+
+
+Env:
+    - Openfield
+    - 20x20
+    - 4 actions [D U R L]
+    - Rewarded action: None
+    - Step Penalization = -0.01
+    - Rho = 0.0
+
+0: Training
+    - rwd (5,5):1
+    
+    - Arch A (no SR)
+    - Arch B (w SR)
+
+1: Testing
+    - rwd (15,15):1
+    
+    - Arch A (no SR)
+        - MF only
+        - EC only (using h as EC key)
+        
+    - Arch B (w SR)
+        - MF only
+        - EC only
+            - Phi as EC key
+            - Psi as EC key
+            
+            
+
+    
+    

@@ -193,7 +193,69 @@ def plot_polmap(maze, policy_array, save=False, **kwargs):
 		plt.show()
 	plt.close()
 
+def plot_pref_pol(maze, policy_array, save=False, **kwargs):
+	'''
+		:param maze: the environment object
+		:param save: bool. save figure in current directory
+		:return: None
+		'''
+	show = kwargs.get('show', True)
+	title = kwargs.get('title', 'Most Likely Action from Policy')
+	directory = kwargs.get('directory', '../data/figures/')
+	filetype = kwargs.get('filetype', 'png')
+	vmax = kwargs.get('upperbound', 2)
+	rewards = kwargs.get('rwds', maze.rewards)
+	fig = plt.figure(figsize=(7, 5))
+	ax1 = fig.add_axes([0, 0, 0.85, 0.85])
+	axc = fig.add_axes([0.75, 0, 0.05, 0.85])
 
+	cmap = plt.cm.Spectral_r
+	cNorm = colors.Normalize(vmin=0, vmax=vmax)
+	scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
+	cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
+	# make base grid
+	ax1.pcolor(maze.grid, vmin=0, vmax=vmax, cmap='bone')
+	# add patch for reward location/s (red)
+	for rwd_loc in rewards:
+		rwd_r, rwd_c = rwd_loc
+		ax1.add_patch(plt.Rectangle((rwd_c, rwd_r), width=0.99, height=1, linewidth=1, ec='white', fill=False))
+
+	chance_threshold = kwargs.get('threshold', 0.18)  # np.round(1 / len(maze.actionlist), 6)
+
+	for i in range(maze.r):
+		for j in range(maze.c):
+			policy = tuple(policy_array[i, j])
+
+			dx, dy = 0.0, 0.0
+			for ind, k in enumerate(policy):
+				action = ind
+				prob = k
+				if i==1 and j==1:
+					print(action, prob)
+				if prob < 0.01:
+					pass
+				else:
+					dx1, dy1, head_w, head_l = make_arrows(action, prob)
+					dx += dx1*prob
+					dy += dy1*prob
+					if i == 1 and j == 1:
+						print(ind, k, dx1, dy1)
+			if dx ==0.0 and dy == 0.0:
+				pass
+			else:
+				colorVal1 = scalarMap.to_rgba(entropy(policy))
+				ax1.arrow(j + 0.5, i + 0.5, dx, dy, head_width=0.3, head_length=0.5, color=colorVal1)
+
+
+	ax1.set_aspect('equal')
+	ax1.set_title(title)
+	ax1.invert_yaxis()
+
+	if save:
+		plt.savefig(f'{directory}{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
+	if show:
+		plt.show()
+	plt.close()
 def plot_optimal(maze, policy_array, save=False, **kwargs):
 	'''
 	:param maze: the environment object
@@ -223,8 +285,8 @@ def plot_optimal(maze, policy_array, save=False, **kwargs):
 	chance_threshold = kwargs.get('threshold',0.18)  #np.round(1 / len(maze.actionlist), 6)
 
 
-	for i in range(maze.c):
-		for j in range(maze.r):
+	for i in range(maze.r):
+		for j in range(maze.c):
 			policy = tuple(policy_array[i,j])
 
 			dx, dy = 0,0
@@ -240,7 +302,7 @@ def plot_optimal(maze, policy_array, save=False, **kwargs):
 					dx += dx1
 					dy += dy1
 			colorVal1 = scalarMap.to_rgba(entropy(policy))
-			ax1.arrow(j+0.5, i+0.5, dx/2, dy/2, head_width=0.25, head_length=0.25, color=colorVal1)
+			ax1.arrow(j+0.5, i+0.5, dx/2, dy/2, head_width=0.25, head_length=0.5, color=colorVal1)
 
 	ax1.set_aspect('equal')
 	ax1.set_title(title)
