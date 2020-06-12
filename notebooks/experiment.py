@@ -1,21 +1,75 @@
 ### =============================================================================
-### Updated Feb 2020
+### Updated June 2020
 ### =============================================================================
 from __future__ import division
 import numpy as np
 import time
 import torch
+import pickle
+import csv
+
 import sys
 # import modules from other folders in the tree
 sys.path.insert(0,'../rl_network/'); import ac;  import stategen as sg
 sys.path.insert(0,'../memory/'); import episodic as ec
 sys.path.insert(0,'../environments/'); import gw; import gridworld_plotting as gp
-from scipy.stats import entropy
-# temp
-import matplotlib.pyplot as plt
-import time
-#/
+
 ####################################################
+def log_experiments(save_id, experiment_type, env, agent, data, mem=None, **kwargs):
+
+
+
+    load = kwargs.get('load', ' ')
+    arch_type = kwargs.get('arch', 'B')
+    save_flag = kwargs.get('save_flag', False)
+    if experiment_type == 0 or save_flag:
+        save = f'../data/outputs/gridworld/weights/{save_id}.pt'
+        ac.torch.save(agent, save)
+    else:
+        save = kwargs.get('save', ' ')
+
+    pvals = kwargs.get('pvals', False)
+
+    expt_log = [save_id, experiment_type, load, save]
+    # add environment parameters
+    if env.maze_type == None:
+        maze_type = 'Openfield'
+    else:
+        maze_type = env.maze_type
+    expt_log.append(maze_type)
+    expt_log.append(env.shape)
+    expt_log.append(len(env.action_list))
+    if env.rwd_action == None:
+        rwd_action = 'None'
+    else:
+        rwd_action = env.rwd_action
+    expt_log.append(rwd_action)
+    expt_log.append(env.rewards)
+    expt_log.append(env.step_penalization)
+    expt_log.append(env.rho)
+
+    # add agent parameters
+    expt_log.append(arch_type)
+
+    if mem is not None:
+        expt_log.append(mem.mem_temp)
+        expt_log.append(pvals)
+        expt_log.append(mem.memory_envelope)
+        pickle.dump(mem.cache_list, open(f'../data/outputs/gridworld/episodic_cache/{save_id}_EC.p', 'wb'))
+    else:
+        expt_log.append(-1)  # mem_temp = EC_entropy
+        expt_log.append(pvals)
+        expt_log.append(-1)  # Mem_decay
+
+    with open('../data/outputs/gridworld/experiments.csv', 'a+', newline='') as file:
+        writer = csv.writer(file)
+        if experiment_type is not None:
+            writer.writerow(expt_log)
+            experiment_type = None
+        else:
+            raise Exception('enter experiment type ')
+    pickle.dump(data, open(f'../data/outputs/gridworld/results/{save_id}_data.p', 'wb'))
+
 def get_snapshot(sample_obs, env, agent):
     # get sample observations from all useable spaces in environment
     samples, states = sample_obs
@@ -96,6 +150,8 @@ class test_expt(object):
 
         self.timestamp = 0
 
+        self.starts = kwargs.get('starts', None)
+
         if get_samples:
             sample_observations = self.env.get_sample_obs()
 
@@ -103,9 +159,12 @@ class test_expt(object):
         encountered_reward = False
         for trial in range(NUM_TRIALS):
             self.trial_reset(trial)
+            if self.starts is not None:
+                start_ = self.starts[np.random.choice(np.arange(4))]
+                self.env.set_state(self.env.twoD2oneD(start_))
             for event in range(NUM_EVENTS):
                 # get state observation
-                observation = torch.Tensor(np.expand_dims(self.env.get_observation(), axis=0))
+                observation = torch.Tensor(np.expand_dims(self.env.get_observation(onehot=True), axis=0))
 
                 # pass observation through network
                 if self.agent.use_SR:
@@ -127,6 +186,7 @@ class test_expt(object):
                 if self.rec_memory or self.use_memory:
                     self.save_to_mem(self.timestamp, lin_act, choice, self.env.oneD2twoD(self.env.state), trial)
 
+                #print(self.env.oneD2twoD(self.env.state),action)
                 # take a step in the environment
                 s_1d, reward, isdone = self.env.move(action)
 
