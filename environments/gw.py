@@ -161,11 +161,15 @@ class GridWorld(object):
                 grid[i][hwall] = 1
 
             # make doors
-            grid[vwall][np.random.choice(np.arange(0,vwall))] = 0
-            grid[vwall][np.random.choice(np.arange(vwall+1, self.c))] = 0
+            self.doors = []
+            self.doors.append((vwall, np.random.choice(np.arange(0,vwall))))
+            self.doors.append((vwall, np.random.choice(np.arange(vwall+1, self.c))))
 
-            grid[np.random.choice(np.arange(0,hwall))][hwall] = 0
-            grid[np.random.choice(np.arange(hwall+1, self.r))][hwall] = 0
+            self.doors.append((np.random.choice(np.arange(0,hwall)), hwall))
+            self.doors.append((np.random.choice(np.arange(hwall+1, self.r)),hwall))
+            for i in self.doors:
+                grid[i] = 0
+
 
         elif self.maze_type == 'tmaze':
             self.rho = 0
@@ -206,7 +210,7 @@ class GridWorld(object):
                     if grid[reward_loc[1], reward_loc[0]] == 1:
                         grid[reward_loc[1], reward_loc[0]] = 0
 
-            obstacles = list(zip(np.where(grid==1)[1], np.where(grid==1)[0]))
+            obstacles = list(zip(np.where(grid==1)[0], np.where(grid==1)[1]))
             self.obstacle2D = obstacles
             self.obstacle = [self.twoD2oneD((r,c)) for r,c in obstacles]
 
@@ -248,7 +252,7 @@ class GridWorld(object):
 
     def buildTransitionMatrices(self):
         # initialize
-        self.P = np.zeros((6, self.nstates, self.nstates))  # down, up, right, left, jump, poke
+        self.P = np.zeros((len(self.action_list), self.nstates, self.nstates))  # down, up, right, left, jump, poke
 
         # add neighbor connections and jumps, remove for endlines
         self.P[0, list(range(0, self.nstates-self.shape[1])), list(range(self.shape[1], self.nstates))] = 1     # down
@@ -256,8 +260,8 @@ class GridWorld(object):
 
         self.P[2, list(range(0, self.nstates-1)), list(range(1, self.nstates))] = 1  							# right
         self.P[3, list(range(1, self.nstates)), list(range(0, self.nstates-1))] = 1  							# left
-
-        self.P[4, self.jump_from, self.jump_to] = 1												# jump
+        if len(self.action_list) > 4:
+            self.P[4, self.jump_from, self.jump_to] = 1												# jump
 
         # remove select states
         endlines = list(range(self.shape[1]-1,self.nstates-self.shape[1],self.shape[1]))
@@ -268,10 +272,12 @@ class GridWorld(object):
             self.P[i, :, self.obstacle] = 0  	# remove transitions into obstacles
             self.P[i, self.obstacle, :] = 0  	# remove transitions from obstacles
             self.P[i, self.terminal, :] = 0  	# remove transitions from terminal states
-            self.P[i, self.jump_from, :] = 0 	# remove neighbor transitions from jump states
+            if len(self.action_list) >4:
+                self.P[i, self.jump_from, :] = 0 	# remove neighbor transitions from jump states
 
-        # poke should make no transitions between states so everything stays 0
-        self.P[5, list(range(0, self.nstates)), list(range(0, self.nstates))] = 1
+        if len(self.action_list) >5:
+            # poke should make no transitions between states so everything stays 0
+            self.P[5, list(range(0, self.nstates)), list(range(0, self.nstates))] = 1
 
     def resetEnvironment(self, random_start=True, **kwargs):
         self.random_start = random_start
@@ -283,7 +289,7 @@ class GridWorld(object):
             self.start = self.useable[0]
         self.state = self.twoD2oneD(self.start)
 
-        self.observation = self.get_observation()
+        self.observation = self.get_observation(onehot=True)
 
         self.done = False
         #self.rwd = 0
@@ -356,19 +362,25 @@ class GridWorld(object):
         return reward
 
     def get_observation(self, **kwargs):
-        agent_location  = kwargs.get('agtlocation', self.oneD2twoD(self.state))
-        reward_location = kwargs.get('rwdlocation', self.rewards)
+        onehot = kwargs.get('onehot', False)
+        if onehot:
+            obs = np.zeros((1,np.prod(self.grid.shape)))
+            obs[0,self.state] = 1
+            return np.array([obs])
+        else:
+            agent_location  = kwargs.get('agtlocation', self.oneD2twoD(self.state))
+            reward_location = kwargs.get('rwdlocation', self.rewards)
 
-        #location of reward
-        rwd_position = np.zeros_like(self.grid)
-        for reward in reward_location:
-            rwd_position[reward] = 1
+            #location of reward
+            rwd_position = np.zeros_like(self.grid)
+            for reward in reward_location:
+                rwd_position[reward] = 1
 
-        #location of agent
-        agt_position = np.zeros_like(self.grid)
-        agt_position[agent_location] = 1
+            #location of agent
+            agt_position = np.zeros_like(self.grid)
+            agt_position[agent_location] = 1
 
-        return np.array([self.grid, rwd_position, agt_position])
+            return np.array([self.grid, rwd_position, agt_position])
 
     def get_sample_obs(self):
         env_sample = [[],[]]
@@ -558,11 +570,14 @@ class GW_4state(object):
                 grid[i][hwall] = 1
 
             # make doors
-            grid[vwall][np.random.choice(np.arange(0,vwall))] = 0
-            grid[vwall][np.random.choice(np.arange(vwall+1, self.c))] = 0
+            self.doors = []
+            self.doors.append((vwall, np.random.choice(np.arange(0, vwall))))
+            self.doors.append((vwall, np.random.choice(np.arange(vwall + 1, self.c))))
 
-            grid[np.random.choice(np.arange(0,hwall))][hwall] = 0
-            grid[np.random.choice(np.arange(hwall+1, self.r))][hwall] = 0
+            self.doors.append((np.random.choice(np.arange(0, hwall)), hwall))
+            self.doors.append((np.random.choice(np.arange(hwall + 1, self.r)), hwall))
+            for i in self.doors:
+                grid[i] = 0
 
         elif self.maze_type == 'tmaze':
             self.rho = 0
@@ -603,7 +618,7 @@ class GW_4state(object):
                     if grid[reward_loc[1], reward_loc[0]] == 1:
                         grid[reward_loc[1], reward_loc[0]] = 0
 
-            obstacles = list(zip(np.where(grid==1)[1], np.where(grid==1)[0]))
+            obstacles = list(zip(np.where(grid==1)[0], np.where(grid==1)[1]))
             self.obstacle2D = obstacles
             self.obstacle = [self.twoD2oneD((r,c)) for r,c in obstacles]
 
@@ -836,7 +851,7 @@ def plotWorld(world, plotNow=False, current_state = False, **kwargs):
     title = kwargs.get('title', 'Grid World')
     ax_labels = kwargs.get('ax_labels', False)
     state_labels = kwargs.get('states', False)
-
+    four_actions = kwargs.get('four_actions', False)
     r,c = world.shape
 
     fig = plt.figure(figsize=(c*scale, r*scale))
@@ -853,11 +868,12 @@ def plotWorld(world, plotNow=False, current_state = False, **kwargs):
     U[:] = np.nan
     V[:] = np.nan
 
-    if world.jump is not None:
-        for (a, b) in world.jump.keys():
-            (a2, b2) = world.jump[(a, b)]
-            U[a, b] = (b2 - b)
-            V[a, b] = (a - a2)
+    if not four_actions:
+        if world.jump is not None:
+            for (a, b) in world.jump.keys():
+                (a2, b2) = world.jump[(a, b)]
+                U[a, b] = (b2 - b)
+                V[a, b] = (a - a2)
 
     C, R = np.meshgrid(np.arange(0, c) + 0.5, np.arange(0, r) + 0.5)
     plt.quiver(C, R, U, V, scale=1, units='xy')

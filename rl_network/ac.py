@@ -43,6 +43,7 @@ def make_agent(agent_params, **kwargs):
 
 	if agent_params['load_model']:
 		MF = torch.load(agent_params['load_dir']) # load previously saved model
+		print(f'Loaded Model {agent_params["load_dir"][33:]}')
 	else:
 		MF = ActorCritic(agent_params, use_SR=agent_params['use_SR'])
 
