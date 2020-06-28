@@ -42,8 +42,7 @@ def make_agent(agent_params, **kwargs):
 		freeze_weights = False
 
 	if agent_params['load_model']:
-		MF = torch.load(agent_params['load_dir']) # load previously saved model
-		print(f'Loaded Model {agent_params["load_dir"][33:]}')
+		MF = torch.load(agent_params['load_dir'][0]) # load previously saved model
 	else:
 		MF = ActorCritic(agent_params, use_SR=agent_params['use_SR'])
 

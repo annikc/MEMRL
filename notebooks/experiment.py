@@ -16,11 +16,11 @@ sys.path.insert(0,'../environments/'); import gw; import gridworld_plotting as g
 
 ####################################################
 def log_experiments(save_id, experiment_type, env, agent, data, mem=None, **kwargs):
-
-
-
-    load = kwargs.get('load', ' ')
     arch_type = kwargs.get('arch', 'B')
+    load = kwargs.get('load', ' ')
+    alpha = kwargs.get('alpha', -1)
+    beta = kwargs.get('beta', -1)
+
     save_flag = kwargs.get('save_flag', False)
     if experiment_type == 0 or save_flag:
         save = f'../data/outputs/gridworld/weights/{save_id}.pt'
@@ -36,9 +36,9 @@ def log_experiments(save_id, experiment_type, env, agent, data, mem=None, **kwar
         maze_type = 'Openfield'
     else:
         maze_type = env.maze_type
-    expt_log.append(maze_type)
-    expt_log.append(env.shape)
-    expt_log.append(len(env.action_list))
+    expt_log.append(maze_type) # type of environment
+    expt_log.append(env.shape) # dimensions
+    expt_log.append(len(env.action_list)) # number of actions
     if env.rwd_action == None:
         rwd_action = 'None'
     else:
@@ -60,6 +60,10 @@ def log_experiments(save_id, experiment_type, env, agent, data, mem=None, **kwar
         expt_log.append(-1)  # mem_temp = EC_entropy
         expt_log.append(pvals)
         expt_log.append(-1)  # Mem_decay
+
+    # switching parameters
+    expt_log.append(alpha)
+    expt_log.append(beta)
 
     with open('../data/outputs/gridworld/experiments.csv', 'a+', newline='') as file:
         writer = csv.writer(file)
@@ -100,6 +104,15 @@ class test_expt(object):
             self.mem_size = 0.75 * environment.nstates
             self.episodic = ec.ep_mem(self.agent, cache_limit=self.mem_size)
 
+    def policy_arbitration(self,reward_tminus1):
+        threshold = 0.01
+        decay = np.power(threshold,1/self.beta)
+        self.MF_cs = decay*self.MF_cs + self.alpha*reward_tminus1
+        if self.MF_cs > 1.0:
+            self.MF_cs = 1.0
+        elif self.MF_cs < 0.0:
+            self.MF_cs = 0.0
+
     def trial_reset(self, trial):
         # reset environment, choose new starting location for agent
         self.env.resetEnvironment(around_rwd=self.around_reward, radius=self.start_radius)
@@ -110,16 +123,19 @@ class test_expt(object):
         #if self.record_memory: #self.episodic.reset_cache()  ## why did I have this here?
         self.memory_buffer = [[], [], [], [], trial]  # [timestamp, state_t, a_t, readable_state, trial]
         if self.use_memory:
-            pass
-            #self.MF_cs = self.episodic.make_pvals(self.ploss_scale, envelope=self.mfc_env)
+            self.MF_cs = 0.0
+            self.last_reward = 0
         else:
-            self.MF_cs = 1
+            self.MF_cs = 1.0
 
     def action_selection(self, policy_, value_, lin_act=None):
         policy = policy_.data[0]
         value = value_.item()
         if self.use_memory:
-            pol_choice = 'ec' #np.random.choice(['mf', 'ec'], p=[self.MF_cs, 1 - self.MF_cs])
+            # compute MFCS
+            self.policy_arbitration(self.last_reward)
+            pol_choice = np.random.choice(['mf', 'ec'], p=[self.MF_cs, 1 - self.MF_cs])
+            #print(self.MF_cs, pol_choice, self.last_reward)
             if pol_choice == 'ec':
                 episodic_memory = self.episodic.recall_mem(key=lin_act, timestep=self.timestamp, env=self.recency_env)
                 episodic_pol = torch.from_numpy(episodic_memory)
@@ -144,7 +160,10 @@ class test_expt(object):
         self.around_reward = kwargs.get('around_reward', False)
         self.start_radius  = kwargs.get('radius', 5)
 
-        self.ploss_scale   = 0  # this is equivalent to calculating MF_confidence = sech(0) = 1
+        self.alpha = kwargs.get('alpha', 1)
+        self.beta = kwargs.get('beta', np.inf)
+
+        #self.ploss_scale   = 0  # this is equivalent to calculating MF_confidence = sech(0) = 1
         self.mfc_env = ec.calc_env(halfmax=3.12)  # 1.04 was the calculated standard deviation of policy loss after learning on open field gridworld task **** may need to change for different tasks
         self.recency_env = ec.calc_env(halfmax=20)
 
@@ -164,7 +183,7 @@ class test_expt(object):
                 self.env.set_state(self.env.twoD2oneD(start_))
             for event in range(NUM_EVENTS):
                 # get state observation
-                observation = torch.Tensor(np.expand_dims(self.env.get_observation(onehot=True), axis=0))
+                observation = torch.Tensor(np.expand_dims(self.env.get_observation(), axis=0))
 
                 # pass observation through network
                 if self.agent.use_SR:
@@ -192,6 +211,7 @@ class test_expt(object):
 
                 self.agent.saved_rewards.append(reward)
                 self.reward_sum += reward
+                self.last_reward  = reward ### new with policy arbitration
                 self.timestamp += 1
 
                 if isdone:
@@ -212,7 +232,7 @@ class test_expt(object):
                 else:
                     p_loss, v_loss = self.agent.finish_trial()
 
-            self.ploss_scale = abs(p_loss.item())
+            #self.ploss_scale = abs(p_loss.item())
             data['trial_length'].append(event)
             data['total_reward'].append(self.reward_sum)
             data['loss'][0].append(p_loss.item())
