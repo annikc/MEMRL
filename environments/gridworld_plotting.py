@@ -200,7 +200,7 @@ def plot_pref_pol(maze, policy_array, save=False, **kwargs):
 		:return: None
 		'''
 	show = kwargs.get('show', True)
-	title = kwargs.get('title', 'Most Likely Action from Policy')
+	title = kwargs.get('title', 'Policy Entropy')
 	directory = kwargs.get('directory', '../data/figures/')
 	filetype = kwargs.get('filetype', 'png')
 	vmax = kwargs.get('upperbound', 2)
@@ -230,16 +230,12 @@ def plot_pref_pol(maze, policy_array, save=False, **kwargs):
 			for ind, k in enumerate(policy):
 				action = ind
 				prob = k
-				if i==1 and j==1:
-					print(action, prob)
 				if prob < 0.01:
 					pass
 				else:
 					dx1, dy1, head_w, head_l = make_arrows(action, prob)
 					dx += dx1*prob
 					dy += dy1*prob
-					if i == 1 and j == 1:
-						print(ind, k, dx1, dy1)
 			if dx ==0.0 and dy == 0.0:
 				pass
 			else:
