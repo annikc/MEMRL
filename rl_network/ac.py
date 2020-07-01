@@ -41,10 +41,16 @@ def make_agent(agent_params, **kwargs):
 	else:
 		freeze_weights = False
 
+	if agent_params['architecture'] == 'A':
+		use_SR = False
+	elif agent_params['architecture'] == 'B':
+		use_SR = True
+
 	if agent_params['load_model']:
-		MF = torch.load(agent_params['load_dir'][0]) # load previously saved model
+		print("heloooooo", agent_params['load_dir'])
+		MF = torch.load(agent_params['load_dir']) # load previously saved model
 	else:
-		MF = ActorCritic(agent_params, use_SR=agent_params['use_SR'])
+		MF = ActorCritic(agent_params, use_SR=use_SR)
 
 	if freeze_weights:
 		freeze = []
@@ -77,7 +83,6 @@ class ActorCritic(nn.Module):
 	def __init__(self, agent_params, **kwargs):
 		# call the super-class init
 		super(ActorCritic, self).__init__()
-		self.gamma = agent_params['gamma'] # discount factor
 		self.input_dims  = agent_params['input_dims']
 		self.action_dims = agent_params['action_dims']
 
@@ -102,6 +107,16 @@ class ActorCritic(nn.Module):
 		else:
 			self.batch_size= agent_params['batch_size']
 
+		if 'gamma' not in agent_params.keys():
+			self.gamma = kwargs.get('gamma', 0.98)
+		else:
+			self.gamma = agent_params['gamma']
+
+		if 'eta' not in agent_params.keys():
+			self.eta = kwargs.get('eta', 5e-4)
+		else:
+			self.eta = agent_params['eta']
+
 		self.use_SR = kwargs.get('use_SR', True)
 
 
@@ -110,7 +125,7 @@ class ActorCritic(nn.Module):
 			if len(agent_params['hidden_dims']) != len(agent_params['hidden_types']):
 				raise Exception('Incorrect specification of hidden layer dimensions')
 
-			hidden_types = agent_params['hidden_types']
+			self.hidden_types = agent_params['hidden_types']
 			# create lists for tracking hidden layers
 			self.hidden = nn.ModuleList()
 			self.hidden_dims   = agent_params['hidden_dims']
@@ -118,13 +133,13 @@ class ActorCritic(nn.Module):
 			self.hx = []
 			self.cx = []
 			# calculate dimensions for each layer
-			for ind, htype in enumerate(hidden_types):
+			for ind, htype in enumerate(self.hidden_types):
 				if htype not in ['linear', 'lstm', 'gru', 'conv', 'pool']:
 					raise Exception(f'Unrecognized type for hidden layer {ind}')
 				if ind==0:
 					input_d = self.input_dims
 				else:
-					if hidden_types[ind-1] in ['conv', 'pool'] and not htype in ['conv', 'pool']:
+					if self.hidden_types[ind-1] in ['conv', 'pool'] and not htype in ['conv', 'pool']:
 						input_d = int(np.prod(self.hidden_dims[ind-1]))
 
 					else:
@@ -174,26 +189,14 @@ class ActorCritic(nn.Module):
 			self.layers = [self.input_dims, self.action_dims]
 			self.output = nn.ModuleList([nn.Linear(input_dimensions, action_dimensions),  # ACTOR
 										 nn.Linear(input_dimensions, 1)])  # CRITIC
-		self.output_d = self.hidden_dims[-1]
+		output_d = self.hidden_dims[-1]
 
 		self.saved_actions = []
 		self.saved_rewards = []
 		self.saved_phi     = []
 		self.saved_psi     = []
-		'''
-		main_params = []
-		SR_params = []
-		for name, para in self.named_parameters():
-			if name[0:2] == 'SR':
-				SR_params.append(para)
-			else:
-				main_params.append(para)
 
-		self.SR_opt = opt([{'params': SR_params,
-							'lr': 0.01 * agent_params.eta}])  # opt([{'params': freeze, 'lr': 0.0}, {'params': unfreeze, 'lr': agent_params['eta']}], lr=0.0)
-		self.optimizer = opt(main_params, lr=agent_params.eta)
-		'''
-		self.optimizer = optim.Adam(self.parameters(), lr=agent_params['eta'])
+		self.optimizer = optim.Adam(self.parameters(), lr=self.eta)
 
 	def conv_output(self, input_tuple, **kwargs):
 		channels, h_in, w_in = input_tuple

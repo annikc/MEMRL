@@ -7,7 +7,7 @@ import time
 import torch
 import pickle
 import csv
-
+import uuid
 import sys
 # import modules from other folders in the tree
 sys.path.insert(0,'../rl_network/'); import ac;  import stategen as sg
@@ -97,12 +97,34 @@ def get_snapshot(sample_obs, env, agent):
 class test_expt(object):
     def __init__(self, agent, environment, **kwargs):
         self.agent = agent
+        if self.agent.use_SR:
+            self.agent_architecture = 'B'
+        else:
+            self.agent_architecture = 'A'
         self.env = environment
+
+        self.data = self.reset_data_logs()
+
         self.use_memory = kwargs.get('use_mem', False)
         self.rec_memory = kwargs.get('rec_mem', False)
         if self.rec_memory or self.use_memory:
             self.mem_size = 0.75 * environment.nstates
-            self.episodic = ec.ep_mem(self.agent, cache_limit=self.mem_size)
+            self.episodic = ec.ep_mem(entry_size=agent.action_dims, cache_limit=self.mem_size)
+        else:
+            self.episodic = None
+
+    def reset_data_logs(self):
+        data_log = {'total_reward': [],
+                    'loss': [[],[],[]],
+                    'trial_length': [],
+                    'trials_run_to_date':0,
+                    'pol_tracking':[],
+                    'val_tracking':[],
+                    'ec_tracking': [],
+                    't': [],
+                    'mfcs':[]
+                   }
+        return data_log
 
     def policy_arbitration(self,reward_tminus1):
         threshold = 0.01
@@ -120,7 +142,6 @@ class test_expt(object):
         self.agent.reinit_hid()
         self.reward_sum = 0
 
-        #if self.record_memory: #self.episodic.reset_cache()  ## why did I have this here?
         self.memory_buffer = [[], [], [], [], trial]  # [timestamp, state_t, a_t, readable_state, trial]
         if self.use_memory:
             self.MF_cs = 0.0
@@ -154,18 +175,24 @@ class test_expt(object):
         self.memory_buffer[3].append(current_state)
         self.memory_buffer[4] = trial
 
-    def run(self, NUM_TRIALS, NUM_EVENTS, data, **kwargs):
+    def run(self, NUM_TRIALS, NUM_EVENTS, **kwargs):
+        self.num_trials = NUM_TRIALS
+        self.num_events = NUM_EVENTS
         print_freq         = kwargs.get('printfreq', 0.1)
         get_samples        = kwargs.get('get_samples', False)
         self.around_reward = kwargs.get('around_reward', False)
         self.start_radius  = kwargs.get('radius', 5)
 
         self.alpha = kwargs.get('alpha', 1)
-        self.beta = kwargs.get('beta', np.inf)
+        self.beta = kwargs.get('beta', np.inf) # full model free control
+        reset_data = kwargs.get('reset_data', False)
+        if reset_data:
+            self.data = self.reset_data_logs()
 
         #self.ploss_scale   = 0  # this is equivalent to calculating MF_confidence = sech(0) = 1
-        self.mfc_env = ec.calc_env(halfmax=3.12)  # 1.04 was the calculated standard deviation of policy loss after learning on open field gridworld task **** may need to change for different tasks
-        self.recency_env = ec.calc_env(halfmax=20)
+        #self.mfc_env = ec.calc_envelope(halfmax=3.12)  # 1.04 was the calculated standard deviation of policy loss after learning on open field gridworld task **** may need to change for different tasks
+
+        self.recency_env = ec.calc_envelope(halfmax=20)
 
         self.timestamp = 0
 
@@ -233,18 +260,18 @@ class test_expt(object):
                     p_loss, v_loss = self.agent.finish_trial()
 
             #self.ploss_scale = abs(p_loss.item())
-            data['trial_length'].append(event)
-            data['total_reward'].append(self.reward_sum)
-            data['loss'][0].append(p_loss.item())
-            data['loss'][1].append(v_loss.item())
+            self.data['trial_length'].append(event+1)
+            self.data['total_reward'].append(self.reward_sum)
+            self.data['loss'][0].append(p_loss.item())
+            self.data['loss'][1].append(v_loss.item())
             if self.agent.use_SR:
-                data['loss'][2].append(psi_loss.item())
-            data['trials_run_to_date'] += 1
+                self.data['loss'][2].append(psi_loss.item())
+            self.data['trials_run_to_date'] += 1
             if get_samples:
                 pol_grid, val_grid = get_snapshot(sample_observations, self.env, self.agent)
-                data['pol_tracking'].append(pol_grid)
-                data['val_tracking'].append(val_grid)
-                data['t'].append(trial)
+                self.data['pol_tracking'].append(pol_grid)
+                self.data['val_tracking'].append(val_grid)
+                self.data['t'].append(trial)
 
             if trial == 0 or trial % int(print_freq * NUM_TRIALS) == 0 or trial == NUM_TRIALS - 1:
                 print(f"{trial}: {self.reward_sum} ({time.time() - t}s)")

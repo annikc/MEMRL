@@ -3,7 +3,7 @@
 '''
 Object Classes and Relevant Functions for Episodic Memory Module
 Author: Annik Carson 
---  June 2018
+--  June 2020
 '''
 
 # =====================================
@@ -11,22 +11,16 @@ Author: Annik Carson
 # =====================================
 from __future__ import division, print_function
 import numpy as np
-import time
 
 class ep_mem(object):
-	def __init__(self, model, cache_limit,**kwargs):
+	def __init__(self, entry_size, cache_limit,**kwargs):
 		self.cache_list 		= {}								# memory bank object
 		self.cache_limit 		= cache_limit                       # size of memory bank
-		self.n_actions			= model.layers[-1]					# number of rows in each memory unit
+		self.n_actions			= entry_size						# number of rows in each memory unit
 
+		self.mem_temp           = kwargs.get('mem_temp', 0.05)      # softmax temp for memory recall
 		self.memory_envelope 	= kwargs.get('mem_envelope', 50)    # speed of memory decay
-
-		##
-		self.mem_factor            = 0.5
-		self.reward_unseen         = True
-		self.time_since_last_reward= 0
-		self.confidence_score      = 0
-		self.cs_max                = 0
+		self.use_pvals          = kwargs.get('pvals', False)
 
 	def reset_cache(self):
 		self.cache_list.clear()
@@ -80,35 +74,32 @@ class ep_mem(object):
 		confidence score = scaled by cosine sim
 
 		'''
-		self.mem_temp = kwargs.get('mem_temp', 0.1)
+		mem_temp = kwargs.get('mem_temp', self.mem_temp)
+		#specify decay envelope for memory relevance calculation
+		envelope = kwargs.get('pval_decay_env', self.memory_envelope)
 
 		if len(self.cache_list) == 0:
 			random_policy = softmax(np.zeros(self.n_actions))
 			return random_policy
 		else:
-			#specify decay envelope for memory relevance calculation
-			envelope = kwargs.get('decay', self.memory_envelope)
-
-			# returns the most similar key, as well as the cosine similarity measure
-			lin_act, similarity = self.cosine_sim(key)
+			lin_act, similarity = self.cosine_sim(key) # returns the most similar key, as well as the cosine similarity measure
 			memory       = np.nan_to_num(self.cache_list[lin_act][0])
 			deltas       = memory[:,0]
-			#times        = abs(timestep - memory[:,1])
-			#pvals 		 = self.make_pvals(times, envelope=envelope)
-			policy = softmax( similarity*deltas, T=self.mem_temp) #np.multiply(sim,deltas))
-
+			times        = abs(timestep - memory[:,1])
+			pvals 		 = self.make_pvals(times, envelope=envelope)
+			if self.use_pvals:
+				policy = softmax( similarity*np.multiply(deltas,pvals), T=mem_temp)
+			else:
+				policy = softmax( similarity*deltas, T=mem_temp)
 			return policy
 
-
 	def make_pvals(self, p, **kwargs):
-		envelope = kwargs.get('envelope', self.memory_envelope)
 		if isinstance(p,int):
-			ratio = p/envelope
+			ratio = p/self.memory_envelope
 			return np.round(1 / np.cosh(ratio), 8)
 		else:
-			ratio = np.around(p/envelope, 8)
+			ratio = np.around(p/self.memory_envelope, 8)
 			return np.round(1 / np.cosh(ratio), 8)
-
 	# retrieve relevant items from memory
 	def cosine_sim(self, key):
 		# make list of memory keys
@@ -137,7 +128,7 @@ def plot_softmax(x):
 	axarr[1].bar(np.arange(len(x)), y) 
 	plt.show()
 
-def calc_env(halfmax):
+def calc_envelope(halfmax):
 	'''
 	:param halfmax: x value for which envelope will give sech(x/env) = 0.5
 	:return: envelope value
