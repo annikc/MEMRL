@@ -107,11 +107,8 @@ class test_expt(object):
 
         self.use_memory = kwargs.get('use_mem', False)
         self.rec_memory = kwargs.get('rec_mem', False)
-        if self.rec_memory or self.use_memory:
-            self.mem_size = 0.75 * environment.nstates
-            self.episodic = ec.ep_mem(entry_size=agent.action_dims, cache_limit=self.mem_size)
-        else:
-            self.episodic = None
+        self.mem_size = kwargs.get('mem_size', 0.75 * environment.nstates)
+        self.episodic = kwargs.get('mem', None)
 
     def reset_data_logs(self):
         data_log = {'total_reward': [],
@@ -121,6 +118,7 @@ class test_expt(object):
                     'pol_tracking':[],
                     'val_tracking':[],
                     'ec_tracking': [],
+                    'starts': [],
                     't': [],
                     'mfcs':[]
                    }
@@ -184,7 +182,7 @@ class test_expt(object):
         self.start_radius  = kwargs.get('radius', 5)
 
         self.alpha = kwargs.get('alpha', 1)
-        self.beta = kwargs.get('beta', np.inf) # full model free control
+        self.beta =  kwargs.get('beta', 10000) # full model free control
         reset_data = kwargs.get('reset_data', False)
         if reset_data:
             self.data = self.reset_data_logs()
@@ -208,6 +206,7 @@ class test_expt(object):
             if self.starts is not None:
                 start_ = self.starts[np.random.choice(np.arange(4))]
                 self.env.set_state(self.env.twoD2oneD(start_))
+            self.data['starts'].append(self.env.oneD2twoD(self.env.state))
             for event in range(NUM_EVENTS):
                 # get state observation
                 observation = torch.Tensor(np.expand_dims(self.env.get_observation(), axis=0))

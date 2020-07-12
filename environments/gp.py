@@ -98,7 +98,67 @@ def make_arrows_new(action, probability):
 
     return dx, dy, head_w, head_l
 
+def plotWorld(world, plotNow=False, current_state = False, **kwargs):
+    scale = kwargs.get('scale', 1)
+    title = kwargs.get('title', 'Grid World')
+    ax_labels = kwargs.get('ax_labels', False)
+    state_labels = kwargs.get('states', False)
+    r,c = world.shape
 
+    fig = plt.figure(figsize=(c*scale, r*scale))
+
+    gridMat = np.zeros(world.shape)
+    for i, j in world.obstacle2D:
+        gridMat[i, j] = 1.0
+    for i, j in world.terminal2D:
+        gridMat[i, j] = 0.2
+    plt.pcolor(world.grid, edgecolors='k', linewidths=0.75, cmap='bone_r', vmin=0, vmax=1)
+
+    U = np.zeros((r, c))
+    V = np.zeros((r, c))
+    U[:] = np.nan
+    V[:] = np.nan
+
+    if len(world.action_list) >4 :
+        if world.jump is not None:
+            for (a, b) in world.jump.keys():
+                (a2, b2) = world.jump[(a, b)]
+                U[a, b] = (b2 - b)
+                V[a, b] = (a - a2)
+
+    C, R = np.meshgrid(np.arange(0, c) + 0.5, np.arange(0, r) + 0.5)
+    plt.quiver(C, R, U, V, scale=1, units='xy')
+
+    for rwd_loc in world.rewards.keys():
+        rwd_r, rwd_c = rwd_loc
+        if world.rewards[rwd_loc] < 0:
+            colorcode = 'red'
+        else:
+            colorcode = 'darkgreen'
+        plt.gca().add_patch(plt.Rectangle((rwd_c, rwd_r), width=1, height=1, linewidth=2, facecolor=colorcode, alpha=0.5))
+
+    if current_state:
+        agent_r, agent_c = world.oneD2twoD(world.state)
+        agent_dot = plt.Circle((agent_c + .5, agent_r + .5), 0.35, fc='b') ## plot functions use x,y we use row(y), col(x)
+        plt.gca().add_patch(agent_dot)
+
+    if state_labels:
+        for (i,j) in world.useable:
+            # i = row, j = col
+            plt.annotate(f'{world.twoD2oneD((i,j))}', (j+0.3,i+0.7))
+
+
+    plt.xticks(np.arange(c) + 0.5, np.arange(c))
+    plt.yticks(np.arange(r) + 0.5, np.arange(r))
+    plt.gca().invert_yaxis()
+    plt.gca().set_aspect('equal')
+    if not ax_labels:
+        plt.gca().get_xaxis().set_ticks([])
+        plt.gca().get_yaxis().set_ticks([])
+    plt.title(title)
+    if plotNow:
+        plt.show()
+    return fig
 # =====================================
 #          PLOTTING FUNCTIONS
 # =====================================

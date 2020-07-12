@@ -47,7 +47,6 @@ def make_agent(agent_params, **kwargs):
 		use_SR = True
 
 	if agent_params['load_model']:
-		print("heloooooo", agent_params['load_dir'])
 		MF = torch.load(agent_params['load_dir']) # load previously saved model
 	else:
 		MF = ActorCritic(agent_params, use_SR=use_SR)
@@ -153,25 +152,25 @@ class ActorCritic(nn.Module):
 					output_d = self.hidden_dims[ind]
 
 				# construct the layer
-				if htype is 'linear':
+				if htype == 'linear':
 					self.hidden.append(nn.Linear(input_d, output_d))
 					self.hx.append(None)
 					self.cx.append(None)
-				elif htype is 'lstm':
+				elif htype == 'lstm':
 					self.hidden.append(nn.LSTMCell(input_d, output_d))
 					self.hx.append(Variable(torch.zeros(self.batch_size, output_d)))
 					self.cx.append(Variable(torch.zeros(self.batch_size, output_d)))
-				elif htype is 'gru':
+				elif htype == 'gru':
 					self.hidden.append(nn.GRUCell(input_d, output_d))
 					self.hx.append(Variable(torch.zeros(self.batch_size, output_d)))
 					self.cx.append(None)
-				elif htype is 'conv':
+				elif htype == 'conv':
 					in_channels = input_d[0]
 					out_channels = output_d[0]
 					self.hidden.append(nn.Conv2d(in_channels, out_channels, kernel_size=self.rfsize, padding=self.padding, stride=self.stride, dilation=self.dilation))
 					self.hx.append(None)
 					self.cx.append(None)
-				elif htype is 'pool':
+				elif htype == 'pool':
 					self.hidden.append(nn.MaxPool2d(kernel_size=self.rfsize, padding=self.padding, stride=self.stride, dilation=self.dilation))
 					self.hx.append(None)
 					self.cx.append(None)
@@ -351,8 +350,8 @@ class ActorCritic(nn.Module):
 		EC = kwargs.get('cache', None)
 		buffer = kwargs.get('buffer', None)
 
-		if EC is not None:
-			if buffer is not None:
+		if EC != None:
+			if buffer != None:
 				mem_dict = {}
 				timesteps, states, actions, readable, trial = buffer
 			else:
@@ -428,7 +427,7 @@ def generate_values_old(maze, model,**kwargs):
 	value_map = maze.empty_map
 	EC = kwargs.get('EC', None)
 	pcs = kwargs.get('pcs', None)
-	if EC is not None:
+	if EC != None:
 		EC_pol_map = maze.make_map(maze.grid, pol=True)
 		MF_pol_map = maze.make_map(maze.grid, pol=True)
 	for loc in maze.useable:
@@ -442,7 +441,7 @@ def generate_values_old(maze, model,**kwargs):
 			else:
 				policy, value = sample_select_action(model,state)[1:3]
 		value_map[loc[1]][loc[0]] = value
-		if EC is not None:
+		if EC != None:
 			if model.input_type == 'vector':
 				EC_pol = EC.recall_mem(tuple(state.data[0]))
 			elif model.input_type == 'frame':
