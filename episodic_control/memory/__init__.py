@@ -18,9 +18,13 @@ class EpisodicMemory(object):
 		self.mem_temp           = kwargs.get('mem_temp', 0.05)      # softmax temp for memory recall
 		self.memory_envelope 	= kwargs.get('mem_envelope', 50)    # speed of memory decay
 		self.use_pvals          = kwargs.get('pvals', False)
+		# temp aug 24
+		self.visited_states = []
+		# /temp
 
 	def reset_cache(self):
 		self.cache_list.clear()
+		self.visited_states = []
 
 	def calc_envelope(self,halfmax):
 		'''
@@ -52,6 +56,7 @@ class EpisodicMemory(object):
 			self.cache_list[activity][0][action] = [delta, trial]
 			self.cache_list[activity][1] = timestamp
 			self.cache_list[activity][2] = readable
+			self.visited_states.append(readable)
 		# Case 2: memory is full
 		else:
 			# Case 2a: key does not yet exist
@@ -91,9 +96,9 @@ class EpisodicMemory(object):
 			lin_act, similarity = self.cosine_sim(key) # returns the most similar key, as well as the cosine similarity measure
 			memory       = np.nan_to_num(self.cache_list[lin_act][0])
 			deltas       = memory[:,0]
-			times        = abs(timestep - memory[:,1])
-			pvals 		 = self.make_pvals(times, envelope=envelope)
 			if self.use_pvals:
+				times = abs(timestep - memory[:, 1])
+				pvals = self.make_pvals(times, envelope=envelope)
 				policy = softmax( similarity*np.multiply(deltas,pvals), T=mem_temp)
 			else:
 				policy = softmax( similarity*deltas, T=mem_temp)
