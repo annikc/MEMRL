@@ -239,6 +239,7 @@ class Experiment(object):
         self.eccount =0
 
     def action_selection(self, policy_, value_, lin_act=None):
+        '''
         if self.use_memory:
             # compute MFCS
             #self.policy_arbitration(self.last_reward)
@@ -264,6 +265,14 @@ class Experiment(object):
             choice = self.agent.select_action(policy_, value_)
 
         return choice, policy_
+        '''
+        #self.eccount += 1
+        episodic_memory = self.episodic.recall_mem(key=lin_act, timestep=self.timestamp, env=self.recency_env)
+        episodic_pol = torch.from_numpy(episodic_memory)
+        choice = self.agent.select_ec_action(policy_, value_, episodic_pol)
+        policy_ = episodic_pol
+
+        return choice, policy_
 
     def save_to_mem(self, timestamp, lin_act, choice, current_state, trial):
         self.memory_buffer[0].append(timestamp)
@@ -275,7 +284,7 @@ class Experiment(object):
     def run(self, NUM_TRIALS, NUM_EVENTS, **kwargs):
         self.num_trials = NUM_TRIALS
         self.num_events = NUM_EVENTS
-        print_freq         = kwargs.get('printfreq', 0.01)
+        print_freq         = kwargs.get('printfreq', 100)
         get_samples        = kwargs.get('get_samples', False)
         self.around_reward = kwargs.get('around_reward', True)
         self.start_radius  = kwargs.get('radius', 5)
@@ -340,9 +349,9 @@ class Experiment(object):
 
                 # take a step in the environment
                 s_1d, reward, isdone = self.env.move(action)
-                self.data['sar'][trial].append((self.env.oneD2twoD(self.env.state), poli.detach().numpy(), action, reward))### try
+                #self.data['sar'][trial].append((self.env.oneD2twoD(self.env.state), poli.detach().numpy(), action, reward))### try
                 #temp
-                self.data['visited_states'].append(self.env.oneD2twoD(self.env.state))
+                #self.data['visited_states'].append(self.env.oneD2twoD(self.env.state))
                 #/temp
 
                 self.agent.saved_rewards.append(reward)
@@ -373,16 +382,18 @@ class Experiment(object):
             #self.data['arbitration_count'][2].append(ec_events)
             #print(f'MF:{self.mfcount}/EC:{self.eccount} || R:{self.reward_sum} ')
             #self.ploss_scale = abs(p_loss.item())
-            print(np.vstack(self.data['sar'][trial]))
-            mpol_array = np.zeros(self.env.grid.shape, dtype=[(x, 'f8') for x in self.env.action_list])
-            mem = self.episodic
-            for i in mem.cache_list.keys():
-                values = mem.cache_list[i]
-                row, col = values[2]
-                pol = mem.recall_mem(i, timestep=0)
-                mpol_array[row, col] = tuple(pol)
-            plot_polmap(self.env, mpol_array, title='argmax pol EC')
-            plot_pref_pol(self.env, mpol_array, title='pref pol EC')
+            #print(np.vstack(self.data['sar'][trial]))
+            # temp
+            #mpol_array = np.zeros(self.env.grid.shape, dtype=[(x, 'f8') for x in self.env.action_list])
+            #mem = self.episodic
+            #for i in mem.cache_list.keys():
+            #    values = mem.cache_list[i]
+            #    row, col = values[2]
+            #    pol = mem.recall_mem(i, timestep=0)
+            #    mpol_array[row, col] = tuple(pol)
+            #plot_polmap(self.env, mpol_array, title='argmax pol EC')
+            #plot_pref_pol(self.env, mpol_array, title='pref pol EC')
+            #/temp
 
             self.data['trial_length'].append(event+1)
             self.data['total_reward'].append(self.reward_sum)
@@ -396,17 +407,17 @@ class Experiment(object):
                 self.data['pol_tracking'].append(pol_grid)
                 self.data['val_tracking'].append(val_grid)
                 self.data['t'].append(trial)
-            #if trial == 0 or trial % int(print_freq * NUM_TRIALS) == 0 or trial == NUM_TRIALS - 1:
-            print(f"{trial}: {self.reward_sum} ({time.time() - t}s / {event} steps - MF selected {self.mfcount} times)")
-
+            if trial == 0 or trial%print_freq==0 or trial == NUM_TRIALS - 1:
+                print(f"{trial}: {self.reward_sum} ({time.time() - t}s / {event} steps - MF selected {self.mfcount} times)")
+                t = time.time()
             ### temp aug 21
-            pol_grid, val_grid = get_snapshot(sample_observations, self.env, self.agent)
+            #pol_grid, val_grid = get_snapshot(sample_observations, self.env, self.agent)
 
             #plot_polmap(self.env, pol_grid, title='argmax pol MF')
             #plot_pref_pol(self.env, pol_grid,  title='Preferred pol MF')
 
             ### /temp
-            t = time.time()
+
 
             if self.around_reward and trial > 0 and trial == int(NUM_TRIALS / 2):  # np.mean(data['trial_length'][-20:])< 2*start_radius:
                 print(trial)

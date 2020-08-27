@@ -21,7 +21,7 @@ from matplotlib import cm
 
 def main(experiment_type, env_type, rho, arch, use_pvals, mem_temp, mem_envelope, alpha, beta, RECORD=True):
     parent_dir = './data/'
-    log_file = 'cottage_scinet_logs.csv'
+    log_file = 'experiments_log.csv'
     # set environment parameters
     rows, columns = 20, 20
     penalty = -0.01
@@ -36,8 +36,8 @@ def main(experiment_type, env_type, rho, arch, use_pvals, mem_temp, mem_envelope
                        rewards={reward_location: 1},
                        step_penalization=penalty,
                        rho=rho,
-                       actionlist=['Down', 'Up', 'Right', 'Left'],
-                       rewarded_action=None)
+                       )#actionlist=['Down', 'Up', 'Right', 'Left'],
+                       #rewarded_action=None)
 
     # agent parameters
     training = {
@@ -74,8 +74,8 @@ def main(experiment_type, env_type, rho, arch, use_pvals, mem_temp, mem_envelope
 
     params = [training, testing_1, testing_2, testing_2, testing_4, testing_5, testing_5]
 
-    NUM_TRIALS = 100
-    NUM_EVENTS = 50
+    NUM_TRIALS = 10000
+    NUM_EVENTS = 250
 
     # mixing parameters for MF-EC control
     # alpha = 0.01 # MF confidence boost for reward
@@ -87,6 +87,7 @@ def main(experiment_type, env_type, rho, arch, use_pvals, mem_temp, mem_envelope
     if experiment_type != 0:
         # read csv file - get id tag for matching conditions
         df = pd.read_csv(parent_dir + log_file)
+        print(f"e type {env_type}, shape {env.shape}, rho {env.rho}, arch {arch}")
         filter = DataFilter(df,
                             expt_type=[0],
                             env_type=[str(env_type)],
@@ -128,27 +129,30 @@ def main(experiment_type, env_type, rho, arch, use_pvals, mem_temp, mem_envelope
     if RECORD:
         expt.data_log(run_id, experiment_type, ex, load_from=load_id)
 
-    #### trying some craziness -- delete later (Jul 24)
-    plt.figure(0)
-    x = ex.data['confidence_selection'][0] # MFCS
-    y = ex.data['confidence_selection'][1] # policy_choice
-    viridis = cm.get_cmap('inferno', len(x)).colors
-    plt.scatter(x, y, c = viridis, alpha=0.3)
-    plt.yticks([0,1], ['MF', 'EC'])
-    plt.ylim([-0.5, 1.5])
-    plt.show()
-    plt.close()
+    if experiment_type != 0:
+        #### trying some craziness -- delete later (Jul 24)
+        plt.figure(0)
+        x = ex.data['confidence_selection'][0] # MFCS
+        y = ex.data['confidence_selection'][1] # policy_choice
+        viridis = cm.get_cmap('inferno', len(x)).colors
+        plt.scatter(x, y, c = viridis, alpha=0.3)
+        plt.yticks([0,1], ['MF', 'EC'])
+        plt.ylim([-0.5, 1.5])
+        plt.show()
+        plt.close()
 
 
-    plt.figure(1)
-    y = ex.data['confidence_selection'][0] # MFCS
-    x = np.arange(len(x))
-    cols = ['b', 'g'] #mf , ec
-    z = ex.data['confidence_selection'][1] # policy_choice
-    col = [cols[i] for i in z]
-    plt.scatter(x, y, c = col, alpha=0.3)
-    plt.show()
-    plt.close()
+        plt.figure(1)
+        y = ex.data['confidence_selection'][0] # MFCS
+        x = np.arange(len(x))
+        cols = ['b', 'g'] #mf , ec
+        z = ex.data['confidence_selection'][1] # policy_choice
+        col = [cols[i] for i in z]
+        plt.scatter(x, y, c = col, alpha=0.3)
+        plt.ylim([0,1])
+        plt.ylabel('MF Confidence Score')
+        plt.show()
+        plt.close()
 
 
 
