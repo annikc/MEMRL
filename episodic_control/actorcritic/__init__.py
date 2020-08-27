@@ -310,7 +310,7 @@ class ActorCritic(torch.nn.Module):
 				mem_dict['timestamp'] = t_
 				mem_dict['readable'] = rdbl
 				mem_dict['trial'] = trial
-				print(f'adding mem for state {rdbl}: chose action{a_}, return {r}')
+				#print(f'adding mem for state {rdbl}: chose action{a_}, return {r}')
 				EC.add_mem(mem_dict)
 		else:
 			for (log_prob, value), r in zip(saved_actions, returns_):
