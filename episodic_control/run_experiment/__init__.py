@@ -22,6 +22,47 @@ import matplotlib.patches as patches
 from os import listdir
 from os.path import isfile, join
 from scipy.stats import entropy
+from fxns import discount_rwds
+
+def plot_valmap(maze, value_array, save=False, **kwargs):
+    '''
+    :param maze: the environment object
+    :param value_array: array of state values
+    :param save: bool. save figure in current directory
+    :return: None
+    '''
+    show = kwargs.get('show', True)
+    title = kwargs.get('title', 'State Value Estimates')
+    filetype = kwargs.get('filetype', 'png')
+    vals = value_array.copy()
+    fig = plt.figure(figsize=(7, 5))
+    ax1 = fig.add_axes([0, 0, 0.85, 0.85])
+    axc = fig.add_axes([0.75, 0, 0.05, 0.85])
+    vmin, vmax = kwargs.get('v_range', [0, 1])
+    cmap = plt.cm.Spectral_r
+    cNorm = colors.Normalize(vmin=vmin, vmax=vmax)
+    for i in maze.obstacles_list:
+        vals[i] = np.nan
+    cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
+    ax1.pcolor(vals, cmap=cmap, vmin=vmin, vmax=vmax)
+
+    # add patch for reward location/s (red)
+    for rwd_loc in maze.rewards:
+        rwd_y, rwd_x = rwd_loc
+        ax1.add_patch(plt.Rectangle((rwd_y, rwd_x), width=0.99, height=1, linewidth=1, ec='white', fill=False))
+
+    ax1.set_aspect('equal')
+    ax1.invert_yaxis()
+    ax1.set_title(title)
+
+    if save:
+        plt.savefig(f'../data/figures/v_{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
+    if show:
+        plt.show()
+
+    plt.close()
+
+
 def make_arrows(action, probability):
     '''
     alternate style:
@@ -197,6 +238,7 @@ class Experiment(object):
                     'pol_tracking':[],
                     'val_tracking':[],
                     'ec_tracking': [],
+                    'rpe_tracking': [],
                     'starts': [],
                     't': [],
                     'mfcs':[],
@@ -271,8 +313,10 @@ class Experiment(object):
         episodic_pol = torch.from_numpy(episodic_memory)
         choice = self.agent.select_ec_action(policy_, value_, episodic_pol)
         policy_ = episodic_pol
+        
 
         return choice, policy_
+
 
     def save_to_mem(self, timestamp, lin_act, choice, current_state, trial):
         self.memory_buffer[0].append(timestamp)
@@ -286,15 +330,13 @@ class Experiment(object):
         self.num_events = NUM_EVENTS
         print_freq         = kwargs.get('printfreq', 100)
         get_samples        = kwargs.get('get_samples', False)
-        self.around_reward = kwargs.get('around_reward', True)
+        self.around_reward = kwargs.get('around_reward', False)
         self.start_radius  = kwargs.get('radius', 5)
 
         reset_data = kwargs.get('reset_data',True)
         if reset_data:
             self.data = self.reset_data_logs()
 
-        #self.ploss_scale   = 0  # this is equivalent to calculating MF_confidence = sech(0) = 1
-        #self.mfc_env = ec.calc_envelope(halfmax=3.12)  # 1.04 was the calculated standard deviation of policy loss after learning on open field gridworld task **** may need to change for different tasks
         if self.episodic != None:
             self.recency_env = self.episodic.calc_envelope(halfmax=20)
 
@@ -302,15 +344,11 @@ class Experiment(object):
 
         self.starts = kwargs.get('starts', None)
 
-        #if get_samples: ### aug21 temp change back
-        #    sample_observations = self.env.get_sample_obs()
         sample_observations = self.env.get_sample_obs()
 
         t = time.time()
         encountered_reward = False
-        print(f"running alpha {self.alpha}, beta: {self.beta}")
         for trial in range(NUM_TRIALS):
-            self.data['sar'].append([])
             self.trial_reset(trial)
             if self.starts is not None:
                 start_ = self.starts[np.random.choice(np.arange(4))]
@@ -318,6 +356,7 @@ class Experiment(object):
             self.data['starts'].append(self.env.oneD2twoD(self.env.state))
             ec_trace  = 0
             ec_events = []
+            self.data['sar'].append([])
             for event in range(NUM_EVENTS):
                 # get state observation
                 observation = torch.Tensor(np.expand_dims(self.env.get_observation(), axis=0))
@@ -349,7 +388,7 @@ class Experiment(object):
 
                 # take a step in the environment
                 s_1d, reward, isdone = self.env.move(action)
-                #self.data['sar'][trial].append((self.env.oneD2twoD(self.env.state), poli.detach().numpy(), action, reward))### try
+                self.data['sar'][trial].append((self.env.oneD2twoD(self.env.state), poli.detach().numpy(), action, reward))### try
                 #temp
                 #self.data['visited_states'].append(self.env.oneD2twoD(self.env.state))
                 #/temp
@@ -365,6 +404,17 @@ class Experiment(object):
                         self.agent.saved_psi.append(psi_)
                     encountered_reward = True
                     break
+
+            if trial == 0 or trial%print_freq==0 or trial == NUM_TRIALS - 1:
+                RPE_map = np.zeros(self.env.shape)
+                RPE_map[RPE_map == 0] = np.nan
+
+                timesteps, states, actions, readable, trial = self.memory_buffer
+                returns_ = torch.Tensor(discount_rwds(np.asarray(self.agent.saved_rewards), gamma=self.agent.gamma))
+                for (log_prob, value), r, rdbl in zip(self.agent.saved_actions, returns_, readable):
+                    rpe = r - value.item()
+                    RPE_map[rdbl[0], rdbl[1]] = rpe
+                self.data['rpe_tracking'].append(RPE_map)
 
             if self.rec_memory or self.use_memory:
                 if self.agent.use_SR:
@@ -397,6 +447,10 @@ class Experiment(object):
 
             self.data['trial_length'].append(event+1)
             self.data['total_reward'].append(self.reward_sum)
+            if trial == 0:
+                running_rwdavg = self.reward_sum
+            else:
+                running_rwdavg = ((trial)*running_rwdavg + self.reward_sum)/(trial+2)
             self.data['loss'][0].append(p_loss.item())
             self.data['loss'][1].append(v_loss.item())
             if self.agent.use_SR:
@@ -408,16 +462,14 @@ class Experiment(object):
                 self.data['val_tracking'].append(val_grid)
                 self.data['t'].append(trial)
             if trial == 0 or trial%print_freq==0 or trial == NUM_TRIALS - 1:
-                print(f"{trial}: {self.reward_sum} ({time.time() - t}s / {event} steps - MF selected {self.mfcount} times)")
+                print(f"{trial}: {self.reward_sum} ({time.time() - t}s / Running Av: {running_rwdavg}")
+
+                #plot_valmap(self.env, RPE_map, title='RPE', v_range=[-2.5, 10])
+
+                #pol_grid, val_grid = get_snapshot(sample_observations, self.env, self.agent)
+                #plot_valmap(self.env, val_grid, title='MF generated values', v_range=[-2.5, 10])
+                #plot_pref_pol(self.env, pol_grid,  title='Preferred pol MF')
                 t = time.time()
-            ### temp aug 21
-            #pol_grid, val_grid = get_snapshot(sample_observations, self.env, self.agent)
-
-            #plot_polmap(self.env, pol_grid, title='argmax pol MF')
-            #plot_pref_pol(self.env, pol_grid,  title='Preferred pol MF')
-
-            ### /temp
-
 
             if self.around_reward and trial > 0 and trial == int(NUM_TRIALS / 2):  # np.mean(data['trial_length'][-20:])< 2*start_radius:
                 print(trial)
@@ -443,10 +495,11 @@ def get_snapshot(sample_obs, env, agent):
 
     return pol_grid, val_grid
 
-def data_log(run_id, experiment_type, experiment, **kwargs):
+def data_log(log_file, run_id, experiment_type, experiment, **kwargs):
     parent_folder = kwargs.get('write_to_dir', './data/')
     load_from = kwargs.get('load_from',' ')
     write = kwargs.get('write', True)
+    append_data = kwargs.get('append_data', False)
     expt_log = [
     'save_id',          #uuid
     'experiment_type',  #int
@@ -529,11 +582,6 @@ def data_log(run_id, experiment_type, experiment, **kwargs):
     log_jam += epi_log
     print('writing to file')
     if write:
-        # write to logger
-        with open(parent_folder+'experiments_log.csv', 'a+', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(log_jam)
-
         # save environment
         if experiment_type == 0:
             pickle.dump(experiment.env, open(f'{parent_folder}environments/{run_id}_env.p', 'wb'))
@@ -541,11 +589,32 @@ def data_log(run_id, experiment_type, experiment, **kwargs):
         # save agent
         torch.save(experiment.agent, f'{parent_folder}agent_weights/{run_id}.pt')
         # save data
-        pickle.dump(experiment.data, open(f'{parent_folder}results/{run_id}_data.p', 'wb'))
+        if append_data:
+            load_data = pickle.load(open(f'{parent_folder}results/{run_id}_data.p', 'rb'))
+
+            t_to_date = load_data['trials_run_to_date']
+            log_jam[3] = t_to_date
+            for key in load_data.keys():
+                if key == 'trials_run_to_date':
+                    load_data[key] += experiment.data[key]
+                elif len(load_data[key]) == t_to_date:
+                    load_data[key] += experiment.data[key]
+                else:
+                    for i in range(len(load_data[key])):
+                        load_data[key][i] += experiment.data[key][i]
+            pickle.dump(load_data, open(f'{parent_folder}results/{run_id}_data.p', 'wb'))
+        else:
+            pickle.dump(experiment.data, open(f'{parent_folder}results/{run_id}_data.p', 'wb'))
         # save memory
         if experiment.episodic is not None:
             pickle.dump(experiment.episodic, open(f'{parent_folder}episodic_memory/{run_id}_EC.p', 'wb'))
         print(f'{run_id} recorded')
+
+        # write to logger
+        with open(parent_folder + log_file, 'a+', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(log_jam)
+
     else:
         print_dict = {}
         for i in range(len(log_jam)):

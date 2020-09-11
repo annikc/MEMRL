@@ -6,14 +6,15 @@ class DataFilter(object):
     def __init__(self, df, **kwargs):
         self.print       = kwargs.get('print', False)
         self.parent_dir  = kwargs.get('parent_dir', './data/')
+        self.load_from   = kwargs.get('load_from',       df['load_from'].unique())
         self.exp_type    = kwargs.get('expt_type',       df['experiment_type'].unique()) #list of strings
         self.env_type    = kwargs.get('env_type',        df['ENVIRONMENT'].unique()) #string
         self.dims        = kwargs.get('dims',            df['dims'].unique()) #string
         self.rho         = kwargs.get('rho',             df['rho'].unique()) # float
 
         self.action_list = kwargs.get('action_list',     df['action_list'].unique()) # int  [str(['Down', 'Up', 'Right', 'Left'])]) #
+        self.rewards     = kwargs.get('rewards',         df['rewards'].unique())  # string
         self.rwd_action  = kwargs.get('rewarded_action', df['rwd_action'].unique()) # string
-
         self.arch        = kwargs.get('arch',            df['AGENT'].unique()) # list of strings
         self.freeze_w    = kwargs.get('freeze_w',        df['freeze_weights'].unique())
         self.pvals       = kwargs.get('use_pvals',       df['use_pvals'].unique()) # bool
@@ -26,6 +27,7 @@ class DataFilter(object):
             print(df['ENVIRONMENT'].unique(), self.env_type)
             print(df['dims'].unique(), self.dims)
             print(df['rho'].unique(), self.rho)
+            print(df['rewards'].unique(), self.rewards)
             print(df['action_list'].unique(), self.action_list)
             print(df['rwd_action'].unique(), self.rwd_action)
             print(df['AGENT'].unique(), self.arch)
@@ -49,9 +51,11 @@ class DataFilter(object):
     def filter_df(self, df):
         idx = np.where((df['experiment_type'].isin(self.exp_type))
                        & (df['ENVIRONMENT'].isin(self.env_type))
+                       & (df['load_from'].isin(self.load_from))
                        & (df['dims'].isin(self.dims))
                        & (df['rho'].isin(self.rho))
                        & (df['action_list'].isin(self.action_list))
+                       & (df['rewards'].isin(self.rewards))
                        & (df['rwd_action'].isin(self.rwd_action))
                        & (df['AGENT'].isin(self.arch))
                        & (df['freeze_weights'].isin(self.freeze_w))
