@@ -281,8 +281,14 @@ class Experiment(object):
         self.eccount =0
 
     def action_selection(self, policy_, value_, lin_act=None):
-        '''
+
         if self.use_memory:
+            episodic_memory = self.episodic.recall_mem(key=lin_act, timestep=self.timestamp, env=self.recency_env)
+            episodic_pol = torch.from_numpy(episodic_memory)
+            choice = self.agent.select_ec_action(policy_, value_, episodic_pol)
+            policy_ = episodic_pol
+
+            '''
             # compute MFCS
             #self.policy_arbitration(self.last_reward)
             self.MF_cs = 0.01
@@ -303,19 +309,12 @@ class Experiment(object):
             #self.data['confidence_selection'][0].append(self.MF_cs)
             #self.data['confidence_selection'][1].append(cstar)
             #print(self.MF_cs, cstar)
+            '''
         else:
             choice = self.agent.select_action(policy_, value_)
 
         return choice, policy_
-        '''
-        #self.eccount += 1
-        episodic_memory = self.episodic.recall_mem(key=lin_act, timestep=self.timestamp, env=self.recency_env)
-        episodic_pol = torch.from_numpy(episodic_memory)
-        choice = self.agent.select_ec_action(policy_, value_, episodic_pol)
-        policy_ = episodic_pol
-        
 
-        return choice, policy_
 
 
     def save_to_mem(self, timestamp, lin_act, choice, current_state, trial):
@@ -351,12 +350,13 @@ class Experiment(object):
         for trial in range(NUM_TRIALS):
             self.trial_reset(trial)
             if self.starts is not None:
-                start_ = self.starts[np.random.choice(np.arange(4))]
+                start_ = self.starts[np.random.choice(np.arange(len(self.starts)))]
                 self.env.set_state(self.env.twoD2oneD(start_))
             self.data['starts'].append(self.env.oneD2twoD(self.env.state))
             ec_trace  = 0
             ec_events = []
             self.data['sar'].append([])
+
             for event in range(NUM_EVENTS):
                 # get state observation
                 observation = torch.Tensor(np.expand_dims(self.env.get_observation(), axis=0))
@@ -370,8 +370,8 @@ class Experiment(object):
                     policy_, value_, psi_ = self.agent(observation)
 
                 # linear activity
-                if self.rec_memory or self.use_memory:
-                    lin_act = tuple(np.round(psi_.data[0].numpy(), 4))
+                if self.rec_memory or self.use_memory: ##### CHANGED TO PHI
+                    lin_act = tuple(np.round(phi_.data[0].numpy(), 4))
                     choice, poli = self.action_selection(policy_, value_,lin_act)
                 else:
                     choice, poli = self.action_selection(policy_, value_)
@@ -388,7 +388,7 @@ class Experiment(object):
 
                 # take a step in the environment
                 s_1d, reward, isdone = self.env.move(action)
-                self.data['sar'][trial].append((self.env.oneD2twoD(self.env.state), poli.detach().numpy(), action, reward))### try
+                #self.data['sar'][trial].append((self.env.oneD2twoD(self.env.state), poli.detach().numpy(), action, reward))### try
                 #temp
                 #self.data['visited_states'].append(self.env.oneD2twoD(self.env.state))
                 #/temp
@@ -421,6 +421,20 @@ class Experiment(object):
                     p_loss, v_loss, psi_loss = self.agent.finish_trial_EC(cache=self.episodic, buffer=self.memory_buffer)
                 else:
                     p_loss, v_loss  = self.agent.finish_trial_EC(cache=self.episodic, buffer=self.memory_buffer)
+
+                ##### temp oct 7
+                EC_pol_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
+                samples, states = sample_observations
+                pols, vals, phis, psis = self.agent(torch.Tensor(samples))
+                for ind, phi in enumerate(phis):
+                    state = states[ind]
+                    lin_act = tuple(np.round(phi.data.numpy(), 4))
+                    episodic_memory = self.episodic.recall_mem(key=lin_act, timestep=self.timestamp,
+                                                               env=self.recency_env)
+                    episodic_pol = tuple(torch.from_numpy(episodic_memory))
+                    EC_pol_grid[state[0],state[1]] = episodic_pol
+                self.data['ec_tracking'].append(EC_pol_grid)
+                #### /temp
             else:
                 if self.agent.use_SR:
                     p_loss, v_loss, psi_loss = self.agent.finish_trial()
@@ -499,7 +513,6 @@ def data_log(log_file, run_id, experiment_type, experiment, **kwargs):
     parent_folder = kwargs.get('write_to_dir', './data/')
     load_from = kwargs.get('load_from',' ')
     write = kwargs.get('write', True)
-    append_data = kwargs.get('append_data', False)
     expt_log = [
     'save_id',          #uuid
     'experiment_type',  #int
@@ -585,26 +598,10 @@ def data_log(log_file, run_id, experiment_type, experiment, **kwargs):
         # save environment
         if experiment_type == 0:
             pickle.dump(experiment.env, open(f'{parent_folder}environments/{run_id}_env.p', 'wb'))
-
         # save agent
         torch.save(experiment.agent, f'{parent_folder}agent_weights/{run_id}.pt')
         # save data
-        if append_data:
-            load_data = pickle.load(open(f'{parent_folder}results/{run_id}_data.p', 'rb'))
-
-            t_to_date = load_data['trials_run_to_date']
-            log_jam[3] = t_to_date
-            for key in load_data.keys():
-                if key == 'trials_run_to_date':
-                    load_data[key] += experiment.data[key]
-                elif len(load_data[key]) == t_to_date:
-                    load_data[key] += experiment.data[key]
-                else:
-                    for i in range(len(load_data[key])):
-                        load_data[key][i] += experiment.data[key][i]
-            pickle.dump(load_data, open(f'{parent_folder}results/{run_id}_data.p', 'wb'))
-        else:
-            pickle.dump(experiment.data, open(f'{parent_folder}results/{run_id}_data.p', 'wb'))
+        pickle.dump(experiment.data, open(f'{parent_folder}results/{run_id}_data.p', 'wb'))
         # save memory
         if experiment.episodic is not None:
             pickle.dump(experiment.episodic, open(f'{parent_folder}episodic_memory/{run_id}_EC.p', 'wb'))

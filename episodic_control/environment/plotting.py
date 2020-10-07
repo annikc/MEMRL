@@ -26,6 +26,11 @@ def plot_world(world, plotNow=False, current_state = False, **kwargs):
     title = kwargs.get('title', 'Grid World')
     ax_labels = kwargs.get('ax_labels', False)
     state_labels = kwargs.get('states', False)
+    invert_ = kwargs.get('invert', False)
+    if invert_:
+        cmap = 'bone'
+    else:
+        cmap = 'bone_r'
     r,c = world.shape
 
     fig = plt.figure(figsize=(c*scale, r*scale))
@@ -35,7 +40,7 @@ def plot_world(world, plotNow=False, current_state = False, **kwargs):
         gridMat[i, j] = 1.0
     for i, j in world.terminal2D:
         gridMat[i, j] = 0.2
-    plt.pcolor(world.grid, edgecolors='k', linewidths=0.75, cmap='bone_r', vmin=0, vmax=1)
+    plt.pcolor(world.grid, edgecolors='k', linewidths=0.75, cmap=cmap, vmin=0, vmax=1)
 
     U = np.zeros((r, c))
     V = np.zeros((r, c))
@@ -91,8 +96,9 @@ def plot_valmap(maze, value_array, save=False, **kwargs):
     :return: None
     '''
     show = kwargs.get('show', True)
+    directory = kwargs.get('directory', './figures/')
     title = kwargs.get('title', 'State Value Estimates')
-    filetype = kwargs.get('filetype', 'png')
+    filetype = kwargs.get('filetype', 'svg')
     vals = value_array.copy()
     fig = plt.figure(figsize=(7, 5))
     ax1 = fig.add_axes([0, 0, 0.85, 0.85])
@@ -115,7 +121,7 @@ def plot_valmap(maze, value_array, save=False, **kwargs):
     ax1.set_title(title)
 
     if save:
-        plt.savefig(f'../data/figures/v_{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
+        plt.savefig(f'{directory}v_{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
     if show:
         plt.show()
 
@@ -128,8 +134,9 @@ def plot_polmap(maze, policy_array, save=False, **kwargs):
     :return: None
     '''
     show = kwargs.get('show', True)
+    directory = kwargs.get('directory', './figures/')
     title = kwargs.get('title', 'Most Likely Action from Policy')
-    filetype = kwargs.get('filetype', 'png')
+    filetype = kwargs.get('filetype', 'svg')
     fig = plt.figure(figsize=(7, 5))
     ax1 = fig.add_axes([0, 0, 0.85, 0.85])
     axc = fig.add_axes([0.75, 0, 0.05, 0.85])
@@ -167,7 +174,7 @@ def plot_polmap(maze, policy_array, save=False, **kwargs):
     ax1.invert_yaxis()
 
     if save:
-        plt.savefig(f'../data/figures/p_{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
+        plt.savefig(f'{directory}p_{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -195,7 +202,7 @@ def make_arrows(action, probability):
                 (0.1, -0.1),  # points right and up #J
                 (-0.1, 0.1),  # points left and down # P
                 ]
-        dx, dy = dxdy[action]
+        dx, dy = dxdy[action]  #dxdy[(action-1)%len(dxdy)] ## use if action-space remapping
 
         head_w, head_l = 0.1, 0.1
 
@@ -249,8 +256,8 @@ def plot_pref_pol(maze, policy_array, save=False, **kwargs):
         '''
     show = kwargs.get('show', True)
     title = kwargs.get('title', 'Policy Entropy')
-    directory = kwargs.get('directory', '../data/figures/')
-    filetype = kwargs.get('filetype', 'png')
+    directory = kwargs.get('directory', './figures/')
+    filetype = kwargs.get('filetype', 'svg')
     vmax = kwargs.get('upperbound', 2)
     rewards = kwargs.get('rwds', maze.rewards)
     fig = plt.figure(figsize=(7, 5))
@@ -288,7 +295,10 @@ def plot_pref_pol(maze, policy_array, save=False, **kwargs):
                 pass
             else:
                 colorVal1 = scalarMap.to_rgba(entropy(policy))
-                ax1.arrow(j + 0.5, i + 0.5, dx, dy, head_width=0.3, head_length=0.5, color=colorVal1)
+                if entropy(policy) > 1.2:
+                    pass
+                else:
+                    ax1.arrow(j + 0.5, i + 0.5, dx, dy, head_width=0.3, head_length=0.5, color=colorVal1)
 
 
     ax1.set_aspect('equal')
@@ -296,7 +306,7 @@ def plot_pref_pol(maze, policy_array, save=False, **kwargs):
     ax1.invert_yaxis()
 
     if save:
-        plt.savefig(f'{directory}{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
+        plt.savefig(f'{directory}pref_{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
