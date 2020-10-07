@@ -88,7 +88,7 @@ class GridWorld(object):
         self.action_dict 	= kwargs.get('actiondict', {'D':0, 'U':1, 'R':2, 'L':3, 'J':4, 'P':5})
         self.action_list    = kwargs.get('actionlist', ['Down', 'Up', 'Right', 'Left', 'Jump', 'Poke'])
         self.action_space   = spaces.Discrete(len(self.action_list))
-        self.buildTransitionMatrices()
+        self.buildTransitionMatrix()
 
         # Reward
         self.rwd_action = kwargs.get('rewarded_action', 'Poke')
@@ -236,7 +236,7 @@ class GridWorld(object):
             for r,c in list(self.rewards.keys()):
                 self.R[self.twoD2oneD((r,c))] = self.rewards[(r,c)]
 
-    def buildTransitionMatrices(self):
+    def buildTransitionMatrix(self):
         # initialize
         self.P = np.zeros((len(self.action_list), self.nstates, self.nstates))  # down, up, right, left, jump, poke
 
@@ -264,6 +264,18 @@ class GridWorld(object):
         if len(self.action_list) >5:
             # poke should make no transitions between states so everything stays 0
             self.P[5, list(range(0, self.nstates)), list(range(0, self.nstates))] = 1
+
+    def remapTransitionMatrix(self):
+        oldP = self.P
+
+        # initalize
+        self.P = np.zeros((len(self.action_list), self.nstates, self.nstates))  # down, up, right, left, jump, poke
+
+        for x in range(oldP.shape[0]):
+            col = (x + 1) % oldP.shape[0]
+            self.P[col, :, :] = oldP[x, :, :]
+
+        print("transition probs remapped")
 
     def resetEnvironment(self, random_start=True, **kwargs):
         self.random_start = random_start
@@ -322,8 +334,6 @@ class GridWorld(object):
         return np.any(slice_n_dice,axis=1)
 
     def set_reward(self, rewards):
-        if not isinstance(rewards, list):
-            reward_location = [rewards]
         self.rewards = rewards
 
         # recalculate reward function
