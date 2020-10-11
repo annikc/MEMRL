@@ -283,6 +283,7 @@ class Experiment(object):
     def action_selection(self, policy_, value_, lin_act=None):
 
         if self.use_memory:
+
             episodic_memory = self.episodic.recall_mem(key=lin_act, timestep=self.timestamp, env=self.recency_env)
             episodic_pol = torch.from_numpy(episodic_memory)
             choice = self.agent.select_ec_action(policy_, value_, episodic_pol)
@@ -290,8 +291,8 @@ class Experiment(object):
 
             '''
             # compute MFCS
-            #self.policy_arbitration(self.last_reward)
-            self.MF_cs = 0.01
+            self.policy_arbitration(self.last_reward)
+            #self.MF_cs = 0.01
             cstar = np.random.choice([0,1], p=[self.MF_cs, 1 - self.MF_cs])
             pol_choice = ['mf', 'ec'][cstar]
             #cstar = 1
@@ -306,9 +307,8 @@ class Experiment(object):
                 self.mfcount +=1
                 choice = self.agent.select_action(policy_, value_)
 
-            #self.data['confidence_selection'][0].append(self.MF_cs)
-            #self.data['confidence_selection'][1].append(cstar)
-            #print(self.MF_cs, cstar)
+            self.data['confidence_selection'][0].append(self.MF_cs)
+            self.data['confidence_selection'][1].append(cstar)
             '''
         else:
             choice = self.agent.select_action(policy_, value_)
@@ -395,6 +395,8 @@ class Experiment(object):
 
                 self.agent.saved_rewards.append(reward)
                 self.reward_sum += reward
+                if reward > 1:
+                    print(trial, event, reward)
                 self.last_reward  = reward ### new with policy arbitration
                 self.timestamp += 1
 
@@ -405,17 +407,6 @@ class Experiment(object):
                     encountered_reward = True
                     break
 
-            if trial == 0 or trial%print_freq==0 or trial == NUM_TRIALS - 1:
-                RPE_map = np.zeros(self.env.shape)
-                RPE_map[RPE_map == 0] = np.nan
-
-                timesteps, states, actions, readable, trial = self.memory_buffer
-                returns_ = torch.Tensor(discount_rwds(np.asarray(self.agent.saved_rewards), gamma=self.agent.gamma))
-                for (log_prob, value), r, rdbl in zip(self.agent.saved_actions, returns_, readable):
-                    rpe = r - value.item()
-                    RPE_map[rdbl[0], rdbl[1]] = rpe
-                self.data['rpe_tracking'].append(RPE_map)
-
             if self.rec_memory or self.use_memory:
                 if self.agent.use_SR:
                     p_loss, v_loss, psi_loss = self.agent.finish_trial_EC(cache=self.episodic, buffer=self.memory_buffer)
@@ -423,6 +414,7 @@ class Experiment(object):
                     p_loss, v_loss  = self.agent.finish_trial_EC(cache=self.episodic, buffer=self.memory_buffer)
 
                 ##### temp oct 7
+                '''
                 EC_pol_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
                 samples, states = sample_observations
                 pols, vals, phis, psis = self.agent(torch.Tensor(samples))
@@ -435,6 +427,7 @@ class Experiment(object):
                     EC_pol_grid[state[0],state[1]] = episodic_pol
                 self.data['ec_tracking'].append(EC_pol_grid)
                 #### /temp
+                '''
             else:
                 if self.agent.use_SR:
                     p_loss, v_loss, psi_loss = self.agent.finish_trial()
