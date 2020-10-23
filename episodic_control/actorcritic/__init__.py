@@ -10,6 +10,7 @@ import numpy as np
 
 import torch
 import torch.nn.functional as F
+import torch.nn as nn
 from torch.autograd import Variable
 from torch.distributions import Categorical
 
@@ -21,6 +22,68 @@ SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 # =====================================
 #       ACTOR CRITIC NETWORK CLASS
 # =====================================
+class convAC(torch.nn.Module):
+	def __init__(self):
+		super(convAC, self).__init__()
+		self.conv1 = nn.Conv2d(3,3, kernel_size=(5,5), stride=(1,1), padding=(1,1))
+		self.mp1 = nn.MaxPool2d(kernel_size=5, stride=1, padding=1, dilation=1)
+		self.conv2 = nn.Conv2d(3,3, kernel_size=(5,5), stride=(1,1), padding=(1,1))
+		self.mp2 = nn.MaxPool2d(kernel_size=5, stride=1, padding=1, dilation=1)
+		self.phi = nn.Linear(in_features=432, out_features=1000, bias=True)
+		self.psi = nn.Linear(in_features=1000, out_features=1000, bias=True)
+
+		self.actor = nn.Linear(in_features=1000, out_features=4, bias=True)
+		self.critic = nn.Linear(in_features=1000, out_features=1, bias=True)
+
+		self.gamma = 0.98
+		self.eta = 5e-4
+		self.saved_actions = []
+		self.rewards = []
+
+	def forward(self,x):
+		x = F.relu(self.conv1(x))
+		x = self.mp1(x)
+		x = F.relu(self.conv2(x))
+		x = self.mp2(x)
+		x = x.view(x.shape[0],-1)
+		phi = F.relu(self.phi(x))
+		psi = F.relu(self.psi(phi))
+
+		p = F.softmax(self.actor(psi), dim=1)
+		v = self.critic(psi)
+		return p, v, phi, psi
+
+
+class linAC(torch.nn.Module):
+	def __init__(self):
+		super(linAC, self).__init__()
+		self.layer1 = nn.Linear(400, 100)
+		self.layer2 = nn.Linear(100, 50)
+		#self.layer3 = nn.Linear(2000, 2000)
+		#self.phi = nn.Linear(50, 50)
+		#self.psi = nn.Linear(50, 50)
+
+		self.actor = nn.Linear(50, 4)
+		self.critic =nn.Linear(50,1)
+
+		self.gamma = 0.98
+		self.eta = 5e-4
+		self.saved_actions = []
+		self.rewards = []
+
+	def forward(self,x):
+		x = F.relu(self.layer1(x))
+		x = F.relu(self.layer2(x))
+		#x = F.relu(self.layer3(x))
+		#x = F.relu(self.phi(x))
+		#x = F.relu(self.psi(x))
+
+		p = F.softmax(self.actor(x), dim=1)
+		v = self.critic(x)
+
+		return p, v
+
+
 class ActorCritic(torch.nn.Module):
 	def __init__(self, agent_params, **kwargs):
 		# call the super-class init
@@ -61,9 +124,7 @@ class ActorCritic(torch.nn.Module):
 
 		self.use_SR = kwargs.get('use_SR', True)
 
-
 		if 'hidden_types' in agent_params.keys():
-
 			if len(agent_params['hidden_dims']) != len(agent_params['hidden_types']):
 				raise Exception('Incorrect specification of hidden layer dimensions')
 
@@ -120,17 +181,15 @@ class ActorCritic(torch.nn.Module):
 
 			# create the actor and critic layers
 			self.layers = [self.input_dims]+self.hidden_dims+[self.action_dims]
-			self.output = torch.nn.ModuleList([
-				torch.nn.Linear(output_d, self.action_dims), #actor
-				torch.nn.Linear(output_d, 1)                 #critic
-			])
-			if self.use_SR:
-				self.SR = torch.nn.Linear(output_d, output_d) # psi
+			self.output = torch.nn.ModuleList()
+			self.output.append(torch.nn.Linear(output_d, self.action_dims)) # actor
+			self.output.append(torch.nn.Linear(output_d, 1)) # critic
 
 		else:
 			self.layers = [self.input_dims, self.action_dims]
-			self.output = torch.nn.ModuleList([torch.nn.Linear(input_dimensions, action_dimensions),  # ACTOR
-										 torch.nn.Linear(input_dimensions, 1)])  # CRITIC
+			self.output = torch.nn.ModuleList([
+				torch.nn.Linear(self.input_dims, self.action_dims),  # ACTOR
+				torch.nn.Linear(self.input_dims, 1)])  # CRITIC
 		output_d = self.hidden_dims[-1]
 
 		self.saved_actions = []
@@ -152,7 +211,7 @@ class ActorCritic(torch.nn.Module):
 
 		return (channels, h_out, w_out)
 
-	def forward(self, x, temperature=1, **kwargs):
+	def forward(self, x):
 		# check the inputs
 		if type(self.input_dims) == int:
 			assert x.shape[-1] == self.input_dims
@@ -173,6 +232,10 @@ class ActorCritic(torch.nn.Module):
 			# run input through the layer depending on type
 			if isinstance(layer, torch.nn.Linear):
 				x = F.relu(layer(x))
+				if i == (len(self.hidden)-2):
+					phi = x
+				elif i == (len(self.hidden)-1):
+					psi = x
 			elif isinstance(layer, torch.nn.LSTMCell):
 				x, cx = layer(x, (self.hx[i], self.cx[i]))
 				self.hx[i] = x.clone()
@@ -189,8 +252,6 @@ class ActorCritic(torch.nn.Module):
 		policy = F.softmax(self.output[0](x), dim=1)
 		value  = self.output[1](x)
 		if self.use_SR:
-			phi = x
-			psi = self.SR(x)
 			return policy, value, phi, psi
 		else:
 			return policy, value , x
@@ -241,7 +302,10 @@ class ActorCritic(torch.nn.Module):
 		for (log_prob, value), r in zip(saved_actions, returns_):
 			rpe = r - value.item()
 			policy_losses.append(-log_prob * rpe)
-			value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
+			return_bs = Variable(torch.Tensor([[r]])).unsqueeze(-1)
+			print(value.shape, return_bs.shape)
+			value_losses.append(F.smooth_l1_loss(value, return_bs))
+
 		if self.use_SR:
 			for t in range(len(phis[:-1])):
 				next_psi = psis[t + 1]
