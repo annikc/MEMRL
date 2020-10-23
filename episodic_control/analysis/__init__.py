@@ -22,22 +22,35 @@ class DataFilter(object):
         self.mem_envelope= kwargs.get('mem_envelope',    df['memory_envelope'].unique())
         self.alpha       = kwargs.get('alpha',           df['alpha'].unique())
         self.beta        = kwargs.get('beta',            df['beta'].unique())
-        print_deets = False
+        print_deets = kwargs.get('print_deets', False)
         if print_deets:
-            print(df['experiment_type'].unique(), self.exp_type)
-            print(df['ENVIRONMENT'].unique(), self.env_type)
-            print(df['dims'].unique(), self.dims)
-            print(df['rho'].unique(), self.rho)
-            print(df['rewards'].unique(), self.rewards)
-            print(df['action_list'].unique(), self.action_list)
-            print(df['rwd_action'].unique(), self.rwd_action)
-            print(df['AGENT'].unique(), self.arch)
-            print(df['freeze_weights'].unique(), self.freeze_w)
-            print(df['use_pvals'].unique(), self.pvals)
-            print(df['mem_temp'].unique(), self.ec_entropy)
-            print(df['memory_envelope'].unique(), self.mem_envelope)
-            print(df['alpha'].unique(), self.alpha)
-            print(df['beta'].unique(), self.beta)
+            vars = [self.exp_type,
+                    self.env_type,
+                    self.dims,
+                    self.rho,
+                    self.action_list,
+                    self.rewards,
+                    self.rwd_action,
+                    self.arch,
+                    self.pvals,
+                    self.ec_entropy,
+                    self.mem_envelope,]
+            keys = ['experiment_type',
+                    'ENVIRONMENT',
+                    'dims',
+                    'rho',
+                    'action_list',
+                    'rewards',
+                    'rwd_action',
+                    'AGENT',
+                    'use_pvals',
+                    'mem_temp',
+                    'memory_envelope']
+
+            for var, key in zip(vars, keys):
+                self.print_fields(df, var, key)
+
+            print(f'expt_type: {self.exp_type} at {np.where(df["experiment_type"].isin(self.exp_type))}')
 
         self.info = self.filter_df(df)
 
@@ -51,7 +64,8 @@ class DataFilter(object):
         #self.normalized_rwd = self.get_normalized_reward()
         #self.reward_avg, self.reward_sd = self.average('total_reward')
         
-
+    def print_fields(self, df, variable, key):
+            print(f'{key}: {variable} at {np.where(df[key].isin(variable))}')
     def filter_df(self, df):
         idx = np.where((df['experiment_type'].isin(self.exp_type))
                        & (df['ENVIRONMENT'].isin(self.env_type))

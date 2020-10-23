@@ -110,7 +110,7 @@ class GridWorld(object):
             self.start_loc      = self.starter
 
         # TODO - reset environment including initializing start state
-        self.resetEnvironment(around_rwd=around_reward)
+        self.resetEnvironment()
         self.finish_after_first_reward = True
 
     def oneD2twoD(self, idx):
@@ -277,19 +277,22 @@ class GridWorld(object):
 
         print("transition probs remapped")
 
-    def resetEnvironment(self, random_start=True, **kwargs):
+    def resetEnvironment(self, random_start=True):
         self.random_start = random_start
-        self.around_reward = kwargs.get('around_rwd', False)
-        rad = kwargs.get('radius', 5)
         if self.random_start:
-            self.start = self.get_start_location(around_reward=self.around_reward, rad=rad)
+            self.start = self.get_random_start_location()
         else:
             self.start = self.useable[0]
         self.state = self.twoD2oneD(self.start)
 
         self.observation = self.get_observation()
         self.done = False
-        #self.rwd = 0
+
+    def get_random_start_location(self):
+        get_start = np.random.choice(len(self.useable))
+        start_r = self.useable[get_start][0]
+        start_c = self.useable[get_start][1]
+        return (start_r, start_c)
 
     def get_start_location(self, around_reward, **kwargs):
         if around_reward:
@@ -437,7 +440,4 @@ class GridWorld(object):
         is_terminal = self.done
 
         return (self.state, reward, is_terminal)
-
-
-
 
