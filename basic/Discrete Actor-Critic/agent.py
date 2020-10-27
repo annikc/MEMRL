@@ -12,19 +12,10 @@ class Agent():
         # the policy is just a probability distribution and we back propogate the log of that 
         # distribution through the actor network for loss minimization the actor network
         self.log_probs = None
-        #create the actor critic network using our generic network 
+        # create the actor critic network using our generic network 
+        # the actor network 
         self.actor = Network(alpha, input_dims, l1_size, l2_size, n_actions)
-        self.critic = Network(beta, input_dims, l1_size, l2_size, n_actions)
-
-    def state_represention(self, state):
-         # pass state info through our environemnt represention Network to get the 
-         # state representation 
-         state_representation = F.softmax(self.env_representation.forward(state))
-         # pass representation to memory to get similar state representations 
-         action_probs = T.distributions.Categorical(probabilities)
-         # compare the action 
-
-    def recall_similar()
+        self.critic = Network(beta, input_dims, l1_size, l2_size, n_actions=1)
 
     
     def choose_action(self, observation):
