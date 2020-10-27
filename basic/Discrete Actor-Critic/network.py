@@ -14,14 +14,14 @@ import numpy as np
 class Network(nn.Module):
     def __init__(self, lr, input_dim, fc1_dims, fc2_dims, n_actions):
         super(Network, self).__init__()
-        self.input_dim = input_dim
+        self.input_dims = input_dim
         self.lr = lr
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
         self.n_actions = n_actions
 
         # network connections 
-        self.fc1 = nn.Linear(self.input_dim, self.fc1_dims)
+        self.fc1 = nn.Linear(*self.input_dims, self.fc1_dims)
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
         self.fc3 = nn.Linear(self.fc2_dims, self.n_actions)
 
@@ -29,7 +29,7 @@ class Network(nn.Module):
         self.optimizer = optim.Adam(self.parameters(), lr=self.lr)
 
         # setup device
-        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cup:0')
+        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu:0')
         self.to(self.device)
 
     def forward(self, observation):
