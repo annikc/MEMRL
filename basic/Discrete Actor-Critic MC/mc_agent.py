@@ -48,15 +48,17 @@ class MC_Agent():
         for (log_prob, observed_value), target_value in logs_values_rewards:  
             # delta = reward + gamma*critic_value*(1-done)
             delta = target_value - observed_value.item()  # This is the delta variable (i.e target_value*self.gamma + observed_value)
-            actor_losses.append(-log_prob * delta)
+            actor_loss = (-log_prob * delta)
             #print(actor_losses)
             return_bs = Variable(T.Tensor([[target_value]])).unsqueeze(-1) # used to make the shape work out
-            print(observed_value.shape, return_bs.shape) # shape error - you can pass batch 
-            critic_losses.append(F.smooth_l1_loss(observed_value, target_value))
+            #print(observed_value.shape, return_bs.shape) # shape error - you can pass batch 
+            critic_loss = (F.smooth_l1_loss(observed_value, target_value))
+            (actor_loss + critic_loss).backward()
             #print(critic_losses) # critic losses is updated differently than Anniks model not sure if this is correct (?)
-
-        # back props losses through the network
-        (T.cat(actor_losses) + t.cat(critic_losses)).backward()
+        # actor_losses_tensor = T.stack(actor_losses)
+        # critic_losses_tensor = T.stack(critic_losses)
+        # # back props losses through the network
+        # (actor_losses_tensor + critic_losses_tensor).backward()
 
         # then we optimize the networks
         self.actor.optimizer.step()

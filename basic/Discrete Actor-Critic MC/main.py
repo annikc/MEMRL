@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
     env = gym.make('CartPole-v1')
     score_history = []
-    n_episodes = 2500
+    n_episodes = 10000
 
     for episode in range(n_episodes):
         done = False
