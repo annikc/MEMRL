@@ -1,14 +1,17 @@
-import numpy as np
-import gym
-from agent import Agent
-import matplotlib.pyplot as plt
-from utils import plot_learning_curve
-from gym import wrappers
+# =====================================
+#         Runs OpenAI Gyms
+# =====================================
 
+import gym
+from mc_agent import MC_Agent
+from utils import plot_learning_curve
 
 if __name__ == '__main__':
+    env = gym.make('CartPole-v1')
+    n_actions = env.action_space.n
+    state_shape = env.observation_space.shape
     # first we create our agent
-    agent = Agent(alpha=0.00001, beta=0.0005, input_dims=[4], gamma=0.99, n_actions=2, l1_size=32, l2_size=32)
+    agent = MC_Agent(alpha=0.00001, beta=0.0005, input_dims=state_shape, gamma=0.99, n_actions=n_actions, l1_size=32, l2_size=32)
 
     filename = 'cartpole'
     figure_file = 'plots/' + filename
@@ -22,14 +25,15 @@ if __name__ == '__main__':
         score = 0 
         state = env.reset()
         while not done:
-            action, log_prob = agent.choose_action(state) # choose action to take
+            action, log_prob, critic_value = agent.get_action_log_value(state) # choose action to take
             state_, reward, done, info = env.step(action) # get info from taking that action
             score += reward # add reward to the score for the episode 
-            agent.encode_memory(state, action, log_prob, reward, state_, done) # encode information about the step
+            agent.MC.store_transition(log_prob, critic_value, reward, done) # encode information about the step
             state = state_
         print(f"Episode: {episode}, Score: {score}")
         score_history.append(score)
-
+        agent.mc_learn()
+        agent.MC.clear_buffer()
 
 
     filename = 'cartpole.png'
