@@ -6,13 +6,13 @@
 # get_action_log_value = takes observation (state) and returns the action from actor network (i.e. policy), log_value from actor, and value from critic networ 
 # mc_learn = Uses stored transition from the episode to calculate losses and updates the actor and critic networks
 
-from network import Network
+from Networks.fcx2 import Network
 import torch as T
 import torch.nn.functional as F
-from mc_buffer import MCBuffer
+from Buffers.mc import MCBuffer
 from torch.autograd import Variable
 
-class MC_Agent():
+class Agent_fcx2():
     def __init__(self, alpha, beta, input_dims, gamma=0.99, l1_size = 256, l2_size = 256, n_actions = []): #alpha/beta = agent/critic lrs
         self.log_probs = None
         self.n_actions = n_actions
@@ -46,10 +46,11 @@ class MC_Agent():
             # delta = reward + gamma*critic_value*(1-done)
             delta = target_value - observed_value.item()  # This is the delta variable (i.e target_value*self.gamma + observed_value)
             actor_loss = (-log_prob * delta)
+            critic_loss = delta**2
             #print(actor_losses)
-            return_bs = Variable(T.Tensor([[target_value]])).unsqueeze(-1) # used to make the shape work out
+            #return_bs = Variable(T.Tensor([[target_value]])).unsqueeze(-1) # used to make the shape work out
             #print(observed_value.shape, return_bs.shape) # shape error - you can pass batch 
-            critic_loss = (F.smooth_l1_loss(observed_value, return_bs))
+            #critic_loss = (F.smooth_l1_loss(observed_value, return_bs))
             #critic_loss = delta**2
             actor_losses += actor_loss
             critic_losses += critic_loss
