@@ -6,10 +6,10 @@
 # get_action_log_value = takes observation (state) and returns the action from actor network (i.e. policy), log_value from actor, and value from critic networ 
 # mc_learn = Uses stored transition from the episode to calculate losses and updates the actor and critic networks
 
-from Networks.fcx2 import Network
+from .Networks.fcx2 import Network
 import torch as T
 import torch.nn.functional as F
-from Buffers.mc import MCBuffer
+from .Buffers.mc import MCBuffer
 from torch.autograd import Variable
 
 class Agent_fcx2():
@@ -41,9 +41,12 @@ class Agent_fcx2():
         critic_losses = 0
         # Gets information stored in buffer
         logs_values_rewards = self.MC.get_buffer()
+
+
         # target_values are calucated using rewards-to-go backward iteration method (discounted_rwds function in mc_buffer)
         for (log_prob, observed_value), target_value in logs_values_rewards:  
             # delta = reward + gamma*critic_value*(1-done)
+            #print(log_prob, target_value, observed_value.item())
             delta = target_value - observed_value.item()  # This is the delta variable (i.e target_value*self.gamma + observed_value)
             actor_loss = (-log_prob * delta)
             critic_loss = delta**2
@@ -54,6 +57,7 @@ class Agent_fcx2():
             #critic_loss = delta**2
             actor_losses += actor_loss
             critic_losses += critic_loss
+            print(actor_loss, critic_loss)
 
         self.actor.optimizer.zero_grad()
         self.critic.optimizer.zero_grad()

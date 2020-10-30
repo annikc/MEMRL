@@ -6,10 +6,10 @@
 # get_action_log_value = takes observation (state) and returns the action from actor network (i.e. policy), log_value from actor, and value from critic networ 
 # mc_learn = Uses stored transition from the episode to calculate losses and updates the actor and critic networks
 
-from Networks.cnn import Network
+from .Networks.cnn import Network
 import torch as T
 import torch.nn.functional as F
-from Buffers.mc import MCBuffer
+from .Buffers.mc import MCBuffer
 from torch.autograd import Variable
 
 class Agent_cnn():
@@ -54,6 +54,7 @@ class Agent_cnn():
             critic_loss = delta**2
             actor_losses += actor_loss
             critic_losses += critic_loss
+            print(actor_loss, critic_loss)
 
         self.actor.optimizer.zero_grad()
         self.critic.optimizer.zero_grad()
