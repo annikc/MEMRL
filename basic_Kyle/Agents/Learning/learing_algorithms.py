@@ -22,11 +22,6 @@ class Monte_Carlo_Learning():
 
         # target_values are calucated using rewards-to-go backward iteration method (discounted_rwds function in mc_buffer)
         for index in range(len(log_probs)):
-            probabilities = F.softmax(policy_network.forward(states[index]))
-            action_probs = T.distributions.Categorical(probabilities)
-            action = action_probs.sample()
-            log_prob = action_probs.log_prob(action)
-            target_value = T.tensor(target_values[index])  
             # delta = reward + gamma*critic_value*(1-done)
             delta = target_value - model_values[index]  # This is the delta variable (i.e target_value*self.gamma + observed_value)
             policy_loss = (-log_prob * delta)
@@ -54,5 +49,6 @@ class Monte_Carlo_Learning():
             disc_rwds[t] = running_add
         return disc_rwds
 
-#class TD_Buffer_Learning():
+class TD_Buffer_Learning():
+
     

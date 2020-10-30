@@ -27,7 +27,7 @@ class Agent():
         self.transition_memory.clear_memory()
 
     # learn
-    def learn(self):
+    def learn(self, MC=True):
         self.policy_network, self.value_network = self.learning.learn(self.policy_network, self.value_network, self.transition_memory)
         
         
