@@ -11,43 +11,46 @@ import numpy as np
 from Agents.Transition_Cache.transition_cache import Transition_Cache
 from torch.autograd import Variable
 
-class Agent_MC():
-    def __init__(self, policy_value_network, trans_cache_size=100000, 
+class Agent_MC_2N():
+    def __init__(self, policy_network, value_network, trans_cache_size=100000, 
                     gamma=0.99, TD=False): #alpha/beta = agent/critic lrs
         self.log_probs = None
         self.gamma = gamma
-        self.policy_value_network = policy_value_network # actor network output is action dimensions
+        self.policy_network = policy_network # actor network output is action dimensions
+        self.value_network = value_network  # critic netowrk outputs is value estimate 
         self.transition_cache = Transition_Cache(trans_cache_size) 
         self.TD = TD
 
     def get_action(self, observation): 
-        policy, expected_value = self.policy_value_network(observation) # get softmax here
+        state = self.policy_network(observation)
         # the following could be turned into a function within agent_utilities
-        action_probs = T.distributions.Categorical(policy)
+        probabilities = F.softmax(state)
+        action_probs = T.distributions.Categorical(probabilities)
         action = action_probs.sample()
         log_prob = action_probs.log_prob(action)
+        expected_value = self.value_network(observation)
         
+        # Consistent with learning agent
+        #print(action.item(), log_prob, expected_value.view(-1))
+
         return action.item(), log_prob, expected_value.view(-1)
 
     def learn(self):
         policy_losses = 0
         value_losses = 0
 
-        # Calculates the discounted rewards (target_values) and updates transition with them
-        # Note: passing transitions here isn't necessary but allows discount_rwds method to be in 
-        # seperate module if that makes more sense 
+        # Calculates the discounted rewards - saves to expected values
         self.transition_cache.transition_cache = self.discount_rwds(self.transition_cache.transition_cache, self.gamma)
 
-        # Gets policy and value losses 
-        # Note: passing transitions here isn't necessray but allows episode_losses method to be in 
-        # seperate module if that makes more sense 
+        # Gets policy and value losses
         policy_losses, value_losses = self.episode_losses(self.transition_cache.transition_cache)
 
-        self.policy_value_network.optimizer.zero_grad()
+        self.policy_network.optimizer.zero_grad()
+        self.value_network.optimizer.zero_grad()
 
         (policy_losses + value_losses).backward()
-        self.policy_value_network.optimizer.step()
-
+        self.policy_network.optimizer.step()
+        self.value_network.optimizer.step()
  
     # agents transition Cache
     def store_transition(self, transition):
@@ -57,8 +60,6 @@ class Agent_MC():
         self.transition_cache.clear_cache()
     
     # discount_rwds + episode losses could be moved to another module
-    # discounted_rwds method interates backwards through transitions and 
-    # updates their target_value which can be used to calculate losses
     def discount_rwds(self, transitions, gamma = 0.99):
         running_add = 0
         for t in reversed(range(len(transitions))):
@@ -68,15 +69,9 @@ class Agent_MC():
 
         return transitions
 
-    # Calculates the policy and value losses and returns them seperately
     def episode_losses(self, transitions):
         policy_losses = 0
         value_losses = 0
-        # for transition in transitions: 
-        #     delta = transition.target_value - transition.expected_value.item()
-        #     policy_losses += (-transition.log_prob * delta)
-        #     return_bs = Variable(T.Tensor([[transition.target_value]])).unsqueeze(-1) 
-        #     value_losses += (F.smooth_l1_loss(transition.expected_value, return_bs))
         for transition in transitions: 
         # delta = reward + gamma*critic_value*(1-done)
             target_value = transition.target_value
@@ -90,13 +85,6 @@ class Agent_MC():
             value_loss = (F.smooth_l1_loss(expected_value, return_bs))
             policy_losses += policy_loss
             value_losses += value_loss
-        
+            #print(f"P LOSS: {policy_losses}, V LOSS: {value_losses}")
+
         return policy_losses, value_losses
-                
-
-
-
-
-        
-
-

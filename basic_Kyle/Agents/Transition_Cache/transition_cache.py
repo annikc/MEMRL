@@ -11,6 +11,7 @@
 
 from collections import namedtuple
 import numpy as np
+import random
 
 class Transition_Cache():
     def __init__(self, cache_size):
@@ -31,16 +32,14 @@ class Transition_Cache():
         self.transition_cache = []
         self.cache_cntr = 0
 
-    # samples transitions - can be used for methods that require buffer
-    def sample_transition_cache(self, batch_size):
-        # find out how many memories are in our buffer 
-        amount_stored = len(self.transition_cache)
-        
+    # samples transitions - can be used for TD methods that require buffer
+    def sample_transition_cache(self, batch_size):        
         # get a list of random index numbers and sample the cache
-        batch = np.random.choice(amount_stored, batch_size, replace =False)
-        transition_batch = self.transition_cache[batch]
+        sample = random.sample(self.transition_cache, batch_size)
 
-        return transition_batch
+        rewards, expected_values, next_states, terminals  = zip(*[(s.reward, s.expected_value, s.next_state, s.done) for s in sample])
+
+        return rewards, expected_values, next_states, terminals
 
 
 
