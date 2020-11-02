@@ -11,9 +11,9 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 
-class CNN(nn.Module):
-    def __init__(self, lr, input_dims, fc1_dims, n_actions):
-        super(CNN, self).__init__()
+class Network(nn.Module):
+    def __init__(self, lr, input_dims, fc1_dims, output_dims):
+        super(Network, self).__init__()
         self.lr = lr
         self.conv1 = nn.Conv2d(input_dims[0], 32, 8, stride=4)
         self.conv2 = nn.Conv2d(32, 64, 4, stride=2)
@@ -22,11 +22,11 @@ class CNN(nn.Module):
         fc_input_dims = self.conv_output_dims(input_dims)
         
         self.fc1_dims = fc1_dims
-        self.n_actions = n_actions
+        self.output_dims = output_dims
 
         # network connections 
         self.fc1 = nn.Linear(fc_input_dims, self.fc1_dims)
-        self.fc2 = nn.Linear(self.fc1_dims, self.n_actions)
+        self.fc2 = nn.Linear(self.fc1_dims, self.output_dims)
 
         self.optimizer = optim.Adam(self.parameters(), lr=self.lr)
 
@@ -51,34 +51,5 @@ class CNN(nn.Module):
 
         flat1 = F.relu(self.fc1(conv_state))
         x = self.fc2(flat1)  # we can activate this differently depending on whether it's the actor or critic network
-
-        return x
-
-class FCx2(nn.Module):
-    def __init__(self, lr, input_dim, fc1_dims, fc2_dims, n_actions):
-        super(FCx2, self).__init__()
-        self.input_dim = input_dim
-        self.lr = lr
-        self.fc1_dims = fc1_dims
-        self.fc2_dims = fc2_dims
-        self.n_actions = n_actions
-
-        # network connections 
-        self.fc1 = nn.Linear(*self.input_dim, self.fc1_dims)
-        self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
-        self.fc3 = nn.Linear(self.fc2_dims, self.n_actions)
-
-        # optimizer - parameters come fomr nn.Module 
-        self.optimizer = optim.Adam(self.parameters(), lr=self.lr)
-
-        # setup device
-        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu:0')
-        self.to(self.device)
-
-    def forward(self, observation):
-        state = T.Tensor(observation).to(self.device) 
-        x = F.relu(self.fc1(state))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x) # this is activated differently by the actor and critic networks
 
         return x
