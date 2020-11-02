@@ -3,17 +3,16 @@
 # =====================================
 #       Function Descriptions
 # =====================================
-# Forward = forwards data through the network - output is generic and can be activated differently for actor and critic 
-
+# Forward = forwards data through the network - output is generic and can be activated differently for actor and critic
 import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 
-class Network(nn.Module):
+class CNN(nn.Module):
     def __init__(self, lr, input_dims, fc1_dims, n_actions):
-        super(Network, self).__init__()
+        super(CNN, self).__init__()
         self.lr = lr
         self.conv1 = nn.Conv2d(input_dims[0], 32, 8, stride=4)
         self.conv2 = nn.Conv2d(32, 64, 4, stride=2)

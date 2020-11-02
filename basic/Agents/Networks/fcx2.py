@@ -10,9 +10,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-class Network(nn.Module):
+class FCX2(nn.Module):
     def __init__(self, lr, input_dim, fc1_dims, fc2_dims, n_actions):
-        super(Network, self).__init__()
+        super(FCX2, self).__init__()
         self.input_dim = input_dim
         self.lr = lr
         self.fc1_dims = fc1_dims
@@ -20,7 +20,7 @@ class Network(nn.Module):
         self.n_actions = n_actions
 
         # network connections 
-        self.fc1 = nn.Linear(*self.input_dim, self.fc1_dims)
+        self.fc1 = nn.Linear(self.input_dim, self.fc1_dims)
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
         self.fc3 = nn.Linear(self.fc2_dims, self.n_actions)
 
