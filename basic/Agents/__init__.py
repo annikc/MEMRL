@@ -3,6 +3,7 @@
 # Annik Carson Oct 28,2020
 from torch.distributions import Categorical
 from basic.Utils import discount_rwds
+from Agents.Transition_Cache.transition_cache import Transition_Cache
 
 class Agent(object):
     def __init__(self, network, memory=None, **kwargs):
@@ -13,9 +14,9 @@ class Agent(object):
         self.episode_record = self.reset_buffer()
 
         self.gamma = kwargs.get('discount',0.98) # discount factor for return computation
-
+        self.transition_cache = Transition_Cache(cache_size=10000)
         self.TD = kwargs.get('td_learn', False)
-        self.select_action = self.MF_action
+        self.get_action = self.MF_action
         if self.TD:
             self.update = self.update_TD
         else:
@@ -49,7 +50,7 @@ class Agent(object):
 
         #self.saved_actions.append(SavedAction(a.log_prob(action), value))
 
-        return action.item()
+        return action.item(), a.log_prob(action), value.view(-1) ##TODO: why view instead of item
 
     def EC_action(self, state_observation):
         MF_policy, value = self.MFC(state_observation)
@@ -80,7 +81,8 @@ class Agent(object):
 
     def update_MC(self):
         #compute monte carlo return
-        self.episode_record['returns'] = torch.Tensor(discount_rwds(np.asarray(self.episode_record['rewards']), gamma=self.gamma)) # compute returns
+        rewards = np.asarray(self.episode_record['rewards'])
+        self.episode_record['returns'] = torch.Tensor(discount_rwds(rewards, gamma=self.gamma)) # compute returns
 
         for log_prob, value, r in zip(self.episode_record['log_probs'], self.episode_record['values'], self.episode_record['returns']):
             rpe = r - value.item()
@@ -154,3 +156,60 @@ class Agent(object):
             self.EC_storage()
 
         self.episode_record = self.reset_buffer()
+
+    ## from Kyle's agent_MC
+    def learn(self):
+        policy_losses = 0
+        value_losses = 0
+
+        # Calculates the discounted rewards (target_values) and updates transition with them
+        # Note: passing transitions here isn't necessary but allows discount_rwds method to be in
+        # seperate module if that makes more sense
+        self.transition_cache.transition_cache = self.discount_rwds(self.transition_cache.transition_cache)
+
+        # Gets policy and value losses
+        # Note: passing transitions here isn't necessray but allows episode_losses method to be in
+        # seperate module if that makes more sense
+        policy_losses, value_losses = self.episode_losses(self.transition_cache.transition_cache)
+
+        self.policy_value_network.optimizer.zero_grad()
+
+        (policy_losses + value_losses).backward()
+        self.policy_value_network.optimizer.step()
+
+    def discount_rwds(self, transitions):
+        running_add = 0
+        for t in reversed(range(len(transitions))):
+            running_add = running_add*self.gamma + transitions[t].reward
+            transitions[t] = transitions[t]._replace(target_value = running_add)
+            #print (transitions[t].target_value)
+
+        return transitions
+
+    # agents transition Cache
+    def store_transition(self, transition):
+        self.transition_cache.store_transition(transition)
+
+    def clear_transition_cache(self):
+        self.transition_cache.clear_cache()
+
+    # Calculates the policy and value losses and returns them seperately
+    def episode_losses(self, transitions):
+        policy_losses = 0
+        value_losses = 0
+
+        for transition in transitions:
+
+            target_value = transition.target_value
+            expected_value = transition.expected_value
+            delta = target_value - expected_value.item()
+
+            log_prob = transition.log_prob  # This is the delta variable (i.e target_value*self.gamma + observed_value)
+            policy_loss = (-log_prob * delta)
+            return_bs = Variable(T.Tensor([[target_value]])).unsqueeze(-1) # used to make the shape work out
+
+            value_loss = (F.smooth_l1_loss(expected_value, return_bs))
+            policy_losses += policy_loss
+            value_losses += value_loss
+
+        return policy_losses, value_losses

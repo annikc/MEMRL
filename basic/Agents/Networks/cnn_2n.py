@@ -13,7 +13,7 @@ import torch.optim as optim
 import numpy as np
 
 class Network(nn.Module):
-    def __init__(self, lr, input_dims, fc1_dims, n_actions):
+    def __init__(self, lr, input_dims, fc1_dims, output_dims):
         super(Network, self).__init__()
         self.lr = lr
         self.conv1 = nn.Conv2d(input_dims[0], 32, 8, stride=4)
@@ -23,13 +23,12 @@ class Network(nn.Module):
         fc_input_dims = self.conv_output_dims(input_dims)
         
         self.fc1_dims = fc1_dims
-        self.n_actions = n_actions
+        self.output_dims = output_dims
 
         # network connections 
         self.fc1 = nn.Linear(fc_input_dims, self.fc1_dims)
-        self.policy = nn.Linear(self.fc1_dims, n_actions)
-        self.value = nn.Linear(self.fc1_dims, 1)
-        
+        self.fc2= nn.Linear(self.fc1_dims, self.output_dims)
+
         self.optimizer = optim.Adam(self.parameters(), lr=self.lr)
 
         # loss function for td learning
@@ -55,8 +54,7 @@ class Network(nn.Module):
         conv_state = conv3.view(conv3.size()[0], -1)
 
         flat1 = F.relu(self.fc1(conv_state))
-        policy = F.softmax(self.policy(flat1))
-        value = self.value(flat1) # do softmax here
+        x = self.fc2(flat1) # do softmax here
           # we can activate this differently depending on whether it's the actor or critic network
 
-        return policy, value
+        return x
