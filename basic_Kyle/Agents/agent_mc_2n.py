@@ -29,9 +29,6 @@ class Agent_MC_2N():
         action = action_probs.sample()
         log_prob = action_probs.log_prob(action)
         expected_value = self.value_network(observation)
-        
-        # Consistent with learning agent
-        #print(action.item(), log_prob, expected_value.view(-1))
 
         return action.item(), log_prob, expected_value.view(-1)
 
