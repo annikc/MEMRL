@@ -70,12 +70,14 @@ class ActorCritic(object):
 
     def EC_storage(self):
         mem_dict = {}
-        states = self.episode_record['states']
-        actions = self.episode_record['actions']
-        returns = self.episode_record['returns']
-        timesteps = self.episode_record['event_ts']
-        readable = self.episode_record['readable_states']
-        trial = self.episode_record['trial']
+        buffer = np.vstack(self.transition_cache.transition_cache)
+
+        states    = buffer[:,2]
+        actions   = buffer[:,3]
+        returns   = buffer[:,8]
+        timesteps = buffer[:,1]
+        readable  = buffer[:,10]
+        trial     = buffer[-1,0]
 
         for s, a, r, event, rdbl in zip(states,actions,returns,timesteps,readable):
             mem_dict['activity']  = s
