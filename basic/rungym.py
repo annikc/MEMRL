@@ -74,6 +74,7 @@ if __name__ == '__main__':
         
         if not agent.TD:
             agent.learn()
+
             agent.clear_transition_cache()
 
         print(f"Episode: {episode}, Score: {score}")

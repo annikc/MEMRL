@@ -1,40 +1,35 @@
 # Write Agent Class Here
 # Should take arg for network and for memory
 # Annik Carson Oct 28,2020
-from torch.distributions import Categorical
-from basic.Utils import discount_rwds
-from Agents.Transition_Cache.transition_cache import Transition_Cache
 
-class Agent(object):
+from collections import namedtuple
+import torch
+import torch.nn.functional as F
+from torch.distributions import Categorical
+
+from Agents.Transition_Cache import Transition_Cache
+
+
+Transition = namedtuple('Transition', 'episode, transition, state, action, reward, \
+                                next_state, log_prob, expected_value, target_value, done, readable_state')
+
+class ActorCritic(object):
     def __init__(self, network, memory=None, **kwargs):
-        self.MFC = network
+        self.MFC = network ## what happens if MFC is two separate networks ?
         self.EC = memory
+        self.transition_cache = Transition_Cache(cache_size=10000)
+
         self.optimizer = network.optimizer
 
-        self.episode_record = self.reset_buffer()
-
         self.gamma = kwargs.get('discount',0.98) # discount factor for return computation
-        self.transition_cache = Transition_Cache(cache_size=10000)
-        self.TD = kwargs.get('td_learn', False)
-        self.get_action = self.MF_action
-        if self.TD:
-            self.update = self.update_TD
-        else:
-            self.update = self.update_MC
 
-    def reset_buffer(self):
-        episode_record = {'states': [],
-                          'next_state': None,
-                          'actions': [],
-                          'log_probs': [],
-                          'values': [],
-                          'rewards': [],
-                          'returns': [],
-                          'event_ts': [],
-                          'readable_states': [],
-                          'trial': None, ## must set trial in the beginning of each trial in experiment
-                          'done': None}
-        return episode_record
+        self.get_action = self.MF_action
+
+        self.TD = kwargs.get('td_learn', False)
+        if self.TD:
+            self.calc_loss = self.TD_loss
+        else:
+            self.calc_loss = self.MC_loss
 
     def MF_action(self, state_observation):
         policy, value = self.MFC(state_observation)
@@ -43,18 +38,10 @@ class Agent(object):
 
         action = a.sample()
 
-        self.episode_record['states'].append(state_observation)
-        self.episode_record['actions'].append(action)
-        self.episode_record['log_probs'].append(a.log_prob(action))
-        self.episode_record['values'].append(value)
-
-        #self.saved_actions.append(SavedAction(a.log_prob(action), value))
-
         return action.item(), a.log_prob(action), value.view(-1) ##TODO: why view instead of item
 
     def EC_action(self, state_observation):
         MF_policy, value = self.MFC(state_observation)
-        ## here state observation should be state representation??
         EC_policy = self.EC.recall_mem(state_observation)
 
         a = Categorical(EC_policy)
@@ -62,72 +49,24 @@ class Agent(object):
 
         action = a.sample() # select action using episodic
 
-        self.episode_record['states'].append(state_observation)
-        self.episode_record['actions'].append(action)
-        self.episode_record['log_probs'].append(b.log_prob(action))
-        self.episode_record['values'].append(value)
+        return action.item(), b.log_prob(action), value.view(-1)
 
-        #self.saved_actions.append(SavedAction(b.log_prob(action), value)) # for model free weight updates, save log of model free prob for selected action
-
-        return action.item()
-
-    def log_event(self, reward, next_state, done, event, readable_state):
-        # records feedback from environment after action is taken
-        self.episode_record['next_state'] = next_state
-        self.episode_record['rewards'].append(reward)
-        self.episode_record['event_ts'].append(event)
-        self.episode_record['readable_states'].append(readable_state)
-        self.episode_record['done'] = done
-
-    def update_MC(self):
-        #compute monte carlo return
-        rewards = np.asarray(self.episode_record['rewards'])
-        self.episode_record['returns'] = torch.Tensor(discount_rwds(rewards, gamma=self.gamma)) # compute returns
-
-        for log_prob, value, r in zip(self.episode_record['log_probs'], self.episode_record['values'], self.episode_record['returns']):
-            rpe = r - value.item()
-            policy_losses.append(-log_prob * rpe)
-            return_bs = Variable(torch.Tensor([[r]])).unsqueeze(-1) # used to make the shape work out
-            value_losses.append(F.smooth_l1_loss(value, return_bs))
-
-        self.optimizer.zero_grad()
-        p_loss, v_loss = torch.cat(policy_losses).sum(), torch.cat(value_losses).sum()
-        total_loss = p_loss + v_loss
-        total_loss.backward(retain_graph=False)
-        self.optimizer.step()
-
-        return p_loss, v_loss
-
-    def update_TD(self):
-        # for all pytorch programs you want to zero out the gradients for the optimizer
-        # at the beginning of your learning function. we do this for both actor and critic
-        self.actor.optimizer.zero_grad()
-        self.critic.optimizer.zero_grad()
-
-        # next we get the value of the state and the value of the next state
-        # from our critic network
-        v_current = self.episode_record['values'][-1]
-        v_next = self.critic(self.episode_record['next_state']) # compute value for next state
-        reward = self.rewards[-1]
-
-        done = self.episode_record['done']
-
-        # next we calculate the TD error (i.e. delta)
-        # we augment calculation with 1-int(done) so that we don't update
-        # when episode is done
-        delta = ((reward + self.gamma*v_current*(1-int(done))) - v_next)
-        # we use delta to calculate both the actor and critic losses
-        # the modifies the action probabilities in the direction that maximizes
-        # future reward
-        actor_loss = -self.log_probs * delta
-        critic_loss = delta**2
-
-        # we back propogate the sum of the losses through the network
-        (actor_loss + critic_loss).backward()
-
-        # then we optimize
-        self.actor.optimizer.step()
-        self.critic.optimizer.step()
+    def log_event(self, episode, event, state, action, reward, next_state, log_prob, expected_value, target_value, done, readable_state):
+        # episode = trial
+        # event = one step in the environment
+        transition = Transition(episode=episode,
+                                transition=event,
+                                state=state,
+                                action=action,
+                                reward=reward,
+                                next_state=next_state,
+                                log_prob=log_prob,
+                                expected_value=expected_value,
+                                target_value=target_value,
+                                done=done,
+                                readable_state=readable_state
+                                )
+        self.transition_cache.store_transition(transition)
 
     def EC_storage(self):
         mem_dict = {}
@@ -148,68 +87,114 @@ class Agent(object):
 
             self.EC.add_mem(mem_dict)
 
-    def finish_(self):
-        ## if monte carlo, call at end of trial
-        ## if TD, call at end of event
-        self.update()
-        if self.EC != None:
-            self.EC_storage()
+    def discount_rwds(self):
+        transitions = self.transition_cache.transition_cache
 
-        self.episode_record = self.reset_buffer()
-
-    ## from Kyle's agent_MC
-    def learn(self):
-        policy_losses = 0
-        value_losses = 0
-
-        # Calculates the discounted rewards (target_values) and updates transition with them
-        # Note: passing transitions here isn't necessary but allows discount_rwds method to be in
-        # seperate module if that makes more sense
-        self.transition_cache.transition_cache = self.discount_rwds(self.transition_cache.transition_cache)
-
-        # Gets policy and value losses
-        # Note: passing transitions here isn't necessray but allows episode_losses method to be in
-        # seperate module if that makes more sense
-        policy_losses, value_losses = self.episode_losses(self.transition_cache.transition_cache)
-
-        self.policy_value_network.optimizer.zero_grad()
-
-        (policy_losses + value_losses).backward()
-        self.policy_value_network.optimizer.step()
-
-    def discount_rwds(self, transitions):
         running_add = 0
         for t in reversed(range(len(transitions))):
             running_add = running_add*self.gamma + transitions[t].reward
             transitions[t] = transitions[t]._replace(target_value = running_add)
-            #print (transitions[t].target_value)
+        # update transition cache with computed return values
+        self.transition_cache.transition_cache = transitions
 
-        return transitions
+    def MC_loss(self):
+        #compute monte carlo return
+        self.discount_rwds()
 
-    # agents transition Cache
-    def store_transition(self, transition):
-        self.transition_cache.store_transition(transition)
+        pol_loss = 0
+        val_loss = 0
+        for transition in self.transition_cache.transition_cache:
+            G_t = transition.target_value
+            V_t = transition.expected_value
+            delta = G_t - V_t.item()
 
-    def clear_transition_cache(self):
+            log_prob = transition.log_prob
+
+            pol_loss += -log_prob*delta
+            G_t = torch.Tensor([G_t])
+            v_loss = torch.nn.L1Loss()(V_t, G_t)
+            val_loss += v_loss
+        return pol_loss, val_loss
+
+    def TD_loss(self):
+        event = self.transition_cache.transition_cache[-1]
+        V_current = event.expected_value
+        next_state = event.next_state
+        _, V_next = self.MFC(next_state)
+        reward  = event.reward
+        done = event.done
+
+        # calculate the TD error (i.e. delta)
+        # we augment calculation with 1-int(done) so that we don't update when episode is done
+        delta = ((reward + self.gamma*V_current*(1-int(done))) - V_next)
+        # we use delta to calculate both the actor and critic losses
+        # the modifies the action probabilities in the direction that maximizes
+        # future reward
+        pol_loss = -self.log_probs * delta
+        val_loss = delta**2
+
+        return pol_loss, val_loss
+
+    def update(self):
+        pol_loss, val_loss = self.calc_loss()
+
+        self.optimizer.zero_grad()
+        total_loss = pol_loss + val_loss
+        total_loss.backward()
+        self.optimizer.step()
+
+        return pol_loss, val_loss
+
+    def finish_(self):
+        ## if monte carlo, call at end of trial
+        ## if TD, call at end of event
+        p, v = self.update()
+        if self.EC != None:
+            self.EC_storage()
+
         self.transition_cache.clear_cache()
+        return p,v
 
-    # Calculates the policy and value losses and returns them seperately
-    def episode_losses(self, transitions):
-        policy_losses = 0
-        value_losses = 0
+class DualStream(ActorCritic):
+    def __init__(self, policy_network, value_network, memory=None, **kwargs):
 
-        for transition in transitions:
+        self.policy_net = policy_network ## what happens if MFC is two separate networks ?
+        self.value_net = value_network
+        self.EC = memory
+        self.transition_cache = Transition_Cache(cache_size=10000)
 
-            target_value = transition.target_value
-            expected_value = transition.expected_value
-            delta = target_value - expected_value.item()
+        self.policy_optimizer = self.policy_net.optimizer
+        self.value_optimizer = self.value_net.optimizer
 
-            log_prob = transition.log_prob  # This is the delta variable (i.e target_value*self.gamma + observed_value)
-            policy_loss = (-log_prob * delta)
-            return_bs = Variable(T.Tensor([[target_value]])).unsqueeze(-1) # used to make the shape work out
+        self.gamma = kwargs.get('discount',0.98) # discount factor for return computation
 
-            value_loss = (F.smooth_l1_loss(expected_value, return_bs))
-            policy_losses += policy_loss
-            value_losses += value_loss
+        self.get_action = self.MF_action
 
-        return policy_losses, value_losses
+        self.TD = kwargs.get('td_learn', False)
+        if self.TD:
+            self.calc_loss = self.TD_loss
+        else:
+            self.calc_loss = self.MC_loss
+
+
+    def MF_action(self, state_observation):
+        policy = F.softmax(self.policy_net(state_observation))
+        value = self.value_net(state_observation)
+
+        a = Categorical(policy)
+
+        action = a.sample()
+
+        return action.item(), a.log_prob(action), value.view(-1)
+
+    def update(self):
+        pol_loss, val_loss = self.calc_loss()
+
+        self.policy_optimizer.zero_grad()
+        self.value_optimizer.zero_grad()
+        total_loss = pol_loss + val_loss
+        total_loss.backward()
+        self.policy_optimizer.step()
+        self.value_optimizer.step()
+
+        return pol_loss, val_loss
