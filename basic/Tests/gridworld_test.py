@@ -11,7 +11,7 @@ acts = [x[0] for x in env.action_list]
 env.reset()
 
 def get_action(s):
-    return np.random.choice(acts)
+    return np.random.choice(env.action_space.n)
 
 
 maxsteps = 100
