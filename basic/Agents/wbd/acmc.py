@@ -6,7 +6,7 @@
 # get_action_log_value = takes observation (state) and returns the action from actor network (i.e. policy), log_value from actor, and value from critic networ 
 # mc_learn = Uses stored transition from the episode to calculate losses and updates the actor and critic networks
 
-from .Networks import FC as Network
+from basic.Agents.Networks import FC as Network
 import torch as T
 import torch.nn.functional as F
 from .Buffers.mc import MCBuffer

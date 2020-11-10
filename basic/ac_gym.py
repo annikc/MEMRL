@@ -4,7 +4,6 @@
 import numpy as np
 import gym
 from Agents.Networks.annik_ac import ActorCritic as Network
-#from Agents.Networks.fcx2 import Network
 from Agents.EpisodicMemory import EpisodicMemory as Memory
 from Agents import Agent
 import matplotlib.pyplot as plt
