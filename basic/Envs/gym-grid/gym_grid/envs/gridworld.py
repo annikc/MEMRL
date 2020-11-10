@@ -105,22 +105,30 @@ class GridWorld(gym.Env):
             self.starter 		= kwargs.get('t_r_start', (0,0))
             self.start_loc      = self.starter
 
+
+
         # TODO - reset environment including initializing start state
         self.reset()
         self.finish_after_first_reward = True
 
+        self.observation_space = self.get_observation()  # TODO -- make more consistent with openai gym attribute observation_space
+
         self.view = True
         if self.view:
-            self.figure = plot_world(self)
-            ## test
-            fig, ax = self.figure
-            agent_r, agent_c = self.oneD2twoD(self.state)
-            patch = patches.Circle((agent_c + .5, agent_r + .5), 0.35,
-                                   fc='b')  ## plot functions use x,y we use row(y), col(x)
-            ax.add_patch(patch)
-            fig.canvas.draw()
-            plt.show(block=False)
-            ## /test
+            self.reset_viewer()
+
+    def reset_viewer(self, **kwargs):
+        trial = kwargs.get('trial', 'Grid World')
+        self.figure = plot_world(self, title=f'Trial {trial}')
+        ## test
+        fig, ax = self.figure
+        agent_r, agent_c = self.oneD2twoD(self.state)
+        patch = patches.Circle((agent_c + .5, agent_r + .5), 0.35,
+                               fc='b')  ## plot functions use x,y we use row(y), col(x)
+        ax.add_patch(patch)
+        fig.canvas.draw()
+        plt.show(block=False)
+        ## /test
 
     def oneD2twoD(self, idx):
         return (int(idx / self.shape[1]),np.mod(idx,self.shape[1]))
@@ -341,6 +349,7 @@ class GridWorld(gym.Env):
         self.buildRewardFunction()
 
     def get_reward(self, action):
+        action = self.action_list[action][0]
         if len(self.R.shape) > 1:
             reward = self.R[self.state,self.action_dict[action]]
         else:
@@ -435,11 +444,11 @@ class GridWorld(gym.Env):
 
         # check if move is valid, and then move
         x = self.get_actions()
-        if not self.get_actions()[self.action_dict[action]]:
+        if not self.get_actions()[action]:
             #raise Exception('Agent has tried an invalid action!')
             pass
         else:
-            transition_probs = self.P[self.action_dict[action], self.state,:]
+            transition_probs = self.P[action, self.state,:]
             self.state = np.nonzero(transition_probs)[0][0]  # update to new state
 
         reward = self.get_reward(action) ## self.done is set in this function
@@ -450,7 +459,8 @@ class GridWorld(gym.Env):
 
         return self.state, reward, is_terminal, {}
 
-    def render(self, pause_time=0.01, mode='human'):
+    def render(self, pause_time=0.01, mode='human', **kwargs):
+        trial = kwargs.get('trial', None)
         if mode == 'human':
             agent_r, agent_c = self.oneD2twoD(self.state)
             self.figure[1].patches[1].set_center([agent_r + 0.5, agent_c + 0.5])

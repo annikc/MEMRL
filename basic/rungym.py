@@ -3,10 +3,11 @@
 # =====================================
 
 import gym
-from Agents.agent_mc_2n import Agent_MC_2N
+from Agents import DualNetwork as Agent_MC_2N
 from Utils.utils import plot_learning_curve
 from Agents.Networks import cnn, fcx2, fcx2_2n
 from collections import namedtuple
+import matplotlib.pyplot as plt
 
 
 if __name__ == '__main__':
@@ -29,7 +30,7 @@ if __name__ == '__main__':
                         # gamma = 0.99, TD = False)
     
     # Agent with 2 networks
-    agent = Agent_MC_2N(policy_network=policy_network, value_network=value_network, 
+    agent = Agent_MC_2N(policy_network=policy_network, value_network=value_network,
                     trans_cache_size = 100000, gamma = 0.99, TD = False)
 
 
@@ -40,7 +41,8 @@ if __name__ == '__main__':
 
     # Training parameters 
     score_history = []
-    n_episodes = 500
+    loss = [[],[]]
+    n_episodes = 1000
 
     # create named tuple for storing transitions
     Transition = namedtuple('Transition', 'episode, transition, state, action, reward, \
@@ -55,16 +57,15 @@ if __name__ == '__main__':
             action, log_prob, expected_value = agent.get_action(state) # choose action to take
             next_state, reward, done, info = env.step(action) # get info from taking that action
             score += reward
+
             if agent.TD:
                 agent.learn()
 
             target_value = 0
-            
-            # Transitions are stored in named tuples
-            transition = Transition(episode=episode, transition=transition_num, state=state, action=action, 
-                                                    reward=reward, next_state=next_state, log_prob=log_prob, 
-                                                    expected_value=expected_value, target_value=target_value, done=done)
-            agent.store_transition(transition) 
+
+            agent.log_event(episode=episode, event=transition_num, state=state, action=action,
+                            reward=reward, next_state=next_state, log_prob=log_prob,
+                            expected_value=expected_value, target_value=target_value, done=done, readable_state=0)
             state = next_state
             
             if agent.TD:
@@ -73,16 +74,20 @@ if __name__ == '__main__':
             transition_num += 1
         
         if not agent.TD:
-            agent.learn()
+            p,v  = agent.finish_()
 
-            agent.clear_transition_cache()
-
-        print(f"Episode: {episode}, Score: {score}")
+        print(f"Episode: {episode}, Score: {score}, [pol: {p}, val: {v}]")
         score_history.append(score)
+        loss[0].append(p)
+        loss[1].append(v)
 
     # Output Data
     plot_name = 'cartpole'
     figure_file = 'Data/plots/' + plot_name
     x = [i+1 for i in range(n_episodes)]
-    plot_learning_curve(x, score_history, figure_file)
-    
+    fig, ax = plt.subplots(2,1, sharex=True)
+    ax[0].plot(score_history)
+    ax[1].plot(loss[0], label='p')
+    ax[1].plot(loss[1], label='v')
+    ax[1].legend(bbox_to_anchor=(1.05, 0.95))
+    plt.show()

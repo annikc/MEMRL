@@ -1,3 +1,7 @@
-#from .cnn import CNN
-#from .fcx2 import FCX2
-#from .annik_ac import ActorCritic
+from .annik_ac import ActorCritic
+
+from .cnn import CNN_AC
+from .cnn_2n import CNN_2N
+
+from .fcx2 import FullyConnected_AC as FC
+from .fcx2_2n import FullyConnected_2N as FC2N

@@ -8,12 +8,12 @@
 import torch as T
 import torch.nn.functional as F
 import numpy as np
-from Agents.Transition_Cache.transition_cache import Transition_Cache
+from Agents.Transition_Cache import Transition_Cache
 from torch.autograd import Variable
 
 class Agent_MC_2N():
     def __init__(self, policy_network, value_network, trans_cache_size=100000, 
-                    gamma=0.99, TD=False): #alpha/beta = agent/critic lrs
+                    gamma=0.99, TD=False):
         self.log_probs = None
         self.gamma = gamma
         self.policy_network = policy_network # actor network output is action dimensions

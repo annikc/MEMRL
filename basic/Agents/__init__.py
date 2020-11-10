@@ -1,21 +1,23 @@
-# Write Agent Class Here
-# Should take arg for network and for memory
-# Annik Carson Oct 28,2020
+## Agent Class Definitions
+## Basic Agent Super Class -- expects a single (actor-critic) network
+# DualNetwork inherits all functions from Agent base class and provides
+# new update function which does a backward pass on both networks
 
+import numpy as np
 from collections import namedtuple
 import torch
 import torch.nn.functional as F
 from torch.distributions import Categorical
 
-from Agents.Transition_Cache import Transition_Cache
+from basic.Agents.Transition_Cache import Transition_Cache
 
 
 Transition = namedtuple('Transition', 'episode, transition, state, action, reward, \
                                 next_state, log_prob, expected_value, target_value, done, readable_state')
 
-class ActorCritic(object):
+class Agent(object):
     def __init__(self, network, memory=None, **kwargs):
-        self.MFC = network ## what happens if MFC is two separate networks ?
+        self.MFC = network
         self.EC = memory
         self.transition_cache = Transition_Cache(cache_size=10000)
 
@@ -157,7 +159,7 @@ class ActorCritic(object):
         self.transition_cache.clear_cache()
         return p,v
 
-class DualStream(ActorCritic):
+class DualNetwork(Agent):
     def __init__(self, policy_network, value_network, memory=None, **kwargs):
 
         self.policy_net = policy_network ## what happens if MFC is two separate networks ?

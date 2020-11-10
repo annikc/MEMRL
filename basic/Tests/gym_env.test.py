@@ -3,27 +3,27 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-env = gym.make('gym_grid:gridworld-v1')
+env = gym.make('MountainCar-v0')
 
-
-# check functions of gridworld gym env
-env.reset()
-
-def get_action(s):
-    return np.random.choice(env.action_space.n)
+def get_action():
+    return env.action_space.sample()# np.random.choice(env.action_space.shape)
 
 
 maxsteps = 100
+s = env.reset()
+print(s)
 for step in range(maxsteps):
-    s = env.get_state()
 
-    action = get_action(s)
+    action = get_action()
+    print(action)
 
     s_prime, r, done, __ = env.step(action)
 
     print(s, action, s_prime, r)
 
     env.render(0.05)
+
+    s = s_prime
 
     if step == maxsteps-1 or done:
         plt.show(block=True)

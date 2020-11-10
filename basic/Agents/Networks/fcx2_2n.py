@@ -2,11 +2,11 @@ import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import numpy as np
 
-class Network(nn.Module):
+
+class FullyConnected_2N(nn.Module):
     def __init__(self, lr, input_dim, fc1_dims, fc2_dims, output_dims):
-        super(Network, self).__init__()
+        super(FullyConnected_2N, self).__init__()
         self.input_dim = input_dim
         self.lr = lr
         self.fc1_dims = fc1_dims

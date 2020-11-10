@@ -1,107 +1,83 @@
 # =====================================
-#         Runs OpenAI Gyms
+# Test to get the whole mess working
 # =====================================
-
+import numpy as np
 import gym
-from Agents.Networks import cnn, fcx2, fcx2_2n
-from Agents import DualStream as Agent
-
+from Agents.Networks.annik_ac import ActorCritic as Network
+#from Agents.Networks.fcx2 import Network
+from Agents.EpisodicMemory import EpisodicMemory as Memory
+from Agents import Agent
 import matplotlib.pyplot as plt
 
-if __name__ == '__main__':
-    # =====================================
-    #       Environment Listings
-    # =====================================
-    # CartPole-v1 = 195, MontainCar = -110 LunarLander-v2 = 200, BipedalWalker-v2/Hardcore = 300, CarRacing-v0 = 900
-    # Classic Control
-    CartPole = ['CartPole-v1', 'fc', 195] # learning
-    MountainCar = ['MountainCar-v0', 'fc', -110]  # not learning
-    Pendulum = ['Pendulum-v0', 'fc', None]
-
-    # Box2D
-    LunarLander = ['LunarLander-v2', 'fc', 200] # learning
-    BipedalWalker = ['BipedalWalker-v2', 'fc', 300]
-    BipedalWalkerHardCore = ['BipedalWalkerHardCore-v2', 'fc', 300]
-    CarRacing = ['CarRacing-v0', 'fc', 900]
-
-    # Atari
-    pong = ['PongNoFrameskip-v4', 'cnn', None]
-
-    # =====================================
-    #   Choose Environment From Listings
-    # =====================================
-    use_environment = LunarLander
-    beat_environment = True # if true will continue until avg_reward from last 100 episodes >= use_environemnt[2]
-    n_episodes = 1000
-    # creates environment
-    if use_environment[1] == 'fc':
-        env = gym.make(use_environment[0])
-    else:
-        env = make_env(use_environment[0])
-
-    n_actions = env.action_space.n
-    state_shape = env.observation_space.shape
-
-    # setup networks
-    # Note: for agent_mc value_network output_dims = 1, for agent_td value_network output_dims = n_actions
-
-    policy_value_network = fcx2.Network(lr=0.001, input_dim=state_shape, fc1_dims=100, fc2_dims=100, n_actions=n_actions)
-
-    # setup networks
-    policy_network = fcx2_2n.Network(lr=0.006, input_dim=state_shape, fc1_dims=50, fc2_dims=30, output_dims=n_actions)
-    value_network = fcx2_2n.Network(lr=0.01, input_dim=state_shape, fc1_dims=50, fc2_dims=30, output_dims=1)
+class basic_agent_params():
+    def __init__(self, env):
+        self.load_model = False
+        self.load_dir   = ''
+        self.architecture = 'A'
+        self.input_dims = env.observation_space.shape # env.observation.shape # for gridworld
+        self.action_dims = env.action_space.n
+        self.hidden_types = ['conv', 'pool', 'conv', 'pool', 'linear', 'linear']
+        self.hidden_dims = [None, None, None, None, 1000, 1000]
+        self.freeze_w = False
+        self.rfsize = 5
+        self.gamma = 0.98
+        self.eta = 5e-4
 
 
-    # Setup Agent
-    #agent = Agent(network = policy_value_network)
-    agent = Agent(policy_network=policy_network, value_network=value_network)
 
-    # Training parameters
-    score_history = []
-    ploss = []
-    vloss = []
-    n_episodes = 100
+env = gym.make('gym_grid:gridworld-v1')
 
-    # create named tuple for storing transitions
+agent_params = basic_agent_params(env)
+network=Network(agent_params.__dict__) # gridworld
+#network = Network(input_dim=agent_params.input_dims,fc1_dims=40, fc2_dims=40,n_actions=agent_params.action_dims,lr=0.05) # network for cartpole
+agent = Agent(network=network )#, memory=Memory(entry_size=env.action_space.n, cache_limit=env.nstates))
 
-    for episode in range(n_episodes):
-        done = False
-        score = 0
-        state = env.reset()
-        transition_num = 1
-        while not done:
-            action, log_prob, expected_value = agent.get_action(state) # choose action to take
-            next_state, reward, done, info = env.step(action) # get info from taking that action
-            score += reward
+ntrials = 5000
+nevents = 250
 
-            target_value = 0
+track_reward = []
+track_p_loss = []
+track_v_loss = []
 
-            # Transitions are stored in named tuples
-            agent.log_event(episode,transition_num,
-                            state, action, reward, next_state,
-                            log_prob, expected_value, target_value,
-                            done, readable_state=(0,0))
-            state = next_state
 
-            transition_num += 1
+for trial in range(ntrials):
+    env.reset()
+    score = 0
+    for event in range(nevents):
+        #get observation from environment
+        state = env.state ## for record keeping only
+        readable = 0 #env.oneD2twoD(env.state) ## for record keeping only
 
-        if not agent.TD:
-            p, v = agent.finish_()
+        # get observation from environment
+        obs = env.get_observation() # gridworld
+        # get action from agent
+        action, log_prob, expected_value = agent.get_action(np.expand_dims(obs, axis=0))  ## expand dims to make batch size =1
+        # take step in environment
+        next_state, reward, done, info = env.step(action)
 
-        print(f"Episode: {episode}, Score: {score}")
-        score_history.append(score)
-        ploss.append(p)
-        vloss.append(v)
+        # end of event
+        target_value = 0
+        score += reward
 
-    # Output Data
-    plot_name = 'cartpole'
-    figure_file = 'Data/plots/' + plot_name
-    x = [i+1 for i in range(n_episodes)]
-    fig, ax = plt.subplots(2,1, sharex=True)
-    ax[0].plot(score_history)
-    ax[1].plot(ploss, label='p')
-    ax[1].plot(vloss, label='v')
-    ax[1].legend(bbox_to_anchor=(1.05, 0.95))
 
-    plt.show()
-    #plot_learning_curve(x, score_history, figure_file)
+        agent.log_event(episode=trial,event=event,
+                        state=state, action=action, reward=reward, next_state=next_state,
+                        log_prob=log_prob, expected_value=expected_value, target_value=target_value,
+                        done=done, readable_state=readable)
+
+        if done:
+            break
+
+    p,v = agent.finish_()
+
+    track_reward.append(score)
+    track_p_loss.append(p)
+    track_v_loss.append(v)
+    if trial%10==0:
+        print(f"Episode: {trial}, Score: {score}")
+
+fig, ax = plt.subplots(2,1, sharex=True)
+ax[0].plot(track_reward)
+ax[1].plot(track_p_loss, label='p')
+ax[1].plot(track_v_loss, label='v')
+plt.show()

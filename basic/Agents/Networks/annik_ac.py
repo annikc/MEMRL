@@ -1,6 +1,6 @@
 # Actor-Critic Model-Free Control Module Object Class and Related Functions
 # Written and maintained by Annik Carson
-# Last updated: July 2020
+# Last updated: Nov 2020
 #
 # =====================================
 #           IMPORT MODULES            #
@@ -10,9 +10,7 @@ import numpy as np
 
 import torch
 import torch.nn.functional as F
-import torch.nn as nn
 from torch.autograd import Variable
-from torch.distributions import Categorical
 
 
 class ActorCritic(torch.nn.Module):
@@ -88,6 +86,7 @@ class ActorCritic(torch.nn.Module):
 
                 # construct the layer
                 if htype == 'linear':
+                    print('inputd outputd', input_d, output_d)
                     self.hidden.append(torch.nn.Linear(input_d, output_d))
                     self.hx.append(None)
                     self.cx.append(None)
@@ -142,6 +141,7 @@ class ActorCritic(torch.nn.Module):
         return (channels, h_out, w_out)
 
     def forward(self, x):
+        x = torch.Tensor(x)
         # check the inputs
         if type(self.input_dims) == int:
             assert x.shape[-1] == self.input_dims

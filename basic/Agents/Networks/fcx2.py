@@ -2,11 +2,11 @@ import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import numpy as np
 
-class Network(nn.Module):
+
+class FullyConnected_AC(nn.Module):
     def __init__(self, lr, input_dim, fc1_dims, fc2_dims, n_actions):
-        super(Network, self).__init__()
+        super(FullyConnected_AC, self).__init__()
         self.input_dim = input_dim
         self.lr = lr
         self.fc1_dims = fc1_dims
@@ -33,7 +33,7 @@ class Network(nn.Module):
         state = T.Tensor(observation).to(self.device) 
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
-        policy = F.softmax(self.policy(x))
+        policy = F.softmax(self.policy(x),dim=0)
         value = self.value(x) # this is activated differently by the actor and critic networks
 
         return policy, value
