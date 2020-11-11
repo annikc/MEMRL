@@ -1,5 +1,15 @@
 import numpy as np
 
+# for actor critic agent
+class basic_agent_params(object):
+    def __init__(self, env):
+        self.input_dims = env.observation_space.shape
+        self.action_dims = env.action_space.n
+        self.hidden_types = ['conv', 'pool', 'conv', 'pool', 'linear', 'linear']
+        self.hidden_dims = [None, None, None, None, 1000, 1000]
+        self.lr = 5e-4
+
+
 def sigmoid(x):
     return 1 / (1 + math.exp(-x))
 

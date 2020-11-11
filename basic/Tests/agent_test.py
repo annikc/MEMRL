@@ -9,7 +9,6 @@ from basic.Agents import Agent, DualNetwork
 
 # Make Environment to Test Agent in
 env = gym.make('gym_grid:gridworld-v1')
-print(env.action_space.n)
 # for actor critic agent
 class basic_agent_params(object):
     def __init__(self, env):

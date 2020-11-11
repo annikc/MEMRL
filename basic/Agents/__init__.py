@@ -42,10 +42,10 @@ class Agent(object):
 
         return action.item(), a.log_prob(action), value.view(-1) ##TODO: why view instead of item
 
-    def EC_action(self, state_observation):
+    def EC_action(self, state_observation ,mem_state):
         MF_policy, value = self.MFC(state_observation)
-        EC_policy = torch.Tensor(self.EC.recall_mem(state_observation))
-        print(MF_policy,EC_policy)
+
+        EC_policy = torch.Tensor(self.EC.recall_mem(mem_state))
 
         a = Categorical(EC_policy)
         b = Categorical(MF_policy)

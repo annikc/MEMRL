@@ -52,7 +52,6 @@ class ActorCritic(torch.nn.Module):
         else:
             self.lr = agent_params.lr
 
-        self.use_SR = kwargs.get('use_SR', False)
 
         if 'hidden_types' in params_dict.keys():
             if len(agent_params.hidden_dims) != len(agent_params.hidden_types):
@@ -182,13 +181,12 @@ class ActorCritic(torch.nn.Module):
                 self.conv = x
             elif isinstance(layer, torch.nn.MaxPool2d):
                 x = layer(x)
+
         # pass to the output layers
         policy = F.softmax(self.output[0](x), dim=1)
         value = self.output[1](x)
-        if self.use_SR:
-            return policy, value
-        else:
-            return policy, value
+
+        return policy, value
 
     def reinit_hid(self):
         # to store a record of the last hidden states
