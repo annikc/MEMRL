@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 env = gym.make('MountainCar-v0')
+print(env.observation_space.shape)
 
 def get_action():
     return env.action_space.sample()# np.random.choice(env.action_space.shape)

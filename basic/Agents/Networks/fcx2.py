@@ -5,16 +5,16 @@ import torch.optim as optim
 
 
 class FullyConnected_AC(nn.Module):
-    def __init__(self, lr, input_dim, fc1_dims, fc2_dims, n_actions):
+    def __init__(self, parameters):
         super(FullyConnected_AC, self).__init__()
-        self.input_dim = input_dim
-        self.lr = lr
-        self.fc1_dims = fc1_dims
-        self.fc2_dims = fc2_dims
-        self.n_actions = n_actions
+        self.input_dim = parameters.input_dims #
+        self.lr = parameters.lr
+        self.fc1_dims = parameters.hidden_dims[0] ## first index because params class stores list in tuple not sure why
+        self.fc2_dims = parameters.hidden_dims[1]
+        self.n_actions = parameters.action_dims
 
         # network connections 
-        self.fc1 = nn.Linear(*self.input_dim, self.fc1_dims)
+        self.fc1 = nn.Linear(self.input_dim, self.fc1_dims)
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
         self.policy = nn.Linear(self.fc2_dims, self.n_actions)
         self.value = nn.Linear(self.fc2_dims, 1)

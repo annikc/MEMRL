@@ -12,18 +12,18 @@ import torch.optim as optim
 import numpy as np
 
 class CNN_2N(nn.Module):
-    def __init__(self, lr, input_dims, fc1_dims, output_dims):
+    def __init__(self,parameters):
         super(CNN_2N, self).__init__()
-        self.lr = lr
-        self.conv1 = nn.Conv2d(input_dims[0], 32, 8, stride=4)
+        self.lr = parameters.lr #  lr, input_dims, fc1_dims, n_actions
+        self.input_dims = parameters.input_dims
+        self.fc1_dims = parameters.hidden_dims[0] ## for a network with a single fully connected layer
+        self.n_actions = parameters.action_dims
+
+        self.conv1 = nn.Conv2d(self.input_dims[0], 32, 8, stride=4)
         self.conv2 = nn.Conv2d(32, 64, 4, stride=2)
         self.conv3 = nn.Conv2d(64, 64, 4, stride=1)
 
-        fc_input_dims = self.conv_output_dims(input_dims)
-        
-        self.fc1_dims = fc1_dims
-        self.output_dims = output_dims
-
+        fc_input_dims = self.conv_output_dims(self.input_dims)
         # network connections 
         self.fc1 = nn.Linear(fc_input_dims, self.fc1_dims)
         self.fc2= nn.Linear(self.fc1_dims, self.output_dims)

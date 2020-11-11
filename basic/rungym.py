@@ -68,7 +68,7 @@ if __name__ == '__main__':
                             expected_value=expected_value, target_value=target_value, done=done, readable_state=0)
             state = next_state
             
-            if agent.TD:
+            if agent.TD: ## this doesn't work anymore there is no .learn()
                 agent.learn()
 
             transition_num += 1
