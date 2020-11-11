@@ -182,6 +182,7 @@ class ActorCritic(torch.nn.Module):
             elif isinstance(layer, torch.nn.MaxPool2d):
                 x = layer(x)
 
+        self.h_act = x
         # pass to the output layers
         policy = F.softmax(self.output[0](x), dim=1)
         value = self.output[1](x)

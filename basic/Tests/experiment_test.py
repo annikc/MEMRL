@@ -20,4 +20,4 @@ agent = Agent(network, memory=memory)
 agent.get_action = agent.EC_action
 
 run = ex(agent,env)
-run.run(100,100, printfreq=10)
+run.run(100,100, printfreq=10, render=True)

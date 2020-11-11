@@ -42,8 +42,10 @@ class Agent(object):
 
         return action.item(), a.log_prob(action), value.view(-1) ##TODO: why view instead of item
 
-    def EC_action(self, state_observation ,mem_state):
+    def EC_action(self, state_observation):
         MF_policy, value = self.MFC(state_observation)
+
+        mem_state = tuple(self.MFC.h_act.detach().numpy()[0])
 
         EC_policy = torch.Tensor(self.EC.recall_mem(mem_state))
 

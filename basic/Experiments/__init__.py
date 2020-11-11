@@ -57,14 +57,14 @@ class Experiment(object):
                 # get observation from environment
                 state = self.env.state  ## for record keeping only
                 readable = 0 # self.env.oneD2twoD(self.env.state)  ## for record keeping only
-                mem_state = np.zeros(self.env.nstates)
-                mem_state[state] = 1
 
                 # get observation from environment
                 obs = self.env.get_observation()
 
                 # get action from agent
-                action, log_prob, expected_value = self.agent.get_action(np.expand_dims(obs, axis=0), tuple(mem_state))  ## expand dims to make batch size =1
+                action, log_prob, expected_value = self.agent.get_action(np.expand_dims(obs, axis=0))  ## expand dims to make batch size =1
+                mem_state = tuple(self.agent.MFC.h_act.detach().numpy()[0])
+
                 # take step in environment
                 next_state, reward, done, info = self.env.step(action)
 
@@ -73,7 +73,7 @@ class Experiment(object):
                 self.reward_sum += reward
 
                 self.agent.log_event(episode=trial, event=event,
-                                     state=tuple(mem_state), action=action, reward=reward, next_state=next_state,
+                                     state=mem_state, action=action, reward=reward, next_state=next_state,
                                      log_prob=log_prob, expected_value=expected_value, target_value=target_value,
                                      done=done, readable_state=readable)
 
