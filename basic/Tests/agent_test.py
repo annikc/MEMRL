@@ -45,7 +45,7 @@ for step in range(maxsteps):
     env.render()
 
     if step == maxsteps - 1 or done:
-        plt.pause(5)
+        plt.pause(2)
         plt.close()
 
     if done:

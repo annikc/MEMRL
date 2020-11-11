@@ -44,7 +44,8 @@ class Agent(object):
 
     def EC_action(self, state_observation):
         MF_policy, value = self.MFC(state_observation)
-        EC_policy = self.EC.recall_mem(state_observation)
+        EC_policy = torch.Tensor(self.EC.recall_mem(state_observation))
+        print(MF_policy,EC_policy)
 
         a = Categorical(EC_policy)
         b = Categorical(MF_policy)

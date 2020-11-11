@@ -75,7 +75,7 @@ class EpisodicMemory(object):
 			self.cache_list[activity][1] = timestamp
 			self.cache_list[activity][2] = readable
 
-	def recall_mem(self, key, timestep, **kwargs):
+	def recall_mem(self, key, timestep=0, **kwargs):
 		'''
 		pass in key: get most similar entry and return cosine sim score
 

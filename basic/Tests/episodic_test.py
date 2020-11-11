@@ -2,52 +2,48 @@
 import numpy as np
 import gym
 import torch
+import matplotlib.pyplot as plt
 
 import basic.Agents.Networks as nets
-import basic.Agents.EpisodicMemory as ec
 from basic.Agents import Agent, DualNetwork
+from basic.Agents.EpisodicMemory import EpisodicMemory as EM
 
 # Make Environment to Test Agent in
 env = gym.make('gym_grid:gridworld-v1')
 
-class basic_agent_params():
+
+# for actor critic agent
+class basic_agent_params(object):
     def __init__(self, env):
-        self.load_model = False
-        self.load_dir   = ''
-        self.architecture = 'A'
-        self.input_dims = env.observation.shape
-        self.action_dims = 4
+        self.input_dims = env.observation_space.shape
+        self.action_dims = env.action_space.n
         self.hidden_types = ['conv', 'pool', 'conv', 'pool', 'linear', 'linear']
         self.hidden_dims = [None, None, None, None, 1000, 1000]
-        self.freeze_w = False
-        self.rfsize = 5
-        self.gamma = 0.98
-        self.eta = 5e-4
+        self.lr = 5e-4
 
-ac_network = nets.ActorCritic(basic_agent_params(env).__dict__)
-
-memory = ec.EpisodicMemory(6, 400)
-attempt = Agent(network, memory)
-
+params = basic_agent_params(env)
+network = nets.ActorCritic(params)
+memory = EM(entry_size=env.action_space.n, cache_limit=400)
+agent = Agent(network, memory=memory)
+agent.get_action = agent.EC_action
 
 def get_action(s):
-    attempt.get_action(s)
+    action, logprob, value = agent.get_action(s)
+    return action
 
 maxsteps = 100
 for step in range(maxsteps):
     s = torch.Tensor(np.expand_dims(env.get_observation(), axis=0))
 
     action = get_action(s)
-    print(action)
 
     s_prime, r, done, __ = env.step(action)
 
-    print(s, action, s_prime, r)
-
-    env.render(0.05)
+    env.render()
 
     if step == maxsteps - 1 or done:
-        plt.show(block=True)
+        plt.pause(2)
+        plt.close()
 
     if done:
         break
