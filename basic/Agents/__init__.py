@@ -9,7 +9,7 @@ import torch
 import torch.nn.functional as F
 from torch.distributions import Categorical
 
-from basic.Agents.Transition_Cache import Transition_Cache
+from .Transition_Cache import Transition_Cache
 
 
 Transition = namedtuple('Transition', 'episode, transition, state, action, reward, \
@@ -26,6 +26,7 @@ class Agent(object):
         self.gamma = kwargs.get('discount',0.98) # discount factor for return computation
 
         self.get_action = self.MF_action
+        self.counter = 0
 
         self.TD = kwargs.get('td_learn', False)
         if self.TD:
@@ -45,9 +46,17 @@ class Agent(object):
     def EC_action(self, state_observation):
         MF_policy, value = self.MFC(state_observation)
 
-        mem_state = tuple(self.MFC.h_act.detach().numpy()[0])
+        # onehot representation of space for EC
+        onehot_r, onehot_c = np.where(state_observation[0][2] == 1)
+        r, c = onehot_r[0], onehot_c[0]
+        num_cols = len(state_observation[0][0][0])
+        num_rows = len(state_observation[0][0][:,0])
+        ind = (r * num_cols) + c
+        mem_state = np.zeros(num_cols*num_rows)
+        mem_state[ind] = 1
+        mem_state = tuple(mem_state)#tuple(self.MFC.h_act.detach().numpy()[0])
 
-        EC_policy = torch.Tensor(self.EC.recall_mem(mem_state))
+        EC_policy = torch.Tensor(self.EC.recall_mem(mem_state, timestep=self.counter))
 
         a = Categorical(EC_policy)
         b = Categorical(MF_policy)

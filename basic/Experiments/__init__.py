@@ -14,6 +14,7 @@
 import numpy as np
 import time
 import pickle, csv
+import uuid
 
 
 class Experiment(object):
@@ -23,6 +24,7 @@ class Experiment(object):
         self.agent = agent
         # self.rep_learner = rep_learner  #TODO add in later
         self.data = self.reset_data_logs()
+        self.agent.counter = 0
 
     def reset_data_logs(self):
         data_log = {'total_reward': [],
@@ -57,13 +59,16 @@ class Experiment(object):
                 # get observation from environment
                 state = self.env.state  ## for record keeping only
                 readable = 0 # self.env.oneD2twoD(self.env.state)  ## for record keeping only
+                mem_state = np.zeros(self.env.nstates)
+                mem_state[state] = 1
 
                 # get observation from environment
                 obs = self.env.get_observation()
 
                 # get action from agent
                 action, log_prob, expected_value = self.agent.get_action(np.expand_dims(obs, axis=0))  ## expand dims to make batch size =1
-                mem_state = tuple(self.agent.MFC.h_act.detach().numpy()[0])
+
+                mem_state = tuple(mem_state)# tuple(self.agent.MFC.h_act.detach().numpy()[0])
 
                 # take step in environment
                 next_state, reward, done, info = self.env.step(action)
@@ -72,11 +77,11 @@ class Experiment(object):
                 target_value = 0
                 self.reward_sum += reward
 
-                self.agent.log_event(episode=trial, event=event,
+                self.agent.log_event(episode=trial, event=self.agent.counter,
                                      state=mem_state, action=action, reward=reward, next_state=next_state,
                                      log_prob=log_prob, expected_value=expected_value, target_value=target_value,
                                      done=done, readable_state=readable)
-
+                self.agent.counter += 1
                 if self.render:
                     self.env.render()
                 if done:
@@ -97,7 +102,124 @@ class Experiment(object):
                 print(f"Episode: {trial}, Score: {self.reward_sum} (Running Avg:{running_rwdavg}) [{time.time()-t}s]")
                 t = time.time()
 
+    def record_log(self, **kwargs):
+        parent_folder = kwargs.get('dir', './data/')
+        log_name     = kwargs.get('file', 'records_Dec2020.csv')
+        load_from = kwargs.get('load_from', ' ')
 
+        save_id = uuid.uuid4()
+        timestamp = time.asctime(time.localtime())
+
+        
+
+        expt_log = [
+        'save_id',  # uuid
+        'experiment_type',  # int
+        'load_from',  # str
+        'num_trials',  # int
+        'num_events',  # int
+        'ENVIRONMENT',  # str
+        'shape',  # tuple
+        'rho',  # float
+        'rewards',  # dict
+        'action_list',  # list
+        'rwd_action',  # str
+        'step_penalization',  # float
+        'useable',  # list
+        'obstacle2D',  # list
+        'terminal2D',  # list
+        'jump',  # list or NoneType
+        'random_start',  # bool
+        'AGENT',  # arch
+        'use_SR',  # bool
+        'freeze_weights',  # bool
+        'layers',  # list
+        'hidden_types',  # list
+        'gamma',  # float
+        'eta',  # float
+        'optimizer',  # torch optim. class
+        'MEMORY',  # # string*
+        'cache_limit',  # int
+        'use_pvals',  # bool
+        'memory_envelope',  # int
+        'mem_temp',  # float
+        'alpha',  # float   # memory mixing parameters
+        'beta'  # int
+    ]
+
+    log_jam = [
+        run_id,
+        experiment_type,
+        load_from,
+        experiment.num_trials,
+        experiment.num_events,
+
+        str(experiment.env.maze_type),  # 'ENVIRONMENT'
+        experiment.env.shape,
+        float(experiment.env.rho),
+        experiment.env.rewards,
+        experiment.env.action_list,
+        str(experiment.env.rwd_action),
+        experiment.env.step_penalization,
+        experiment.env.useable,
+        experiment.env.obstacle2D,
+        experiment.env.terminal2D,
+        experiment.env.jump,
+        experiment.env.random_start,
+
+        experiment.agent_architecture,  # 'AGENT'
+        experiment.agent.use_SR,
+        experiment.agent.optimizer.param_groups[0]['lr'] == 0.0,  # evaluates true if frozen weights
+        experiment.agent.layers,
+        experiment.agent.hidden_types,
+        experiment.agent.gamma,
+        experiment.agent.eta,
+        experiment.agent.optimizer,
+
+        str(experiment.episodic)
+    ]
+
+    if experiment.episodic != None:
+        epi_log = [
+            experiment.episodic.cache_limit,
+            experiment.episodic.use_pvals,
+            experiment.episodic.memory_envelope,
+            experiment.episodic.mem_temp,
+            experiment.alpha,
+            experiment.beta
+        ]
+    else:
+        epi_log = [
+            'None', 'None', 'None', 'None', 'None', 'None']
+    log_jam += epi_log
+    print('writing to file')
+    if write:
+        # save environment
+        if experiment_type == 0:
+            pickle.dump(experiment.env, open(f'{parent_folder}environments/{run_id}_env.p', 'wb'))
+        # save agent
+        torch.save(experiment.agent, f'{parent_folder}agent_weights/{run_id}.pt')
+        # save data
+        pickle.dump(experiment.data, open(f'{parent_folder}results/{run_id}_data.p', 'wb'))
+        # save memory
+        if experiment.episodic is not None:
+            pickle.dump(experiment.episodic, open(f'{parent_folder}episodic_memory/{run_id}_EC.p', 'wb'))
+        print(f'{run_id} recorded')
+
+        # write to logger
+        with open(parent_folder + log_file, 'a+', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(log_jam)
+
+    else:
+        print_dict = {}
+        for i in range(len(log_jam)):
+            print_dict[expt_log[i]] = log_jam[i]
+        print(print_dict)
+
+
+
+        pass
 ## JUNKYARD == NOV 9, 2020
 '''
 class training(Experiment):

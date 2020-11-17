@@ -21,3 +21,10 @@ agent.get_action = agent.EC_action
 
 run = ex(agent,env)
 run.run(100,100, printfreq=10, render=True)
+
+fig, ax = plt.subplots(2,1,sharex=True)
+ax[0].plot(run.data['total_reward'])
+ax[1].plot(run.data['loss'][0], label='p')
+ax[1].plot(run.data['loss'][1], label='v')
+ax[1].legend(bbox_to_anchor=(1.05, 0.95))
+plt.show()

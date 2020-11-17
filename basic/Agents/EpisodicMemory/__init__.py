@@ -7,7 +7,10 @@
 # =====================================
 from __future__ import division, print_function
 import numpy as np
-from basic.Utils import softmax
+#from basic.Utils import softmax
+import sys
+sys.path.append('../../')
+from Utils import softmax
 
 class EpisodicMemory(object):
 	def __init__(self, entry_size, cache_limit,**kwargs):
@@ -18,6 +21,8 @@ class EpisodicMemory(object):
 		self.mem_temp           = kwargs.get('mem_temp', 0.05)      # softmax temp for memory recall
 		self.memory_envelope 	= kwargs.get('mem_envelope', 50)    # speed of memory decay
 		self.use_pvals          = kwargs.get('pvals', False)
+
+		self.similarity_measure = self.key_sim
 
 
 	def reset_cache(self):
@@ -90,9 +95,10 @@ class EpisodicMemory(object):
 			random_policy = softmax(np.zeros(self.n_actions))
 			return random_policy
 		else:
-			lin_act, similarity = self.cosine_sim(key) # returns the most similar key, as well as the cosine similarity measure
+			lin_act, distance = self.similarity_measure(key) # returns the most similar key, as well as the cosine similarity measure
 			memory       = np.nan_to_num(self.cache_list[lin_act][0])
 			deltas       = memory[:,0]
+			similarity = 1 ## using key sim
 			if self.use_pvals:
 				times = abs(timestep - memory[:, 1])
 				pvals = self.make_pvals(times, envelope=envelope)
@@ -122,6 +128,14 @@ class EpisodicMemory(object):
 		lin_act = mem_cache[np.argmax(cosine_similarity)]
 		return  tuple(lin_act), max(cosine_similarity)
 
+	def key_sim(self, key):
+		mem_cache = np.asarray(list(self.cache_list.keys()))
+		entry 	  = np.asarray(key)
+
+		distance = np.linalg.norm(mem_cache-entry, axis=1)
+
+		closest_entry = mem_cache[np.argmin(distance)]
+		return tuple(closest_entry), min(distance)
 
 def plot_softmax(x):
 	f, axarr = plt.subplots(2, sharex=True)
