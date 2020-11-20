@@ -28,10 +28,9 @@ class Agent(object):
         self.get_action = self.MF_action
 
         self.TD = kwargs.get('td_learn', False)
-        if self.TD:
-            self.calc_loss = self.TD_loss
-        else:
-            self.calc_loss = self.MC_loss
+        
+        self.calc_loss = self.TD_loss if self.TD else self.MC_loss
+
 
     def MF_action(self, state_observation):
         policy, value = self.MFC(state_observation)
