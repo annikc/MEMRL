@@ -3,64 +3,42 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from basic.RepresentationLearning import SRNet
+import basic.RepresentationLearning as rep
 import matplotlib.pyplot as plt
 
+def train_network(network, data, training_cycles, **kwargs):
+    lr = kwargs.get('lr',0.001)
+    print_freq = kwargs.get('print_freq',10)
 
+    loss = nn.MSELoss(reduction='mean')
+    optimizer = torch.optim.Adam(network.parameters(), lr=lr)
 
+    [states, actions, n_states] = data
+    loss_tracker = []
+    for train in range(training_cycles):
+        # get guesses from network
+        phi, psi, reconst = network(states, actions)
 
-def get_action(s):
-    return np.random.choice(len(env.action_list))
-def get_samples(maxsteps):
-    data_col = [[],[],[]]
+        # compute loss
+        optimizer.zero_grad()
+        output = loss(reconst, torch.Tensor(n_states))
+        loss_tracker.append(output)
+        output.backward()
+        optimizer.step()
 
-    for step in range(maxsteps):
-        s = env.get_state()
-        state = env.get_observation()
+        if train%print_freq==0:
+            print(f'Training Cycle:{train} Loss:{output}')
+    return loss_tracker
 
-
-        action = get_action(s)
-
-        s_prime, r, done, __ = env.step(action)
-        next_state = env.get_observation()
-
-        data_col[0].append(state*10)
-        data_col[1].append(action)
-        data_col[2].append(next_state*10)
-
-        #env.render(0.05)
-
-        if step == maxsteps-1 or done:
-            #plt.show(block=True)
-            pass
-
-        if done:
-            env.reset()
-            #break
-    return data_col
-
-# Make Environment to Test Agent in
 env = gym.make('gym_grid:gridworld-v1')
-# check functions of gridworld gym env
-env.reset()
-data_col = [[],[],[]]
 
-testsr = SRNet()
-loss = nn.MSELoss(reduction='mean')
+n_samples = 1000
+conv_data = rep.get_conv_samples(env, n_samples)
+ohot_data = rep.get_onehot_samples(env, n_samples)
 
-optimizer = torch.optim.Adam(testsr.parameters(), lr = 0.001)
+conv_autoencoder = rep.Conv_OSFM()
 
-training_cycles = 100
-for train in range(training_cycles):
-    # get samples from env
-    [states, actions, n_states] = get_samples(1000)
-    # get guesses from network
-    phi, psi, reconst = testsr(states)
+conv_loss = train_network(conv_autoencoder, conv_data, training_cycles=10)
+plt.plot(conv_loss)
 
-    # compute loss
-    optimizer.zero_grad()
-    output = loss(reconst, torch.Tensor(states))
-    output.backward()
-    optimizer.step()
 
-    print(f'Training Cycle:{train} Loss:{output}')

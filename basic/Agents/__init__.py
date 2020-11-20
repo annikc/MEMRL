@@ -65,23 +65,6 @@ class Agent(object):
 
         return action.item(), b.log_prob(action), value.view(-1)
 
-    def log_event(self, episode, event, state, action, reward, next_state, log_prob, expected_value, target_value, done, readable_state):
-        # episode = trial
-        # event = one step in the environment
-        transition = Transition(episode=episode,
-                                transition=event,
-                                state=state,
-                                action=action,
-                                reward=reward,
-                                next_state=next_state,
-                                log_prob=log_prob,
-                                expected_value=expected_value,
-                                target_value=target_value,
-                                done=done,
-                                readable_state=readable_state
-                                )
-        self.transition_cache.store_transition(transition)
-
     def EC_storage(self):
         mem_dict = {}
         buffer = np.vstack(self.transition_cache.transition_cache)
@@ -103,18 +86,8 @@ class Agent(object):
 
             self.EC.add_mem(mem_dict)
 
-    def discount_rwds(self):
-        transitions = self.transition_cache.transition_cache
-
-        running_add = 0
-        for t in reversed(range(len(transitions))):
-            running_add = running_add*self.gamma + transitions[t].reward
-            transitions[t] = transitions[t]._replace(target_value = running_add)
-        # update transition cache with computed return values
-        self.transition_cache.transition_cache = transitions
-
     def MC_loss(self):
-        #compute monte carlo return
+        # compute monte carlo return
         self.discount_rwds()
 
         pol_loss = 0
@@ -126,7 +99,7 @@ class Agent(object):
 
             log_prob = transition.log_prob
 
-            pol_loss += -log_prob*delta
+            pol_loss += -log_prob * delta
             G_t = torch.Tensor([G_t])
             v_loss = torch.nn.L1Loss()(V_t, G_t)
             val_loss += v_loss
@@ -137,19 +110,46 @@ class Agent(object):
         V_current = event.expected_value
         next_state = event.next_state
         _, V_next = self.MFC(next_state)
-        reward  = event.reward
+        reward = event.reward
         done = event.done
 
         # calculate the TD error (i.e. delta)
         # we augment calculation with 1-int(done) so that we don't update when episode is done
-        delta = ((reward + self.gamma*V_current*(1-int(done))) - V_next)
+        delta = ((reward + self.gamma * V_current * (1 - int(done))) - V_next)
         # we use delta to calculate both the actor and critic losses
         # the modifies the action probabilities in the direction that maximizes
         # future reward
         pol_loss = -self.log_probs * delta
-        val_loss = delta**2
+        val_loss = delta ** 2
 
         return pol_loss, val_loss
+
+    def discount_rwds(self):
+        transitions = self.transition_cache.transition_cache
+
+        running_add = 0
+        for t in reversed(range(len(transitions))):
+            running_add = running_add*self.gamma + transitions[t].reward
+            transitions[t] = transitions[t]._replace(target_value = running_add)
+        # update transition cache with computed return values
+        self.transition_cache.transition_cache = transitions
+
+    def log_event(self, episode, event, state, action, reward, next_state, log_prob, expected_value, target_value, done, readable_state):
+        # episode = trial
+        # event = one step in the environment
+        transition = Transition(episode=episode,
+                                transition=event,
+                                state=state,
+                                action=action,
+                                reward=reward,
+                                next_state=next_state,
+                                log_prob=log_prob,
+                                expected_value=expected_value,
+                                target_value=target_value,
+                                done=done,
+                                readable_state=readable_state
+                                )
+        self.transition_cache.store_transition(transition)
 
     def update(self):
         pol_loss, val_loss = self.calc_loss()

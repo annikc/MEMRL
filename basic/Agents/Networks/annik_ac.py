@@ -165,10 +165,6 @@ class ActorCritic(torch.nn.Module):
             # run input through the layer depending on type
             if isinstance(layer, torch.nn.Linear):
                 x = F.relu(layer(x))
-                if i == (len(self.hidden) - 2):
-                    phi = x
-                elif i == (len(self.hidden) - 1):
-                    psi = x
             elif isinstance(layer, torch.nn.LSTMCell):
                 x, cx = layer(x, (self.hx[i], self.cx[i]))
                 self.hx[i] = x.clone()
