@@ -6,6 +6,8 @@ import torch.nn.functional as F
 import basic.RepresentationLearning as rep
 import matplotlib.pyplot as plt
 
+print(torch.device)
+
 def train_network(network, data, training_cycles, **kwargs):
     lr = kwargs.get('lr',0.001)
     print_freq = kwargs.get('print_freq',10)
@@ -38,7 +40,8 @@ ohot_data = rep.get_onehot_samples(env, n_samples)
 
 conv_autoencoder = rep.Conv_OSFM()
 
-conv_loss = train_network(conv_autoencoder, conv_data, training_cycles=10)
+conv_loss = train_network(conv_autoencoder, conv_data, training_cycles=11)
+
 plt.plot(conv_loss)
 
 

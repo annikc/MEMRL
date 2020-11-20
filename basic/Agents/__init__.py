@@ -3,6 +3,8 @@
 # DualNetwork inherits all functions from Agent base class and provides
 # new update function which does a backward pass on both networks
 
+# TODO -- Policy Arbitration
+
 import numpy as np
 from collections import namedtuple
 import torch
@@ -123,6 +125,11 @@ class Agent(object):
         val_loss = delta ** 2
 
         return pol_loss, val_loss
+
+    def policy_arbitration(self):
+        # TODO
+        ## set whether to use agent.MFC or agent.EC
+        pass
 
     def discount_rwds(self):
         transitions = self.transition_cache.transition_cache

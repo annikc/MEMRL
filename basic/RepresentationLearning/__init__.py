@@ -1,11 +1,10 @@
-## write networks
-
-import gym
+## Write Classes for learning state representations
+# OSFM - one step forward model -- trains to predict next state from
+#        current state and action
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributions import Categorical
 
 def get_action(env):
     return np.random.choice(len(env.action_list))
@@ -65,7 +64,6 @@ def get_onehot_samples(env, maxsteps):
             env.reset()
 
     return data_col
-
 
 class Conv_OSFM(nn.Module):
     def __init__(self):
@@ -174,7 +172,6 @@ def plot_phi(phi):
     print(data.shape)
     plt.imshow(data, aspect='auto')
     plt.show()
-
 
 def plot_frames(obsr):
     obs = obsr[0]
