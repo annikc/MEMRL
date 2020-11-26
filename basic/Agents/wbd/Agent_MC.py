@@ -8,7 +8,7 @@
 import torch as T
 import torch.nn.functional as F
 import numpy as np
-from basic.Agents.Transition_Cache import Transition_Cache
+from Agents.Transition_Cache import Transition_Cache
 from torch.autograd import Variable
 
 class Agent_MC():

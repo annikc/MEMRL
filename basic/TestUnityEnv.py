@@ -2,9 +2,9 @@
 # Runs Unity Environments w/ Gym Wrapper
 # =======================================
 
-from basic.Agents.wbd import Agent_MC
-from basic.Utils import plot_learning_curve
-from basic.Agents.Networks import fcx2
+from Agents import Agent as Agent_MC
+from Utils import plot_learning_curve, basic_agent_params
+from Agents.Networks import fcx2 
 from mlagents_envs.environment import UnityEnvironment
 from gym_unity.envs import UnityToGymWrapper
 
@@ -14,23 +14,27 @@ if __name__ == '__main__':
     #       Make Unity Environment
     # =====================================
     # for windows
-    # envU = UnityEnvironment("Unity_Envs\FirstExperiment\Windows\FirstExperiment.exe", seed=1, no_graphics=True)
+    envU = UnityEnvironment("C:/Users/KySquared/Documents/GitHub/MEMRL/basic/Envs/Unity/FirstExperiment/Windows/FirstExperiment.exe", seed=1, no_graphics=True)
     # for linux
-    envU = UnityEnvironment("../Envs/Unity/FirstExperiment/LinuxDev/FirstExperiment.x86_64", seed=1, no_graphics=True)
+    # envU = UnityEnvironment("../Envs/Unity/FirstExperiment/LinuxDev/FirstExperiment.x86_64", seed=1, no_graphics=True)
     env = UnityToGymWrapper(envU, allow_multiple_obs=False)
     n_actions = env.action_space.n
-    state_shape = env.observation_space.shape
+    state_shape = env.observation_space.shape[0]
+
     
     # =====================================
     #              Setup Networks
     # =====================================
-    policy_network = fcx2.Network(lr=0.006, input_dims=state_shape, fc1_dims=30, fc2_dims=30, n_actions=n_actions)
-    value_network = fcx2.Network(lr=0.01, input_dims=state_shape, fc1_dims=30, fc2_dims=30, n_actions=1)
+    params = basic_agent_params(env)
+    params.input_dims = state_shape
+    params.hidden_dims = [50,50]
+    params.hidden_types =['linear', 'linear']
+    policy_network = fcx2.FullyConnected_AC(params)
   
     # =====================================
     #              Setup Agent
     # =====================================
-    agent = Agent_MC(network=policy_network, value_network=value_network)
+    agent = Agent_MC(policy_network)
 
     # =====================================
     #          Training Parameters
@@ -45,17 +49,15 @@ if __name__ == '__main__':
         state = env.reset()
         transition_num = 1
         while not done:
-            action = agent.MF_action(state)
+            action, log_prob, value = agent.MF_action(state)
             next_state, reward, done, _ = env.step(action) # get info from taking that action
             score += reward
-            agent.store_transition(episode=episode, transition=transition_num,
-                                    reward=reward, next_state=next_state, done=done)
+            agent.log_event(episode = 0, event = transition_num, state = state, action = action, reward = reward, next_state = next_state, log_prob = log_prob, expected_value = value, target_value=0,
+                                     done=done, readable_state=0)
             state = next_state
-            if agent.TD:
-                agent.learn()
-
             transition_num += 1
-        
+        agent.finish_()
+
         print(f"Episode: {episode}, Score: {score}")
         score_history.append(score)
 
