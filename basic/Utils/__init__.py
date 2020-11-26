@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 # for actor critic agent
 class basic_agent_params(object):
@@ -28,6 +30,17 @@ def discount_rwds(r, gamma = 0.99):
 def running_mean(x, N):
     cumsum = np.cumsum(np.insert(x, 0, 0))
     return (cumsum[N:] - cumsum[:-N]) / float(N)
+
+
+
+
+def plot_learning_curve(x, scores, figure_file):
+    running_avg = np.zeros(len(scores))
+    for i in range(len(running_avg)):
+        running_avg[i] = np.mean(scores[max(0, i-10):(i+1)])
+    plt.plot(x, running_avg)
+    plt.title('Running average of previous 10 scores')
+    plt.savefig(figure_file)
     
     
     
