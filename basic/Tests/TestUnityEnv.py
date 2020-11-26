@@ -2,9 +2,9 @@
 # Runs Unity Environments w/ Gym Wrapper
 # =======================================
 
-from Agents.agent_mc import Agent_MC
-from Utils.utils import plot_learning_curve
-from Agents.Networks import fcx2
+from basic.Agents import Agent_MC
+from basic.Utils import plot_learning_curve
+from basic.Agents.Networks import fcx2
 from mlagents_envs.environment import UnityEnvironment
 from gym_unity.envs import UnityToGymWrapper
 
