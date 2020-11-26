@@ -16,7 +16,7 @@ if __name__ == '__main__':
     # for windows
     # envU = UnityEnvironment("Unity_Envs\FirstExperiment\Windows\FirstExperiment.exe", seed=1, no_graphics=True)
     # for linux
-    envU = UnityEnvironment("../Envs/Unity/FirstExperiment/LinuxDev/FirstExperiment.x86_64", seed=1, no_graphics=True)
+    envU = UnityEnvironment("../Envs/Unity/FirstExperiment/Linux/FirstExperiment.x86_64", seed=1, no_graphics=True)
     env = UnityToGymWrapper(envU, allow_multiple_obs=False)
     n_actions = env.action_space.n
     state_shape = env.observation_space.shape
