@@ -9,6 +9,7 @@ from basic.Agents import Agent
 from basic.Experiments import Experiment as ex
 
 import matplotlib.pyplot as plt
+import basic.Utils.gridworld_plotting as gp
 
 # Make Environment to Test Agent in
 env = gym.make('gym_grid:gridworld-v1')
@@ -24,6 +25,8 @@ p = run.snapshot()
 
 run.run(100,250, printfreq=10, render=False)
 
+for i in range(len(run.data['EC_snap'])):
+    gp.plot_polmap(env, run.data['EC_snap'][i])
 
 fig, ax = plt.subplots(2,1,sharex=True)
 ax[0].plot(run.data['total_reward'])
