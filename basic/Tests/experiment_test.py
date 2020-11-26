@@ -17,10 +17,11 @@ params = basic_agent_params(env)
 network = nets.ActorCritic(params)
 memory = Memory(entry_size=params.action_dims, cache_limit=400)
 agent = Agent(network, memory=memory)
-agent.get_action = agent.EC_action
+agent.get_action = agent.MF_action
 
 run = ex(agent,env)
-run.run(100,100, printfreq=10, render=True)
+run.run(1000,250, printfreq=10, render=False)
+
 
 fig, ax = plt.subplots(2,1,sharex=True)
 ax[0].plot(run.data['total_reward'])
