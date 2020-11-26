@@ -26,7 +26,7 @@ p = run.snapshot()
 run.run(100,250, printfreq=10, render=False)
 
 for i in range(len(run.data['EC_snap'])):
-    gp.plot_polmap(env, run.data['EC_snap'][i])
+    gp.plot_pref_pol(env, run.data['EC_snap'][i])
 
 fig, ax = plt.subplots(2,1,sharex=True)
 ax[0].plot(run.data['total_reward'])
