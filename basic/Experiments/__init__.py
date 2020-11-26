@@ -21,12 +21,30 @@ class Experiment(object):
         self.data = self.reset_data_logs()
         self.agent.counter = 0
 
+        # temp
+        # only for gridworld environment
+        self.sample_obs, self.sample_states = self.env.get_sample_obs()
+        self.sample_reps = self.get_reps()
+        # / temp
+
     def reset_data_logs(self):
         data_log = {'total_reward': [],
                     'loss': [[], []],
-                    'trial_length': []
+                    'trial_length': [],
+                    'EC_snap': [],
+                    'P_snap': [],
+                    'V_snap': []
                     }
         return data_log
+
+    def get_reps(self):
+        reps = []
+        for i in self.sample_states:
+            j = self.env.twoD2oneD(i)
+            r = np.zeros(self.env.nstates)
+            r[j] = 1
+            reps.append(r)
+        return reps
 
     def representation_learning(self):
         # TODO
@@ -39,6 +57,29 @@ class Experiment(object):
         # pass observation from environment
         # output representation to be used for self.agent input
         pass
+
+    def snapshot(self):
+        # initialize empty data frames
+        pol_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
+        val_grid = np.empty(self.env.shape)
+
+        mem_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
+
+        # forward pass through network
+        pols, vals = self.agent.MFC(self.sample_obs)
+
+        # populate with data from network
+        for s, p, v in zip(self.sample_states, pols, vals):
+            pol_grid[s] = tuple(p.data.numpy())
+            val_grid[s] = v.item()
+
+        for ind, rep in enumerate(self.sample_reps):
+            mem_pol = self.agent.EC.recall_mem(tuple(rep))
+            state = self.sample_states[ind]
+            mem_grid[state] = tuple(mem_pol)
+
+        return pol_grid, val_grid, mem_grid
+
 
     def run(self, NUM_TRIALS, NUM_EVENTS, **kwargs):
         print_freq = kwargs.get('printfreq', 100)
@@ -90,12 +131,18 @@ class Experiment(object):
             self.data['loss'][0].append(p)
             self.data['loss'][1].append(v)
 
+
+
             if trial == 0:
                 running_rwdavg = self.reward_sum
             else:
                 running_rwdavg = ((trial) * running_rwdavg + self.reward_sum) / (trial + 2)
 
             if trial % print_freq == 0:
+                snaps = self.snapshot()
+                self.data['P_snap'].append(snaps[0])
+                self.data['V_snap'].append(snaps[1])
+                self.data['EC_snap'].append(snaps[2])
                 print(f"Episode: {trial}, Score: {self.reward_sum} (Running Avg:{running_rwdavg}) [{time.time()-t}s]")
                 t = time.time()
 

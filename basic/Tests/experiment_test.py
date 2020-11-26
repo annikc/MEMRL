@@ -20,7 +20,9 @@ agent = Agent(network, memory=memory)
 agent.get_action = agent.MF_action
 
 run = ex(agent,env)
-run.run(1000,250, printfreq=10, render=False)
+p = run.snapshot()
+
+run.run(100,250, printfreq=10, render=False)
 
 
 fig, ax = plt.subplots(2,1,sharex=True)

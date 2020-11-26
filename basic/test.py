@@ -1,18 +1,21 @@
 # =======================================
 # Runs Unity Environments w/ Gym Wrapper
 # =======================================
+import gym
+from basic.Agents import Agent
+from basic.Agents.Networks import ActorCritic as Network
+#from mlagents_envs.environment import UnityEnvironment
+#from gym_unity.envs import UnityToGymWrapper
 
-from .Agents import Agent
-from .Agents.Networks import ActorCritic as Network
-
-
-from mlagents_envs.environment import UnityEnvironment
-from gym_unity.envs import UnityToGymWrapper
-
-unity_env = UnityEnvironment('Envs/')
-
+#unity_env = UnityEnvironment('Envs/Unity_Envs/FirstExperiment/Linux/FirstExperiment.x86_64', seed=1)
+#env = UnityToGymWrapper(unity_env, allow_multiple_obs=False)
 
 
+env = gym.make('gym_grid:gridworld-v1')
+
+
+
+'''
 if __name__ == '__main__':
 
     # =====================================
@@ -65,3 +68,5 @@ if __name__ == '__main__':
     figure_file = 'Data/plots/' + plot_name
     x = [i + 1 for i in range(len(score_history))]
     plot_learning_curve(x, score_history, figure_file)
+
+'''

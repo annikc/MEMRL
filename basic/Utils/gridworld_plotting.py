@@ -15,7 +15,7 @@ import matplotlib.colors as colors
 import matplotlib.colorbar as colorbar
 import matplotlib.cm as cmx
 
-from fxns import softmax
+from basic.Utils import softmax
 from scipy.stats import entropy
 
 # =====================================
@@ -177,7 +177,7 @@ def plot_polmap(maze, policy_array, save=False, **kwargs):
         plt.savefig(f'{directory}p_{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
     if show:
         plt.show()
-    plt.close()
+    #plt.close()
 
 def make_arrows(action, probability):
     '''
