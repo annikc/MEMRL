@@ -1,5 +1,5 @@
 # Memory-Assisted Reinforcement Learning 
-By Annik Carson (Last updated July 2018)
+By Annik Carson
 
 # Basic
 -- Project with Kyle Nealy Fall2020
@@ -11,23 +11,101 @@ Writing workflow to run experiments with Unity/OpenMaze environments.
 > - arbitration between MF and EC action selection as function of agent object
 > - saving results of experiments / logging parameters 
 
-## Experiments
-Take agent and environment objects. Runs through trials, collects data from agent-environment interactions. Determines whether agent uses model-free or episodic control for action selection (later this will be a feature of the agent class controlled by an arbitration module). 
+## File Structure
+```
+basic
+│   README.md    
+│
+└───Agents
+|   |    Define class which is basic operator in Environment
+|   |    Agent basic functionality is to take in observation from Environment and produce action
+|   |    Standard agent contains:
+|   |       - Model-Free Control Network (basic functional unit to produce action from state information)
+|   |       - Episodic Control Module (optional) - produce action from state information
+|   |       - Representation Learning Module - produce state representation from Env observation
+|   |       - Transition Cache - basic storage unit for keeping track of encountered states
+│   └─── Networks
+│       │   - Network objects to be used by Agent class for model-free control
+│   └─── EpisodicMemory
+│       │   - Episodic Memory object to be used by Agent class for episodic control
+│   └─── RepresentationLearning [** Unfinished **]
+│       │   - Network to learn state representations from observations provided by Environment
+│   └─── TransitionCache
+|       |   - Structural object to store state experiences
+|
+└───Envs
+|   └─── Gridworld (python as openai-like environment)   
+|   └─── Unity Environments (to be used with openai gym wrapper)
+|   |   └─── Windows
+|   |   └─── Linux
+|
+└───Experiment
+|   |   Define class for standard experiment run 
+|   |   Stores data from runs
+|   |   Save elements to appropriate output with unique run ID 
+|
+└──Tests
+|   |   Run tests to make sure each element works as expected
+|
+└───Utils
+|   |   Basic functions to be used across packages
+|   |   Plotting functions
+|
+└───Data
+|   |   For data storage -- currently unused
+|
+└───Analysis
+|   |   Functions for analyzing collected data -- currently unused
 
-Logs data collected during runs. Currently this is saved to csv using a unique ID which all results share (i.e. learned network weights, dictionary containing results of trial, etc) 
+
+ 
+```
+
+## Experiments
+Top level to interface with. Collects and logs data from trial runs including total reward and loss. 
+Currently data saved to csv using a unique ID which all results share (i.e. learned network weights, dictionary containing results of trial, etc)
+CSV file stores unique id along with all parameters used in experiment. 
+
+Arguments: agent object, environment object
+
+Returns: Data collected over experiment run
 
 
 ## Environment
-An OpenAI style environment. Custom gridworld environment and imported environments from Unity are made to fit the OpenAI scheme such that all environments behave similarly. 
+Working on getting all environments to work as openai gym environments. Currently using unity environments
+with openai-gym wrapper and a gridworld environment written in python in the style of openai environments.
+
+All environments must have functions to reset at start of trial and to take a step at each event. 
+
+The central function of Environment is step().
+The step() function takes action information and produces next state, reward, information about task completion 
+('done'), and additional information for debugging if necessary. 
 
 ## Agent 
-Takes network object, optional memory (episodic) object. Function get_action(obs) takes the observation from the environment and returns an action. get_action() refers to model free (network based) action selection by default. Can be changed to select action from Episodic module (later agent will have an arbitration function which assigns get_action to either MF_action or EC_action based on feedback about agent's performance). 
+Learner in environment. 
+Model-free control via a network object (see Agents/Networks/) takes state information and produces a 
+policy and value estimate. State information can be either raw observations from the environment or representations
+learned by the representationlearning module of the agent
 
-To Do: Representation learning module -- a separate network trained to learn a latent representation of state observations in a goal-independent manner (i.e. prior to training the agent's model-free network on a reward task). Learned representations (rather than environment observations) will be used by both model-free and episodic modules for producing behaviour.
+Episodic control via a episodicmemory object (see Agents/EpisodicMemory/) takes state information
+and queries a dictionary of saved states and experienced returns. State information should be the same as that passed to
+the model free controller (i.e. either raw observation from environment or learned representation). This module is optional.
+
+To Do: 
+> * Representation learning module -- a separate network trained to learn a latent representation of state observations 
+> in a goal-independent manner (i.e. prior to training the agent's model-free network on a reward task). Learned 
+> representations (rather than environment observations) will be used by both model-free and episodic modules for 
+> producing behaviour.
+>
+> * Arbitration module to control action selection between model-free control and episodic control 
 
 ## Networks
-Networks are designed to take environment observation information and return an appropriate action. Currently we have both convolutional and fully connected networks to manage different types of environment observations. When the agent class is modified to include representation learning, we will predominantly rely on fully connected networks which learn from these vectorized state representations. 
+Define neural networks to learn policy and value functions from state information. Neural network styles (CNN, fully 
+connected) are defined as separate files in Agents/Networks/. 
 
+To Do:
+> * Write script to generate network based on size/shape/type of environment observation
+> or learned representation (depending on what will be used by agent)
 
 
 
