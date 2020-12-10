@@ -1,7 +1,7 @@
 ## test experiment class
 # using gridworld and actor critic network architecture
 import gym
-from basic.Utils import basic_agent_params
+from basic.Agents.Networks import params as basic_agent_params
 
 import basic.Agents.Networks as nets
 from basic.Agents.EpisodicMemory import EpisodicMemory as Memory

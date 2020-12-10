@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import basic.RepresentationLearning as rep
+import basic.modules.Agents.RepresentationLearning as rep
 import matplotlib.pyplot as plt
 
 print(torch.device)

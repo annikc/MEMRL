@@ -1,13 +1,37 @@
 # =======================================
 # Runs Unity Environments w/ Gym Wrapper
 # =======================================
-
+import gym
 from Agents import Agent as Agent_MC
-from Utils import plot_learning_curve, basic_agent_params
-from Agents.Networks import fcx2 
+from Utils import plot_learning_curve
+import Agents.Networks as nets
+from Agents.Networks import params
+
 from mlagents_envs.environment import UnityEnvironment
 from gym_unity.envs import UnityToGymWrapper
 
+## make environment
+#env = gym.make('MountainCar-v0')
+#env = gym.make('CartPole-v0')
+#env = gym.make('gym_grid:gridworld-v1')
+
+## make parameters based on environment
+
+params = params(env)
+params.hidden_types = ['linear', 'linear']
+params.hidden_dims = [10, 20]
+
+## instantiate network with params
+ac_test     = nets.ActorCritic(params)
+print(ac_test)
+#cnn_test    = nets.CNN_AC(params)
+#cnn_2n_test = nets.CNN_2N(params)
+#fcx2        = nets.FC(params)
+#fcx2_2n     = nets.FC2N(params)
+
+
+
+'''
 if __name__ == '__main__':
 
     # =====================================
@@ -16,7 +40,7 @@ if __name__ == '__main__':
     # for windows
     #envU = UnityEnvironment("C:/Users/KySquared/Documents/GitHub/MEMRL/basic/Envs/Unity/FirstExperiment/Windows/FirstExperiment.exe", seed=1, no_graphics=True)
     # for linux
-    #envU = UnityEnvironment("Envs/Unity/FirstExperiment/Linux/FirstExperiment.x86_64", seed=1, no_graphics=False)
+    envU = UnityEnvironment("Envs/Unity/FirstExperiment/LinuxDev/FirstExperiment.x86_64", seed=1, no_graphics=True)
 
     env = UnityToGymWrapper(envU, allow_multiple_obs=False)
     n_actions = env.action_space.n
@@ -66,4 +90,4 @@ if __name__ == '__main__':
     figure_file = 'Data/plots/' + plot_name
     x = [i+1 for i in range(len(score_history))]
     plot_learning_curve(x, score_history, figure_file)
-    
+'''
