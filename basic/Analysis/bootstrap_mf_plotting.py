@@ -2,8 +2,8 @@ import pickle
 import pandas as pd
 import numpy as np
 import  matplotlib.pyplot as plt
-from basic.Utils import running_mean as rm
-from basic.Utils.gridworld_plotting import plot_polmap, plot_pref_pol
+from basic.modules.Utils import running_mean as rm
+from basic.modules.Utils.gridworld_plotting import plot_polmap, plot_pref_pol
 
 id_data = pd.read_csv('../Data/test_bootstrap.csv')
 print(id_data['run_id'])

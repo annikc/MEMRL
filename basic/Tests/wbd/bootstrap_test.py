@@ -1,6 +1,10 @@
 ## test experiment class
 # using gridworld and actor critic network architecture
+import numpy as np
+import matplotlib.pyplot as plt
+
 import gym
+
 
 import basic.Agents.Networks as nets
 from basic.Agents.Networks import fc_params as basic_agent_params
@@ -8,8 +12,8 @@ from basic.Agents.EpisodicMemory import EpisodicMemory as Memory
 from basic.Agents import Agent as Agent
 from basic.Experiments import Bootstrap as ex
 
-import matplotlib.pyplot as plt
-import numpy as np
+
+
 import basic.Utils.gridworld_plotting as gp
 
 # Make Environment to Test Agent in
@@ -30,7 +34,7 @@ for x in range(10):
     # build fully connected network
     network = nets.ActorCritic(params)
     memory = Memory(entry_size=params.action_dims, cache_limit=400)
-    memory.key_sim = memory.cosine_sim
+    #memory.key_sim = memory.cosine_sim
     agent = Agent(network, memory=memory)
     # instantiate new experiment
     run = ex(agent,env)

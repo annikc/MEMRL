@@ -1,15 +1,15 @@
 ## test experiment class
 # using gridworld and actor critic network architecture
 import gym
-from basic.Agents.Networks import params as basic_agent_params
+from basic.modules.Agents.Networks import params as basic_agent_params
 
-import basic.Agents.Networks as nets
-from basic.Agents.EpisodicMemory import EpisodicMemory as Memory
-from basic.Agents import Agent
-from basic.Experiments import Experiment as ex
+import basic.modules.Agents.Networks as nets
+from basic.modules.Agents.EpisodicMemory import EpisodicMemory as Memory
+from basic.modules.Agents import Agent
+from basic.modules.Experiments import Experiment as ex
 
 import matplotlib.pyplot as plt
-import basic.Utils.gridworld_plotting as gp
+import basic.modules.Utils.gridworld_plotting as gp
 
 # Make Environment to Test Agent in
 env = gym.make('gym_grid:gridworld-v1')

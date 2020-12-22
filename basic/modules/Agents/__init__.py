@@ -36,24 +36,6 @@ class Agent(object):
         else:
             self.calc_loss = self.MC_loss
 
-    def memory_query(self, state_observation): ## change name
-        # onehot representation of space for EC
-        if len(state_observation.shape) == 3:
-            onehot_r, onehot_c = np.where(state_observation[0][2] == 1)
-            r, c = onehot_r[0], onehot_c[0]
-            num_cols = len(state_observation[0][0][0])
-            num_rows = len(state_observation[0][0][:,0])
-            ind = (r * num_cols) + c
-            mem_state = np.zeros(num_cols*num_rows)
-            mem_state[ind] = 1
-            mem_state = tuple(mem_state)
-
-        elif len(state_observation.shape) ==1:
-            mem_state = tuple(state_observation)
-
-        return mem_state
-
-
     def MF_action(self, state_observation):
         policy, value = self.MFC(state_observation)
 
@@ -65,13 +47,14 @@ class Agent(object):
     def EC_action(self, state_observation):
         MF_policy, value = self.MFC(state_observation)
 
-        mem_state = self.memory_query(state_observation)
+        #mem_state = self.memory_query(state_observation)
+        mem_state = tuple(state_observation)
 
         EC_policy = torch.Tensor(self.EC.recall_mem(mem_state, timestep=self.counter))
 
         a = Categorical(EC_policy)
         b = Categorical(MF_policy)
-
+        #print(f'ec:{a.probs}, mf:{b.probs}')
         action = a.sample() # select action using episodic
         return action.item(), b.log_prob(action), value.view(-1)
 
@@ -87,7 +70,7 @@ class Agent(object):
         trial     = buffer[-1,0]
 
         for s, a, r, event, rdbl in zip(states,actions,returns,timesteps,readable):
-            mem_dict['activity']  = s
+            mem_dict['activity']  = tuple(s)
             mem_dict['action']    = a
             mem_dict['delta']     = r
             mem_dict['timestamp'] = event
@@ -281,3 +264,25 @@ class Agent_EC_stores_RPE(Agent):
             mem_dict['trial']     = trial
 
             self.EC.add_mem(mem_dict)
+
+
+## JUNKYARD
+'''
+### function from Agent class 
+    def memory_query(self, state_observation): ## change name
+        # onehot representation of space for EC
+        if len(state_observation.shape) == 3:
+            onehot_r, onehot_c = np.where(state_observation[0][2] == 1)
+            r, c = onehot_r[0], onehot_c[0]
+            num_cols = len(state_observation[0][0][0])
+            num_rows = len(state_observation[0][0][:,0])
+            ind = (r * num_cols) + c
+            mem_state = np.zeros(num_cols*num_rows)
+            mem_state[ind] = 1
+            mem_state = tuple(mem_state)
+
+        elif len(state_observation.shape) ==1:
+            mem_state = tuple(state_observation)
+
+        return mem_state
+'''

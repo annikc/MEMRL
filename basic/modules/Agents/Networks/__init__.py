@@ -1,3 +1,4 @@
+import gym
 from .annik_ac import ActorCritic
 
 from .cnn import CNN_AC
@@ -16,12 +17,15 @@ class params(object):
         self.lr = 5e-4
 
     def get_input_dims(self,env):
-        shape = env.observation_space.shape
-        if len(shape) == 1:
+        if isinstance(env.observation_space, gym.spaces.box.Box):
+            print(f'box: {env.observation_space.shape}')
             input_dims = env.observation_space.shape[0]
-
+        elif isinstance(env.observation_space, gym.spaces.discrete.Discrete):
+            print(f'discrete: {env.observation_space.n}')
+            input_dims = env.observation_space.n
         else:
             input_dims = env.observation_space.shape
+
         return input_dims
 
 class fc_params(params):

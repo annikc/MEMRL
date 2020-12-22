@@ -434,6 +434,8 @@ class GridWorld(gym.Env):
         self.observation = self.get_observation()
         self.done = False
 
+        return self.state
+
     def step(self, action):
         """
         Args:
@@ -483,6 +485,38 @@ class GridWorld4(GridWorld):
         self.action_list = ['Down', 'Up', 'Right', 'Left']
         self.rewarded_action = None
         super().__init__(actionlist=self.action_list, rewarded_action=self.rewarded_action)
+
+class GridWorld4_movedR(GridWorld):
+    def __init__(self):
+        self.action_list = ['Down', 'Up', 'Right', 'Left']
+        self.rewarded_action = None
+        self.rewards = {(15,15):10}
+        super().__init__(actionlist=self.action_list, rewarded_action=self.rewarded_action, rewards=self.rewards)
+
+class GridWorld4_random_obstacle(GridWorld):
+    def __init__(self):
+        self.action_list = ['Down', 'Up', 'Right', 'Left']
+        self.rewarded_action = None
+        # obstacles list corresponds to one instance of rho = 0.1
+        # using list of obstacles instead so that they are the same each instantiation
+        # using rho generates new obstacles each time
+        self.obstacles_list = [(0, 11), (0, 14), (3, 1), (3, 19), (4, 4), (4, 11), (4, 15), (4, 17), (6, 4), (6, 18), (7, 6), (8, 1), (8, 11), (9, 0), (9, 8), (9, 14), (10, 13), (11, 4), (11, 16), (12, 5), (12, 18), (12, 19), (13, 2), (13, 5), (13, 15), (14, 6), (14, 9), (14, 14), (14, 19), (15, 4), (15, 7), (15, 15), (15, 19), (16, 7), (17, 0), (17, 2), (17, 11), (18, 1), (19, 5), (19, 7), (19, 11)]
+        super(GridWorld4_random_obstacle, self).__init__(actionlist=self.action_list, rewarded_action=self.rewarded_action,obstacles=self.obstacles_list)
+
+class GridWorld4_rooms(GridWorld):
+    def __init__(self):
+        self.action_list = ['Down', 'Up', 'Right', 'Left']
+        self.rewarded_action = None
+        self.obstacles_list = [(0, 10), (1, 10), (2, 10), (3, 10), (5, 10), (6, 10), (7, 10), (8, 10), (9, 10), (10, 0), (10, 1), (10, 3), (10, 4), (10, 5), (10, 6), (10, 7), (10, 8), (10, 9), (10, 10), (10, 11), (10, 12), (10, 13), (10, 14), (10, 16), (10, 17), (10, 18), (10, 19), (11, 10), (12, 10), (14, 10), (15, 10), (16, 10), (17, 10), (18, 10), (19, 10)]
+        super(GridWorld4_rooms, self).__init__(actionlist=self.action_list, rewarded_action=self.rewarded_action,obstacles=self.obstacles_list)
+
+class GridWorld4_bar(GridWorld):
+    def __init__(self):
+        self.action_list = ['Down', 'Up', 'Right', 'Left']
+        self.rewarded_action = None
+        self.maze_type = 'bar'
+        self.barheight = 8
+        super(GridWorld4_bar, self).__init__(actionlist=self.action_list, rewarded_action=self.rewarded_action,env_type=self.maze_type, barheight=self.barheight)
 
 
 def plot_world(world, **kwargs):
