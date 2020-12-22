@@ -28,14 +28,14 @@ latent_states, __, recs = ohot_autoencoder(test_states, test_actions)
 
 fig, ax = plt.subplots(10,10,sharex=True, sharey=True)
 
-for x in range(100)
-test_state0 = latent_states[x].detach().numpy()
-distances = np.zeros((20,20))
-for ind, i in enumerate(latent_states):
-    l_state = i.detach().numpy()
-    distance = np.linalg.norm(l_state - test_state0)
-    coord = env.oneD2twoD(ind)
-    distances[coord[0], coord[1]] = distance
+for x in range(100):
+    test_state0 = latent_states[x].detach().numpy()
+    distances = np.zeros((20,20))
+    for ind, i in enumerate(latent_states):
+        l_state = i.detach().numpy()
+        distance = np.linalg.norm(l_state - test_state0)
+        coord = env.oneD2twoD(ind)
+        distances[coord[0], coord[1]] = distance
 
 
 plt.imshow(distances, aspect='auto')

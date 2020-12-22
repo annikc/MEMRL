@@ -116,6 +116,7 @@ class GridWorld(gym.Env):
         self.view = True
         if self.view:
             self.reset_viewer()
+            self.viewer = self.figure[0].canvas
 
     def reset_viewer(self, **kwargs):
         trial = kwargs.get('trial', 'Grid World')

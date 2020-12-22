@@ -4,6 +4,7 @@ import torch.nn as nn
 import sys
 sys.path.append('../modules/')
 from modules.Agents import RepresentationLearning as rep
+import matplotlib.pyplot as plt
 
 
 def train_network(network, data, training_cycles, **kwargs):
@@ -30,7 +31,7 @@ def train_network(network, data, training_cycles, **kwargs):
             print(f'Training Cycle:{train} Loss:{output}')
     return loss_tracker
 
-def rep_learning(type, env, n_samples, training_cycles, load=False):
+def rep_learning(type, env, n_samples, training_cycles, load=False, plot=True):
     if type == 'conv':
         data = rep.get_conv_samples(env, n_samples)
         if load:
@@ -78,14 +79,30 @@ def rep_learning(type, env, n_samples, training_cycles, load=False):
         ax[2].set_ylabel('Reconst.')
         ax[0].set_title(f'S:{s}, A:{a}, predicted S\':{sprime} ')
 
-
         plt.show()
 
-    return loss
+    return autoencoder, data, loss
 
+def latent_space_distance(autoencoder, data):
+    states = data[0]
+    actions = data[1]
+    latent_states, _, __ = autoencoder(states, actions)
 
+    state_distance, latent_distance = [], []
+    for i in range(len(states)):
+        ref_state = states[i]
+        ref_latent = latent_states[i].detach().numpy()
 
+        for j in range(len(states)):
+            test_state = states[j]
+            test_latent = latent_states[j].detach().numpy()
 
+            dist_state = np.linalg.norm(ref_state - test_state)
+            dist_latent = np.linalg.norm(ref_latent - test_latent)
 
+            state_distance.append(dist_state)
+            latent_distance.append(dist_latent)
 
+    plt.scatter(state_distance, latent_distance)
+    plt.show()
 
