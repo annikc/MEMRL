@@ -7,7 +7,9 @@
 # =====================================
 from __future__ import division, print_function
 import numpy as np
-from basic.modules.Utils import softmax
+import sys
+sys.path.append('../../../modules/')
+from modules.Utils import softmax
 
 class EpisodicMemory(object):
 	def __init__(self, entry_size, cache_limit,**kwargs):

@@ -22,8 +22,8 @@ class expt(object):
         self.agent.counter = 0
 
     def record_log(self, expt_type, env_name, n_trials, **kwargs): ## TODO -- set up logging
-        parent_folder = kwargs.get('dir', '../../Data/')
-        log_name     = kwargs.get('file', 'records_Dec2020.csv')
+        parent_folder = kwargs.get('dir', './Data/')
+        log_name     = kwargs.get('file', 'test_bootstrap.csv')
         load_from = kwargs.get('load_from', ' ')
 
         save_id = uuid.uuid4()
