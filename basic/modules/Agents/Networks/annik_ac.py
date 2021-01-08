@@ -127,8 +127,8 @@ class ActorCritic(torch.nn.Module):
 
         self.optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
 
-        #self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
-        #self.to(self.device)
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
+        self.to(self.device)
 
     def conv_output(self, input_tuple, **kwargs):
         channels, h_in, w_in = input_tuple
