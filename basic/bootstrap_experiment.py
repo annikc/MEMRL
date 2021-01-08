@@ -18,7 +18,8 @@ params = nets.fc_params(env)
 # generate network
 network = nets.ActorCritic(params)
 print(torch.cuda.current_device())
-network = network.to(torch.device('cuda:0'))
+print(torch.cuda.is_initialized())
+network = network.to('cuda')
 print(torch.cuda.current_device())
 
 memory = Memory.EpisodicMemory(cache_limit=400, entry_size=env.action_space.n)
