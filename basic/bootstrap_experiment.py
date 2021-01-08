@@ -1,5 +1,4 @@
 import torch
-print('gpu:', torch.cuda.is_available())
 import gym
 import numpy as np
 import modules.Agents.Networks as nets
