@@ -273,6 +273,7 @@ class gridworldBootstrap(gridworldExperiment):
 		self.print_freq = kwargs.get('printfreq', 100)
 		self.reset_data_logs()
 		self.data['bootstrap_reward'] = []
+		self.data['trajectories'] = []
 		self.t = time.time()
 
 		for trial in range(NUM_TRIALS):
@@ -308,5 +309,8 @@ class gridworldBootstrap(gridworldExperiment):
 				if set == 0:
 					self.end_of_trial(trial)
 				elif set ==1:
+					# temp
+					self.data['trajectories'].append(agent.transition_cache.transition_cache)
+					# \temp 
 					self.data['bootstrap_reward'].append(self.reward_sum)
 					self.agent.transition_cache.clear_cache()

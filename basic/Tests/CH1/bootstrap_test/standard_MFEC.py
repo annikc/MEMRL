@@ -5,23 +5,28 @@ import modules.Agents.Networks as nets
 import modules.Agents.EpisodicMemory as Memory
 from modules.Agents import Agent
 from modules.Experiments import gridworldExperiment as expt
-
 import matplotlib.pyplot as plt
 
-# action selection type set at beginning 
-actor = 'EC'
+# set up parameters
+env_name   = 'gym_grid:gridworld-v1' #v1 novel #v11 moved reward
+network_id = None # '97b5f281-a60e-4738-895d-191a04edddd6'
+actor      = 'EC'
+ntrials    = 5000
+
+
 # create environment
-env_name = 'gym_grid:gridworld-v1'
 env = gym.make(env_name)
 plt.close()
-print(env.rewards)
-# generate parameters for network from environment observation shape
-params = nets.fc_params(env)
+
 # generate network
-network = nets.ActorCritic(params)
+if network_id == None:
+    # generate parameters for network from environment observation shape
+    params = nets.fc_params(env)
+    network = nets.ActorCritic(params)
+else:
+    network = torch.load(f'./Data/agents/load_agents/{network_id}.pt')
 
 memory = Memory.EpisodicMemory(cache_limit=400, entry_size=env.action_space.n)
-
 
 agent = Agent(network, memory=memory)
 
@@ -31,12 +36,7 @@ elif actor == 'EC':
     agent.get_action = agent.EC_action
 
 run = expt(agent, env)
-ntrials=5000
-
 run.run(NUM_TRIALS=ntrials, NUM_EVENTS=250)
-run.record_log('bootstrap', env_name, n_trials=ntrials)
-#plt.plot(run.data['total_reward'])
-#plt.plot(run.data['bootstrap_reward'])
+run.record_log(f'{actor}', env_name, n_trials=ntrials)
 
-#plt.show()
 
