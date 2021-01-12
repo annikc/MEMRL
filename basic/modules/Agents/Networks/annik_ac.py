@@ -143,7 +143,7 @@ class ActorCritic(torch.nn.Module):
         return (channels, h_out, w_out)
 
     def forward(self, x):
-        x = torch.Tensor(x)
+        x = torch.Tensor(x) ### add cuda here if you want GPU
         # check the inputs
         if type(self.input_dims) == int:
             assert x.shape[-1] == self.input_dims
