@@ -288,7 +288,7 @@ class gridworldBootstrap(gridworldExperiment):
 				#print(f'trial{trial}, {self.agent.get_action.__name__}')
 				for event in range(NUM_EVENTS):
 					state_representation = self.get_representation(state)
-					readable = 0
+					readable = state
 
 					# get action from agent
 					action, log_prob, expected_value = self.agent.get_action(state_representation)
@@ -311,7 +311,11 @@ class gridworldBootstrap(gridworldExperiment):
 					self.end_of_trial(trial)
 				elif set ==1:
 					# temp
-					self.data['trajectories'].append(self.agent.transition_cache.transition_cache)
+					trajs = np.vstack(self.agent.transition_cache.transition_cache)
+					sts, acts, rwds = trajs[:,10], trajs[:,3], trajs[:,4]
+					data_package = [(x,y,z) for x, y,z in zip(sts,acts,rwds)]
+					print(data_package)
+					self.data['trajectories'].append(data_package)
 					# \temp
 					self.data['bootstrap_reward'].append(self.reward_sum)
 					self.agent.transition_cache.clear_cache()
