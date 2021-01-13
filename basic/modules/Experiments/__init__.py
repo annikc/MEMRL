@@ -314,7 +314,7 @@ class gridworldBootstrap(gridworldExperiment):
 					trajs = np.vstack(self.agent.transition_cache.transition_cache)
 					sts, acts, rwds = trajs[:,10], trajs[:,3], trajs[:,4]
 					data_package = [(x,y,z) for x, y,z in zip(sts,acts,rwds)]
-					print(data_package)
+					#print(data_package)
 					self.data['trajectories'].append(data_package)
 					# \temp
 					self.data['bootstrap_reward'].append(self.reward_sum)
