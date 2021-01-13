@@ -311,7 +311,7 @@ class gridworldBootstrap(gridworldExperiment):
 					self.end_of_trial(trial)
 				elif set ==1:
 					# temp
-					self.data['trajectories'].append(agent.transition_cache.transition_cache)
+					self.data['trajectories'].append(self.agent.transition_cache.transition_cache)
 					# \temp
 					self.data['bootstrap_reward'].append(self.reward_sum)
 					self.agent.transition_cache.clear_cache()

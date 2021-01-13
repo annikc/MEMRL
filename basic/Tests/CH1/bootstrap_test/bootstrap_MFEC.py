@@ -21,7 +21,7 @@ if network_id == None:
     params = nets.fc_params(env)
     network = nets.ActorCritic(params)
 else:
-    network = torch.load(f'./Data/agents/load_agents/{network_id}.pt')
+    network = nets.ActorCritic(params) #torch.load(f=f'./Data/agents/load_agents/{network_id}.pt')
 
 memory = Memory.EpisodicMemory(cache_limit=400, entry_size=env.action_space.n)
 
