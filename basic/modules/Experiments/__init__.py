@@ -269,6 +269,33 @@ class gridworldExperiment(expt):
 class gridworldBootstrap(gridworldExperiment):
 	def __init__(self, agent, environment):
 		super(gridworldBootstrap,self).__init__(agent, environment)
+		# temp
+		self.policy_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
+		self.value_grid  = np.empty(self.env.shape)
+		#\temp
+
+	def take_snapshot(self):
+		states2d = self.sample_states
+		reps = self.sample_reps
+
+		#get EC policies
+		EC_pols = self.policy_grid.copy()
+
+		#get MF policies, values
+		MF_pols = self.policy_grid.copy()
+		MF_vals = self.value_grid.copy()
+
+		for rep, s in zip(reps, states2d):
+			p, v = self.agent.MFC(rep)
+			MF_vals[s[0], s[1]] = v
+			MF_pols[s[0], s[1]] = tuple(p)
+
+			ec_p = self.agent.EC.recall_mem(tuple(rep), timestep=self.agent.counter)
+			EC_pols[s[0],s[1]] = tuple(ec_p)
+
+		self.data['V_snap'].append(MF_vals)
+		self.data['P_snap'].append(MF_pols)
+		self.data['EC_snap'].append(EC_pols)
 
 	def run(self, NUM_TRIALS, NUM_EVENTS, **kwargs):
 		self.print_freq = kwargs.get('printfreq', 100)
@@ -307,6 +334,7 @@ class gridworldBootstrap(gridworldExperiment):
 					state = next_state
 					if done:
 						break
+
 				if set == 0:
 					self.end_of_trial(trial)
 				elif set ==1:
@@ -314,8 +342,10 @@ class gridworldBootstrap(gridworldExperiment):
 					trajs = np.vstack(self.agent.transition_cache.transition_cache)
 					sts, acts, rwds = trajs[:,10], trajs[:,3], trajs[:,4]
 					data_package = [(x,y,z) for x, y,z in zip(sts,acts,rwds)]
-					print(data_package)
+					#print(data_package)
 					self.data['trajectories'].append(data_package)
 					# \temp
 					self.data['bootstrap_reward'].append(self.reward_sum)
 					self.agent.transition_cache.clear_cache()
+
+			self.take_snapshot()

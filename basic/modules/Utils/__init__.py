@@ -30,7 +30,26 @@ def plot_learning_curve(x, scores, figure_file):
     plt.plot(x, running_avg)
     plt.title('Running average of previous 10 scores')
     plt.savefig(figure_file)
-    
-    
+
+## JUNKYARD
+def get_snapshot(sample_obs, env, agent):
+    # get sample observations from all useable spaces in environment
+    samples, states = sample_obs
+
+    # forward pass through network
+    if agent.use_SR:
+        pols, vals, _, __ = agent(torch.Tensor(samples))
+    else:
+        pols, vals, _ = agent(torch.Tensor(samples))
+
+    # initialize empty data frames
+    pol_grid = np.zeros(env.shape, dtype=[(x, 'f8') for x in env.action_list])
+    val_grid = np.empty(env.shape)
+    # populate with data from network
+    for s, p, v in zip(states, pols, vals):
+        pol_grid[s] = tuple(p.data.numpy())
+        val_grid[s] = v.item()
+
+    return pol_grid, val_grid
     
 
