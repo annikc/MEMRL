@@ -122,6 +122,7 @@ class expt(object):
 			self.reward_sum = 0
 
 			for event in range(NUM_EVENTS):
+				# get state info from environment
 				state_representation = self.get_representation(state)
 				readable = 0
 
@@ -311,6 +312,6 @@ class gridworldBootstrap(gridworldExperiment):
 				elif set ==1:
 					# temp
 					self.data['trajectories'].append(agent.transition_cache.transition_cache)
-					# \temp 
+					# \temp
 					self.data['bootstrap_reward'].append(self.reward_sum)
 					self.agent.transition_cache.clear_cache()
