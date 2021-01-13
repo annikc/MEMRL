@@ -21,7 +21,7 @@ if network_id == None:
     params = nets.fc_params(env)
     network = nets.ActorCritic(params)
 else:
-    network = nets.ActorCritic(params) #torch.load(f=f'./Data/agents/load_agents/{network_id}.pt')
+    network = torch.load(f=f'./Data/agents/load_agents/{network_id}.pt')
 
 memory = Memory.EpisodicMemory(cache_limit=400, entry_size=env.action_space.n)
 
@@ -30,4 +30,4 @@ agent = Agent(network, memory=memory)
 run = expt(agent, env)
 
 run.run(NUM_TRIALS=ntrials, NUM_EVENTS=250)
-run.record_log(f'{actor}', env_name, n_trials=ntrials)
+run.record_log(f'bootstrap', env_name, n_trials=ntrials)
