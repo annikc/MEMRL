@@ -307,6 +307,8 @@ class gridworldBootstrap(gridworldExperiment):
 		for trial in range(NUM_TRIALS):
 			for set in range(2): ## set 0: episodic control, use this for weight updates; set 1: MF control, no updates
 				state = self.env.reset()
+				state = np.random.choice([0,19,399,380])
+				self.env.set_state(state)
 				self.reward_sum = 0
 				if set == 0:
 					self.agent.get_action = self.agent.EC_action

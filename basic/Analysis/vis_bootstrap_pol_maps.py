@@ -8,7 +8,7 @@ import colorsys
 from basic.modules.Utils import running_mean as rm
 from basic.modules.Utils.gridworld_plotting import plot_polmap, plot_pref_pol, plot_valmap, plot_world
 
-run_id = '19b80c43-c804-445c-8fc0-b0f2b8908198' #'df092c0a-5478-41e1-a34a-43ecdb53262f'
+run_id = 'fc19b92b-197b-4664-b622-adbb2fda368f' #'df092c0a-5478-41e1-a34a-43ecdb53262f'
 env_id = 'gym_grid:gridworld-v1'
 
 env = gym.make(env_id)
@@ -18,14 +18,16 @@ with open(f'../Data/results/{run_id}_data.p', 'rb') as f:
     data = pickle.load(f)
 for key in data.keys():
     print(key, len(data[key]))
-def plot_maps(start, stop, step=5, policy=False, value=False):
+def plot_maps(start, stop, step=5, policy=False, pref_pol=False, value=False):
     for index in range(start, stop, step):
         mf_pol = data['P_snap'][index]
         mf_val = data['V_snap'][index]
         ec_pol = data['EC_snap'][index]
 
-        if policy:
+        if pref_pol:
             plot_pref_pol(env, mf_pol,save=True, directory='./figures/maps/pref_pol/', title=f'{run_id[0:8]}_{index}',show=False)
+        if policy:
+            plot_polmap(env, mf_pol,save=True, directory='./figures/maps/policy/', title=f'{run_id[0:8]}_{index}',show=False)
         if value:
             plot_valmap(env, mf_val,save=True, directory='./figures/maps/value/', title=f'{run_id[0:8]}_{index}',show=False, v_range=[-2.5,10])
         plt.close()
@@ -59,7 +61,7 @@ def plot_pol_evol(coord):
     plt.legend(loc=0)
     plt.show()
 
-'''
+
 fig, ax = plt.subplots(2,1, sharex=True)
 smoothing=50
 ax[0].plot(rm(data['total_reward'],smoothing), c='k', alpha=0.5)
@@ -67,13 +69,9 @@ ax[0].plot(rm(data['bootstrap_reward'],smoothing), c='r')
 ax[1].plot(data['loss'][0], label='p')
 ax[1].plot(data['loss'][1], label='v')
 ax[1].legend(loc=0)
-plt.close()
-'''
+plt.show()
 
-start = 500
-stop = 550
-plot_maps(start=0,stop=999, step=10, policy=True)
-
-plot_pol_evol((4,7))
+#plot_maps(start=0,stop=999, step=10, policy=True)
+plot_pol_evol((5,6))
 #plot_polmap(env,data['P_snap'][100])
 x = trajectories(995)
