@@ -80,6 +80,7 @@ class expt(object):
 		if self.agent.EC != None:
 			with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
 				pickle.dump(self.agent.EC.cache_list, saveec)
+                print(f'Logged with ID {save_id}')
 
 	def reset_data_logs(self):
 		data_log = {'total_reward': [],
