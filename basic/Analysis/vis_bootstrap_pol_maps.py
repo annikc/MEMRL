@@ -8,7 +8,7 @@ import colorsys
 from basic.modules.Utils import running_mean as rm
 from basic.modules.Utils.gridworld_plotting import plot_polmap, plot_pref_pol, plot_valmap, plot_world
 
-run_id = '4544fdb3-98b0-4f31-8874-a6f50c4473b2' #'df092c0a-5478-41e1-a34a-43ecdb53262f'
+run_id = '71932609-329c-47e3-ad2e-10a2944254c8' #'df092c0a-5478-41e1-a34a-43ecdb53262f'
 env_id = 'gym_grid:gridworld-v1'
 
 env = gym.make(env_id)
@@ -69,6 +69,6 @@ ax[1].plot(data['loss'][1], label='v')
 ax[1].legend(loc=0)
 plt.show()
 
-plot_maps(start=0,stop=999, step=10, policy=True)
+#plot_maps(start=0,stop=999, step=10, policy=True)
 #plot_pol_evol((5,6))
-x = trajectories(995)
+#x = trajectories(995)

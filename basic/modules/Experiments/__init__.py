@@ -104,10 +104,10 @@ class expt(object):
 		self.data['loss'][0].append(p)
 		self.data['loss'][1].append(v)
 
-		if trial == 0:
-			self.running_rwdavg = self.reward_sum
+		if trial <= 10:
+			self.running_rwdavg = np.mean(self.data.total_reward)
 		else:
-			self.running_rwdavg = ((trial) * self.running_rwdavg + self.reward_sum) / (trial + 2)
+			self.running_rwdavg = np.mean(self.data.total_reward[-10:-1])
 
 		if trial % self.print_freq == 0:
 			print(f"Episode: {trial}, Score: {self.reward_sum} (Running Avg:{self.running_rwdavg}) [{time.time() - self.t}s]")
@@ -313,8 +313,8 @@ class gridworldBootstrap(gridworldExperiment):
 		for trial in range(NUM_TRIALS):
 			for set in range(2): ## set 0: episodic control, use this for weight updates; set 1: MF control, no updates
 				state = self.env.reset()
-				state = np.random.choice([0,19,399,380])
-				start = state
+				#state = np.random.choice([0,19,399,380])
+				#start = state
 				self.env.set_state(state)
 				self.reward_sum = 0
 				if set == 0:
@@ -361,6 +361,6 @@ class gridworldBootstrap(gridworldExperiment):
 					# \temp
 					self.data['bootstrap_reward'].append(self.reward_sum)
 					self.agent.transition_cache.clear_cache()
-			print(f'EC -- {ecstart}:{ecrwd}  /  MF -- {mfstart}:{mfrwd}')
+			print(f'EC -- {ecstart}:{ecrwd:.3f}  /  MF -- {mfstart}:{mfrwd:.3f}')
 			self.track_weights()
 			#self.take_snapshot()
