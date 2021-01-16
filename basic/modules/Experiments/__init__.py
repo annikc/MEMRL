@@ -80,7 +80,7 @@ class expt(object):
 		if self.agent.EC != None:
 			with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
 				pickle.dump(self.agent.EC.cache_list, saveec)
-                print(f'Logged with ID {save_id}')
+				print(f'Logged with ID {save_id}')
 
 	def reset_data_logs(self):
 		data_log = {'total_reward': [],
@@ -309,6 +309,7 @@ class gridworldBootstrap(gridworldExperiment):
 			for set in range(2): ## set 0: episodic control, use this for weight updates; set 1: MF control, no updates
 				state = self.env.reset()
 				state = np.random.choice([0,19,399,380])
+				start = state
 				self.env.set_state(state)
 				self.reward_sum = 0
 				if set == 0:
@@ -339,8 +340,13 @@ class gridworldBootstrap(gridworldExperiment):
 						break
 
 				if set == 0:
+					ecrwd = self.reward_sum
+					ecstart = start
 					self.end_of_trial(trial)
 				elif set ==1:
+					mfrwd = self.reward_sum
+					mfstart = start
+
 					# temp
 					trajs = np.vstack(self.agent.transition_cache.transition_cache)
 					sts, acts, rwds = trajs[:,10], trajs[:,3], trajs[:,4]
@@ -350,5 +356,6 @@ class gridworldBootstrap(gridworldExperiment):
 					# \temp
 					self.data['bootstrap_reward'].append(self.reward_sum)
 					self.agent.transition_cache.clear_cache()
+			print(f'EC -- {ecstart}:{ecrwd}  /  MF -- {mfstart}:{mfrwd}')
 
 			self.take_snapshot()
