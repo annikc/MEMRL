@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 env_name   = 'gym_grid:gridworld-v1'
 network_id = None # '97b5f281-a60e-4738-895d-191a04edddd6'
-ntrials    = 10000
+ntrials    = 1000
 
 # create environment
 env = gym.make(env_name)
