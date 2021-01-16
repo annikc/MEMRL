@@ -105,9 +105,9 @@ class expt(object):
 		self.data['loss'][1].append(v)
 
 		if trial <= 10:
-			self.running_rwdavg = np.mean(self.data.total_reward)
+			self.running_rwdavg = np.mean(self.data['total_reward'])
 		else:
-			self.running_rwdavg = np.mean(self.data.total_reward[-10:-1])
+			self.running_rwdavg = np.mean(self.data['total_reward'][-10:-1])
 
 		if trial % self.print_freq == 0:
 			print(f"Episode: {trial}, Score: {self.reward_sum} (Running Avg:{self.running_rwdavg}) [{time.time() - self.t}s]")
@@ -314,7 +314,7 @@ class gridworldBootstrap(gridworldExperiment):
 			for set in range(2): ## set 0: episodic control, use this for weight updates; set 1: MF control, no updates
 				state = self.env.reset()
 				#state = np.random.choice([0,19,399,380])
-				#start = state
+				start = state
 				self.env.set_state(state)
 				self.reward_sum = 0
 				if set == 0:
