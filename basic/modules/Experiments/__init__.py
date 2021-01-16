@@ -298,11 +298,16 @@ class gridworldBootstrap(gridworldExperiment):
 		self.data['P_snap'].append(MF_pols)
 		self.data['EC_snap'].append(EC_pols)
 
+	def track_weights(self):
+		self.data['weights'][0].append(self.agent.MFC.output[0].weight.detach().numpy())
+		self.data['weights'][1].append(self.agent.MFC.output[0].bias.detach().numpy())
+
 	def run(self, NUM_TRIALS, NUM_EVENTS, **kwargs):
 		self.print_freq = kwargs.get('printfreq', 100)
 		self.reset_data_logs()
 		self.data['bootstrap_reward'] = []
 		self.data['trajectories'] = []
+		self.data['weights']= [[],[]]
 		self.t = time.time()
 
 		for trial in range(NUM_TRIALS):
@@ -348,14 +353,14 @@ class gridworldBootstrap(gridworldExperiment):
 					mfstart = start
 
 					# temp
-					trajs = np.vstack(self.agent.transition_cache.transition_cache)
-					sts, acts, rwds = trajs[:,10], trajs[:,3], trajs[:,4]
-					data_package = [(x,y,z) for x, y,z in zip(sts,acts,rwds)]
+					#trajs = np.vstack(self.agent.transition_cache.transition_cache)
+					#sts, acts, rwds = trajs[:,10], trajs[:,3], trajs[:,4]
+					#data_package = [(x,y,z) for x, y,z in zip(sts,acts,rwds)]
 					#print(data_package)
-					self.data['trajectories'].append(data_package)
+					#self.data['trajectories'].append(data_package)
 					# \temp
 					self.data['bootstrap_reward'].append(self.reward_sum)
 					self.agent.transition_cache.clear_cache()
 			print(f'EC -- {ecstart}:{ecrwd}  /  MF -- {mfstart}:{mfrwd}')
-
-			self.take_snapshot()
+			self.track_weights()
+			#self.take_snapshot()
