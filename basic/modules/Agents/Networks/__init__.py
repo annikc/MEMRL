@@ -31,6 +31,6 @@ class params(object):
 class fc_params(params):
     def __init__(self, env):
         super(fc_params, self).__init__(env)
-        self.input_dims = 400
+        self.input_dims = env.nstates
         self.hidden_types = ['linear', 'linear']
         self.hidden_dims = [200, 200]

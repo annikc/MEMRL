@@ -6,9 +6,10 @@ import modules.Agents.EpisodicMemory as Memory
 from modules.Agents import Agent
 from modules.Experiments import gridworldBootstrap as expt
 import matplotlib.pyplot as plt
+from basic.modules.Utils.gridworld_plotting import plot_polmap, plot_pref_pol, plot_valmap, plot_world
 
 env_name   = 'gym_grid:gridworld-v1'
-network_id = None # '97b5f281-a60e-4738-895d-191a04edddd6'
+network_id = None# 'd02971b6-a9e7-4c43-a280-05a6b0ef09bc'
 ntrials    = 1000
 
 # create environment
@@ -19,16 +20,15 @@ plt.close()
 if network_id == None:
     # generate parameters for network from environment observation shape
     params = nets.fc_params(env)
-    params.lr = 0.001
+    print(params.__dict__)
     network = nets.ActorCritic(params)
 else:
-    network = torch.load(f=f'./Data/agents/load_agents/{network_id}.pt')
+    network = torch.load(f=f'./Data/agents/{network_id}.pt')
 
-memory = Memory.EpisodicMemory(cache_limit=400, entry_size=env.action_space.n, mem_temp=1)
+memory = Memory.EpisodicMemory(cache_limit=400, entry_size=env.action_space.n)
 
 agent = Agent(network, memory=memory)
+print(len(agent.EC.cache_list))
 
 run = expt(agent, env)
-ntrials = 300
-run.run(NUM_TRIALS=ntrials, NUM_EVENTS=1000)
-run.record_log(f'w_grad', env_name, n_trials=ntrials)
+print(network)

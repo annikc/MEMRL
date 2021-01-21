@@ -136,6 +136,8 @@ class EpisodicMemory(object):
 		closest_entry = mem_cache[np.argmin(distance)]
 		return tuple(closest_entry), min(distance)
 
+
+
 def plot_softmax(x):
 	f, axarr = plt.subplots(2, sharex=True)
 	axarr[0].bar(np.arange(len(x)), x)

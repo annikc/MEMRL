@@ -273,6 +273,7 @@ class gridworldBootstrap(gridworldExperiment):
 		# temp
 		self.policy_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
 		self.value_grid  = np.empty(self.env.shape)
+		self.data['weights']={'h0':[[],[]], 'h1':[[],[]], 'out0':[[],[]], 'out1':[[],[]]}
 		#\temp
 
 	def take_snapshot(self):
@@ -291,24 +292,52 @@ class gridworldBootstrap(gridworldExperiment):
 			MF_vals[s[0], s[1]] = v
 			MF_pols[s[0], s[1]] = tuple(p)
 
-			ec_p = self.agent.EC.recall_mem(tuple(rep), timestep=self.agent.counter)
-			EC_pols[s[0],s[1]] = tuple(ec_p)
+			#ec_p = self.agent.EC.recall_mem(tuple(rep), timestep=self.agent.counter)
+			#EC_pols[s[0],s[1]] = tuple(ec_p)
 
 		self.data['V_snap'].append(MF_vals)
 		self.data['P_snap'].append(MF_pols)
-		self.data['EC_snap'].append(EC_pols)
+		#self.data['EC_snap'].append(EC_pols)
 
 	def track_weights(self):
-		self.data['weights'][0].append(self.agent.MFC.output[0].weight.detach().numpy())
-		self.data['weights'][1].append(self.agent.MFC.output[0].bias.detach().numpy())
+		#for p in self.agent.MFC.parameters():
+		#	print(f'===========\ngradient:{0}\n----------\n{p.grad}')
+		for y in range(len(self.agent.MFC.hidden)):
+			layer = self.agent.MFC.hidden[y]
+
+			#weight_norm = torch.norm(layer.weight)
+			#bias_norm   = torch.norm(layer.bias)
+			vanishing_weights = (layer.grad<=10e-8).sum(dim=1).sum()
+
+
+			self.data['weights'][f'h{y}'][0].append(vanishing_weights)
+			#self.data['weights'][f'h{y}'][1].append(bias_norm)
+			#print(f'w{y}', torch.isnan(self.agent.MFC.hidden[y].weight).any(), f'b{y}', torch.isnan(self.agent.MFC.hidden[y].bias).any())
+
+		for x in range(len(self.agent.MFC.output)):
+			layer = self.agent.MFC.output[x]
+			#weight_norm = torch.norm(layer.weight)
+			#bias_norm   = torch.norm(layer.bias)
+			vanishing_weights = (layer.grad<=10e-8).sum(dim=1).sum()
+			self.data['weights'][f'out{x}'][0].append(vanishing_weights)
+			#self.data['weights'][f'out{x}'][1].append(bias_norm)
+
+			#print(f'w{x}', torch.isnan(self.agent.MFC.output[x].weight).any(), f'b{x}', torch.isnan(self.agent.MFC.output[x].bias).any())
+
+		#self.data['weights'][0].append(self.agent.MFC.output[0].weight.detach().numpy().copy())
+		#self.data['weights'][1].append(self.agent.MFC.output[0].bias.detach().numpy().copy())
+
+
 
 	def run(self, NUM_TRIALS, NUM_EVENTS, **kwargs):
 		self.print_freq = kwargs.get('printfreq', 100)
 		self.reset_data_logs()
 		self.data['bootstrap_reward'] = []
 		self.data['trajectories'] = []
-		self.data['weights']= [[],[]]
+		#self.data['weights']= [[],[]]
+		self.data['cache_size'] = []
 		self.t = time.time()
+		mfec =['EC', 'MF']
 
 		for trial in range(NUM_TRIALS):
 			for set in range(2): ## set 0: episodic control, use this for weight updates; set 1: MF control, no updates
@@ -327,10 +356,10 @@ class gridworldBootstrap(gridworldExperiment):
 					readable = state
 
 					# get action from agent
-					action, log_prob, expected_value = self.agent.get_action(state_representation)
+					action, log_prob, expected_value, policy = self.agent.get_action(state_representation)
 					# take step in environment
 					next_state, reward, done, info = self.env.step(action)
-					#print(self.env.oneD2twoD(state), self.env.action_list[action], self.env.oneD2twoD(next_state))
+					#print(mfec[set], state, policy.probs, policy.logits, self.env.action_list[action]) # self.env.oneD2twoD(state)
 					# end of event
 					target_value = 0
 					self.reward_sum += reward
@@ -348,6 +377,8 @@ class gridworldBootstrap(gridworldExperiment):
 					ecrwd = self.reward_sum
 					ecstart = start
 					self.end_of_trial(trial)
+
+					
 				elif set ==1:
 					mfrwd = self.reward_sum
 					mfstart = start
@@ -361,6 +392,7 @@ class gridworldBootstrap(gridworldExperiment):
 					# \temp
 					self.data['bootstrap_reward'].append(self.reward_sum)
 					self.agent.transition_cache.clear_cache()
-			print(f'EC -- {ecstart}:{ecrwd:.3f}  /  MF -- {mfstart}:{mfrwd:.3f}')
+			print(f'{trial}: EC -- {ecstart}:{ecrwd:.3f}  /  MF -- {mfstart}:{mfrwd:.3f}')
 			self.track_weights()
 			#self.take_snapshot()
+			#self.data['cache_size'].append(len(self.agent.EC.cache_list))

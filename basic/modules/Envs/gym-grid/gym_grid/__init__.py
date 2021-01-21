@@ -16,6 +16,11 @@ register(
 )
 
 register(
+    id='gridworld-v111',
+    entry_point='gym_grid.envs:MiniGrid',
+)
+
+register(
     id='gridworld-v2',
     entry_point='gym_grid.envs:GridWorld4_random_obstacle',
 )

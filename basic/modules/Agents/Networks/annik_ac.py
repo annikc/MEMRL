@@ -87,6 +87,7 @@ class ActorCritic(torch.nn.Module):
                 # construct the layer
                 if htype == 'linear':
                     self.hidden.append(torch.nn.Linear(input_d, output_d))
+                    torch.nn.init.xavier_normal_(self.hidden[-1].weight)
                     self.hx.append(None)
                     self.cx.append(None)
                 elif htype == 'lstm':

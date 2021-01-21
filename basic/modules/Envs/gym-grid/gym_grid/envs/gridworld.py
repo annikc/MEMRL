@@ -487,6 +487,12 @@ class GridWorld4(GridWorld):
         self.rewarded_action = None
         super().__init__(actionlist=self.action_list, rewarded_action=self.rewarded_action)
 
+class MiniGrid(GridWorld):
+    def __init__(self):
+        self.action_list = ['Down', 'Up', 'Right', 'Left']
+        self.rewarded_action = None
+        super().__init__(rows=7, cols=7, actionlist=self.action_list, rewarded_action=self.rewarded_action)
+
 class GridWorld4_movedR(GridWorld):
     def __init__(self):
         self.action_list = ['Down', 'Up', 'Right', 'Left']

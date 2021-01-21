@@ -39,24 +39,23 @@ class Agent(object):
     def MF_action(self, state_observation):
         policy, value = self.MFC(state_observation)
 
-        a = Categorical(policy)
+        a = Categorical(probs=policy,logits=None)
 
         action = a.sample()
-        return action.item(), a.log_prob(action), value.view(-1) ##TODO: why view instead of item
+        return action.item(), a.log_prob(action), value.view(-1), a ##TODO: why view instead of item
 
     def EC_action(self, state_observation):
         MF_policy, value = self.MFC(state_observation)
 
         #mem_state = self.memory_query(state_observation)
         mem_state = tuple(state_observation)
-
         EC_policy = torch.Tensor(self.EC.recall_mem(mem_state, timestep=self.counter))
 
-        a = Categorical(EC_policy)
-        b = Categorical(MF_policy)
-        #print(f'ec:{a.probs}, mf:{b.probs}')
+        a = Categorical(probs=EC_policy,logits=None)
+        b = Categorical(probs=MF_policy,logits=None)
+
         action = a.sample() # select action using episodic
-        return action.item(), b.log_prob(action), value.view(-1)
+        return action.item(), b.log_prob(action), value.view(-1), a
 
     def EC_storage(self):
         mem_dict = {}
@@ -91,7 +90,7 @@ class Agent(object):
             delta = G_t - V_t.item()
 
             log_prob = transition.log_prob
-
+            #print("comput loss for step:", transition.readable_state, log_prob)
             pol_loss += -log_prob * delta
             G_t = torch.Tensor([G_t])
             v_loss = torch.nn.L1Loss()(V_t, G_t)

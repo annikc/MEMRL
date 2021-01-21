@@ -4,11 +4,11 @@ import pandas as pd
 import numpy as np
 import  matplotlib.pyplot as plt
 import colorsys
-
+import os
 from basic.modules.Utils import running_mean as rm
 from basic.modules.Utils.gridworld_plotting import plot_polmap, plot_pref_pol, plot_valmap, plot_world
 
-run_id = '71932609-329c-47e3-ad2e-10a2944254c8' #'df092c0a-5478-41e1-a34a-43ecdb53262f'
+run_id = '50702c6d-cfb6-4a42-b19d-2f9a2125617b' #'df092c0a-5478-41e1-a34a-43ecdb53262f'
 env_id = 'gym_grid:gridworld-v1'
 
 env = gym.make(env_id)
@@ -19,17 +19,27 @@ with open(f'../Data/results/{run_id}_data.p', 'rb') as f:
 for key in data.keys():
     print(key, len(data[key]))
 def plot_maps(start, stop, step=5, policy=False, pref_pol=False, value=False):
+    if policy:
+        parent_dir = './figures/maps/policy/'
+    if pref_pol:
+        parent_dir = './figures/maps/pref_pol/'
+    if value:
+        parent_dir = './figures/maps/value/'
+    dir = parent_dir + f'{run_id[0:8]}/'
+
+    if not os.path.exists(dir):
+        os.makedirs(dir)
     for index in range(start, stop, step):
         mf_pol = data['P_snap'][index]
         mf_val = data['V_snap'][index]
-        ec_pol = data['EC_snap'][index]
+        #ec_pol = data['EC_snap'][index]
 
         if pref_pol:
-            plot_pref_pol(env, mf_pol,save=True, directory='./figures/maps/pref_pol/', title=f'{run_id[0:8]}_{index}',show=False)
+            plot_pref_pol(env, mf_pol,save=True, directory=dir, title=f'{index}',show=False)
         if policy:
-            plot_polmap(env, mf_pol,save=True, directory='./figures/maps/policy/', title=f'{run_id[0:8]}_{index}',show=False)
+            plot_polmap(env, mf_pol,save=True, directory=dir, title=f'{index}',show=False)
         if value:
-            plot_valmap(env, mf_val,save=True, directory='./figures/maps/value/', title=f'{run_id[0:8]}_{index}',show=False, v_range=[-2.5,10])
+            plot_valmap(env, mf_val,save=True, directory=dir, title=f'{run_id[0:8]}_{index}',show=False, v_range=[-2.5,10])
         plt.close()
 
 def trajectories(index):
@@ -60,15 +70,76 @@ def plot_pol_evol(coord):
     plt.legend(loc=0)
     plt.show()
 
-fig, ax = plt.subplots(2,1, sharex=True)
-smoothing=50
+fig, ax = plt.subplots(3,1, sharex=True)
+smoothing=1
 ax[0].plot(rm(data['total_reward'],smoothing), c='k', alpha=0.5)
 ax[0].plot(rm(data['bootstrap_reward'],smoothing), c='r')
+
 ax[1].plot(data['loss'][0], label='p')
 ax[1].plot(data['loss'][1], label='v')
 ax[1].legend(loc=0)
+
+ax[2].plot(data['weights']['h0'][0], label='h0',c='r')
+ax[2].plot(data['weights']['h1'][0], label='h1',c='g')
+ax[2].plot(data['weights']['out0'][0], label='p',c='b')
+ax[2].plot(data['weights']['out1'][0], label='v',c='k')
+#ax[2].plot(data['weights']['h0'][1], ':', label='h0',c='r')
+#ax[2].plot(data['weights']['h1'][1], ':', label='h1',c='g')
+#ax[2].plot(data['weights']['out0'][1], ':', label='p',c='b')
+#ax[2].plot(data['weights']['out1'][1], ':', label='v',c='k')
+ax[2].legend(loc=0)
 plt.show()
 
-#plot_maps(start=0,stop=999, step=10, policy=True)
+'''
+## show weights 
+for index in range(0,999,5):
+    plt.figure()
+    weights = data['weights'][0][index]
+    wt_plot = plt.imshow(weights.T, aspect='auto', interpolation='none', vmin=np.min(data['weights'][0]), vmax=np.max(data['weights'][0]))
+    plt.colorbar(wt_plot)
+    plt.savefig(f'../Analysis/figures/{index}.svg', format='svg')
+    plt.close()
+'''
+
+'''
+## violin plots of weights at topmost layer
+dats = []
+poss = []
+i = 0
+for x in range(0,500,50):
+    poss.append(i)
+    dats.append(data['weights'][0][x].flatten())
+    i+=1
+
+plt.figure()
+plt.violinplot(dats, poss)
+plt.show()
+'''
+
+
+'''
+## show correlation between loss and reward
+xdat = np.asarray(data['total_reward'][100:200])
+
+yp = np.asarray(data['loss'][0][0:len(xdat)])
+yv = np.asarray(data['loss'][1][0:len(xdat)])
+
+N = len(xdat)
+HSV_tuples = [(x*1.0/N, 0.7, 0.5) for x in range(N)]
+RGB_tuples = list(map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples))
+
+
+plt.figure()
+#plt.scatter(x=xdat,y=yp, label='pol', color=RGB_tuples)
+#plt.scatter(x=np.arange(len(xdat))/80,y=700*np.ones(len(xdat)),color=RGB_tuples)
+plt.scatter(xdat,yv, label='val', color=RGB_tuples)
+plt.legend(loc=0)
+plt.show()
+'''
+
+
+
+
+#plot_maps(start=0,stop=150, step=1, policy=True)
 #plot_pol_evol((5,6))
 #x = trajectories(995)
