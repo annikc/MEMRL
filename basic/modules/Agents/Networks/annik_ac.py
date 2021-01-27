@@ -52,6 +52,13 @@ class ActorCritic(torch.nn.Module):
         else:
             self.lr = agent_params.lr
 
+        if 'temp' not in params_dict.keys():
+            self.temperature = kwargs.get('softmax_temp', 1)
+        else:
+            self.temperature = agent_params.temp
+        print(self.temperature, "SOFTMAX TEMP")
+
+
 
         if 'hidden_types' in params_dict.keys():
             if len(agent_params.hidden_dims) != len(agent_params.hidden_types):
@@ -181,7 +188,7 @@ class ActorCritic(torch.nn.Module):
 
         self.h_act = x
         # pass to the output layers
-        policy = F.softmax(self.output[0](x), dim=-1)
+        policy = F.softmax(self.output[0](x)/self.temperature, dim=-1)
         value = self.output[1](x)
 
         return policy, value

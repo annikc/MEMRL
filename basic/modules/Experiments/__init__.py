@@ -21,10 +21,15 @@ class expt(object):
 		self.data = self.reset_data_logs()
 		self.agent.counter = 0
 
-	def record_log(self, expt_type, env_name, n_trials, **kwargs): ## TODO -- set up logging
+	def record_log(self, expt_type, env_name, n_trials, n_steps, **kwargs): ## TODO -- set up logging
 		parent_folder = kwargs.get('dir', './Data/')
 		log_name     = kwargs.get('file', 'test_bootstrap.csv')
 		load_from = kwargs.get('load_from', ' ')
+		MF_temp = self.agent.MFC.temperature
+		if self.agent.EC is not None:
+			EC_temp = self.agent.EC.mem_temp
+		else:
+			EC_temp = "None"
 
 		save_id = uuid.uuid4()
 		timestamp = time.asctime(time.localtime())
@@ -64,7 +69,7 @@ class expt(object):
 		'beta'  # int
 		]
 
-		log_jam = [save_id, env_name, expt_type, n_trials]
+		log_jam = [timestamp, save_id, env_name, expt_type, n_trials, n_steps, MF_temp, EC_temp]
 
 		# write to logger
 		with open(parent_folder + log_name, 'a+', newline='') as file:
@@ -80,7 +85,7 @@ class expt(object):
 		if self.agent.EC != None:
 			with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
 				pickle.dump(self.agent.EC.cache_list, saveec)
-				print(f'Logged with ID {save_id}')
+		print(f'Logged with ID {save_id}')
 
 	def reset_data_logs(self):
 		data_log = {'total_reward': [],
@@ -100,7 +105,7 @@ class expt(object):
 	def end_of_trial(self, trial):
 		p, v = self.agent.finish_()
 
-		self.data['total_reward'].append(self.reward_sum)
+		self.data['total_reward'].append(self.reward_sum) # removed for bootstrap expts
 		self.data['loss'][0].append(p)
 		self.data['loss'][1].append(v)
 
@@ -182,6 +187,9 @@ class gridworldExperiment(expt):
 		# only for gridworld environment
 		self.sample_obs, self.sample_states = self.env.get_sample_obs()
 		self.sample_reps = self.get_reps()
+
+		self.policy_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
+		self.value_grid  = np.empty(self.env.shape)
 		# / temp
 
 	def get_reps(self):
@@ -219,33 +227,55 @@ class gridworldExperiment(expt):
 			pol_grid[s] = tuple(p.data.numpy())
 			val_grid[s] = v.item()
 
-		for ind, rep in enumerate(self.sample_reps):
-			mem_pol = self.agent.EC.recall_mem(tuple(rep))
-			state = self.sample_states[ind]
-			mem_grid[state] = tuple(mem_pol)
+		if self.agent.EC is not None:
+			for ind, rep in enumerate(self.sample_reps):
+				mem_pol = self.agent.EC.recall_mem(tuple(rep))
+				state = self.sample_states[ind]
+				mem_grid[state] = tuple(mem_pol)
 
-		return pol_grid, val_grid, mem_grid
-	'''
+			return pol_grid, val_grid, mem_grid
+
+		else: return pol_grid, val_grid, []
+
+	def take_snapshot(self):
+		states2d = self.sample_states
+		reps = self.sample_reps
+
+		#get EC policies
+		EC_pols = self.policy_grid.copy()
+
+		#get MF policies, values
+		MF_pols = self.policy_grid.copy()
+		MF_vals = self.value_grid.copy()
+
+		for rep, s in zip(reps, states2d):
+			p, v = self.agent.MFC(rep)
+			MF_vals[s[0], s[1]] = v
+			MF_pols[s[0], s[1]] = tuple(p)
+
+			#ec_p = self.agent.EC.recall_mem(tuple(rep), timestep=self.agent.counter)
+			#EC_pols[s[0],s[1]] = tuple(ec_p)
+
+		self.data['V_snap'].append(MF_vals)
+		self.data['P_snap'].append(MF_pols)
+		#self.data['EC_snap'].append(EC_pols)
+
 	def run(self, NUM_TRIALS, NUM_EVENTS, **kwargs):
-		print_freq = kwargs.get('printfreq', 100)
-		self.render = kwargs.get('render', False)
-
+		self.print_freq = kwargs.get('printfreq', 100)
 		self.reset_data_logs()
-		t = time.time()
+		self.t = time.time()
+
 		for trial in range(NUM_TRIALS):
-			if self.render:
-				self.env.figure[0].canvas.set_window_title(f'Trial {trial}')
-			self.env.reset()
+			state = self.env.reset()
 			self.reward_sum = 0
 
 			for event in range(NUM_EVENTS):
-				## get observation from environment
-				state = self.env.state
+				# get state info from environment
 				state_representation = self.get_representation(state)
 				readable = 0
 
 				# get action from agent
-				action, log_prob, expected_value = self.agent.get_action(state_representation)
+				action, log_prob, expected_value, p = self.agent.get_action(state_representation)
 				# take step in environment
 				next_state, reward, done, info = self.env.step(action)
 
@@ -258,13 +288,12 @@ class gridworldExperiment(expt):
 									 log_prob=log_prob, expected_value=expected_value, target_value=target_value,
 									 done=done, readable_state=readable)
 				self.agent.counter += 1
-				if self.render:
-					self.env.render()
+				state = next_state
 				if done:
 					break
 
 			self.end_of_trial(trial)
-	'''
+			self.take_snapshot()
 
 #TODO write bootstrap as more general class
 class gridworldBootstrap(gridworldExperiment):
@@ -274,6 +303,7 @@ class gridworldBootstrap(gridworldExperiment):
 		self.policy_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
 		self.value_grid  = np.empty(self.env.shape)
 		self.data['weights']={'h0':[[],[]], 'h1':[[],[]], 'out0':[[],[]], 'out1':[[],[]]}
+
 		#\temp
 
 	def take_snapshot(self):
@@ -307,10 +337,11 @@ class gridworldBootstrap(gridworldExperiment):
 
 			#weight_norm = torch.norm(layer.weight)
 			#bias_norm   = torch.norm(layer.bias)
-			vanishing_weights = (layer.grad<=10e-8).sum(dim=1).sum()
+			grad_norm    = torch.norm(layer.weight.grad)
+			#vanishing_weights = (layer.weight.grad<=10e-8).sum(dim=1).sum()
 
 
-			self.data['weights'][f'h{y}'][0].append(vanishing_weights)
+			self.data['weights'][f'h{y}'][0].append(grad_norm)
 			#self.data['weights'][f'h{y}'][1].append(bias_norm)
 			#print(f'w{y}', torch.isnan(self.agent.MFC.hidden[y].weight).any(), f'b{y}', torch.isnan(self.agent.MFC.hidden[y].bias).any())
 
@@ -318,8 +349,10 @@ class gridworldBootstrap(gridworldExperiment):
 			layer = self.agent.MFC.output[x]
 			#weight_norm = torch.norm(layer.weight)
 			#bias_norm   = torch.norm(layer.bias)
-			vanishing_weights = (layer.grad<=10e-8).sum(dim=1).sum()
-			self.data['weights'][f'out{x}'][0].append(vanishing_weights)
+			grad_norm = torch.norm(layer.weight.grad)
+			fiveweights= layer.weight[0][0:10]
+			#vanishing_weights = (layer.weight.grad<=10e-8).sum(dim=1).sum()
+			self.data['weights'][f'out{x}'][0].append(fiveweights)
 			#self.data['weights'][f'out{x}'][1].append(bias_norm)
 
 			#print(f'w{x}', torch.isnan(self.agent.MFC.output[x].weight).any(), f'b{x}', torch.isnan(self.agent.MFC.output[x].bias).any())
@@ -327,13 +360,19 @@ class gridworldBootstrap(gridworldExperiment):
 		#self.data['weights'][0].append(self.agent.MFC.output[0].weight.detach().numpy().copy())
 		#self.data['weights'][1].append(self.agent.MFC.output[0].bias.detach().numpy().copy())
 
+	def track_trajectories(self,set):
+		trajs = np.vstack(self.agent.transition_cache.transition_cache)
+		sts, acts, rwds = trajs[:,10], trajs[:,3], trajs[:,4]
+		data_package = [(x,y,z) for x, y,z in zip(sts,acts,rwds)]
+		self.data['trajectories'][set].append(data_package)
 
 
 	def run(self, NUM_TRIALS, NUM_EVENTS, **kwargs):
 		self.print_freq = kwargs.get('printfreq', 100)
 		self.reset_data_logs()
 		self.data['bootstrap_reward'] = []
-		self.data['trajectories'] = []
+		self.data['mf_loss'] = [[],[]]
+		self.data['trajectories'] = [[],[]]
 		#self.data['weights']= [[],[]]
 		self.data['cache_size'] = []
 		self.t = time.time()
@@ -375,24 +414,29 @@ class gridworldBootstrap(gridworldExperiment):
 
 				if set == 0:
 					ecrwd = self.reward_sum
-					ecstart = start
-					self.end_of_trial(trial)
 
-					
+					ecstart = start
+					#self.track_trajectories(set)
+
+					self.end_of_trial(trial)
 				elif set ==1:
 					mfrwd = self.reward_sum
+					self.data['bootstrap_reward'].append(self.reward_sum)
 					mfstart = start
 
-					# temp
-					#trajs = np.vstack(self.agent.transition_cache.transition_cache)
-					#sts, acts, rwds = trajs[:,10], trajs[:,3], trajs[:,4]
-					#data_package = [(x,y,z) for x, y,z in zip(sts,acts,rwds)]
-					#print(data_package)
-					#self.data['trajectories'].append(data_package)
-					# \temp
-					self.data['bootstrap_reward'].append(self.reward_sum)
-					self.agent.transition_cache.clear_cache()
+					#self.track_trajectories(set)
+					p, v = self.agent.finish_()
+
+					self.data['mf_loss'][0].append(p)
+					self.data['mf_loss'][1].append(v)
+
+
 			print(f'{trial}: EC -- {ecstart}:{ecrwd:.3f}  /  MF -- {mfstart}:{mfrwd:.3f}')
-			self.track_weights()
-			#self.take_snapshot()
+			#self.track_weights()
+			self.take_snapshot()
 			#self.data['cache_size'].append(len(self.agent.EC.cache_list))
+
+		'''
+		HOW ARE THE GRADIENTS BEING APPLIED -- CHECK IF YOU ARE DOING STEP WISE OR TRIAL WISE 
+		WHY DOES IT WORK FOR WHOLE TRIAL (I.E. SUM OF ALL LOSSES)  
+		'''

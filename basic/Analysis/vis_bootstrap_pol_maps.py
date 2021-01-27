@@ -8,7 +8,7 @@ import os
 from basic.modules.Utils import running_mean as rm
 from basic.modules.Utils.gridworld_plotting import plot_polmap, plot_pref_pol, plot_valmap, plot_world
 
-run_id = '50702c6d-cfb6-4a42-b19d-2f9a2125617b' #'df092c0a-5478-41e1-a34a-43ecdb53262f'
+run_id = 'f96cadce-7d2c-4e5e-a6a4-ff075c49eb82' #'df092c0a-5478-41e1-a34a-43ecdb53262f' #'466ae988-ea1b-4d73-8d24-ca783f941153' #'df092c0a-5478-41e1-a34a-43ecdb53262f'
 env_id = 'gym_grid:gridworld-v1'
 
 env = gym.make(env_id)
@@ -66,29 +66,67 @@ def plot_pol_evol(coord):
         policy_ev.append(policy)
     pol = np.array([list(x) for x in policy_ev]).T
     plt.figure()
-    plt.stackplot(np.arange(1000), pol, labels=['D','U','R','L'])
+    plt.stackplot(np.arange(len(data['P_snap'])), pol, labels=['D','U','R','L'])
     plt.legend(loc=0)
+    plt.title(f'{coord}')
     plt.show()
 
-fig, ax = plt.subplots(3,1, sharex=True)
-smoothing=1
-ax[0].plot(rm(data['total_reward'],smoothing), c='k', alpha=0.5)
-ax[0].plot(rm(data['bootstrap_reward'],smoothing), c='r')
+def daves_idea():
+    fig, ax = plt.subplots(4,1,sharex=True)
+    num_spots = 3
+    rand_spots = np.random.choice(np.arange(data['P_snap'][0].shape[0]*data['P_snap'][0].shape[0]),num_spots)
+    rand_spots = [env.twoD2oneD(x) for x in [(0,1), (0,2), (0,3), (0,4), (0,5)]]
+    dats = np.asarray(data['P_snap'])
+    DURL = ['Down', 'Up', 'Right', 'Left']
 
-ax[1].plot(data['loss'][0], label='p')
-ax[1].plot(data['loss'][1], label='v')
-ax[1].legend(loc=0)
+    for ind in range(len(rand_spots)):
+        coord = env.oneD2twoD(rand_spots[ind])
+        print(ind, coord)
+        for n, key in enumerate(DURL):
+            print(n,key)
+            action_change = np.array(dats[:,coord[0], coord[1]][key])
+            ax[n].plot(action_change, label=f'{coord}')
 
-ax[2].plot(data['weights']['h0'][0], label='h0',c='r')
-ax[2].plot(data['weights']['h1'][0], label='h1',c='g')
-ax[2].plot(data['weights']['out0'][0], label='p',c='b')
-ax[2].plot(data['weights']['out1'][0], label='v',c='k')
-#ax[2].plot(data['weights']['h0'][1], ':', label='h0',c='r')
-#ax[2].plot(data['weights']['h1'][1], ':', label='h1',c='g')
-#ax[2].plot(data['weights']['out0'][1], ':', label='p',c='b')
-#ax[2].plot(data['weights']['out1'][1], ':', label='v',c='k')
-ax[2].legend(loc=0)
-plt.show()
+    for n, key in enumerate(DURL):
+        ax[n].set_ylabel(key)
+        ax[n].set_ylim([0,1.1])
+    ax[0].legend(loc=0)
+    plt.show()
+#daves_idea()
+
+def plot_rewards():
+    fig, ax = plt.subplots(4,1, sharex=True)
+    smoothing=10
+    ax[0].plot(rm(data['total_reward'],smoothing), c='k', alpha=0.5)
+    if 'bootstrap_reward' in data.keys():
+        ax[0].plot(rm(data['bootstrap_reward'],smoothing), c='r')
+
+    ax[1].plot(rm(data['loss'][0], smoothing), label='ec_p')
+    ax[1].plot(rm(data['mf_loss'][0], smoothing), label='mf_p')
+    #ax[1].set_ylim([-1000,1000])
+    #ax[1].set_yscale('log')
+    ax[1].legend(loc=0)
+
+    ax[2].plot(rm(data['loss'][1],smoothing), label='ec_v')
+    ax[2].plot(rm(data['mf_loss'][1],smoothing), label='mf_v')
+    #ax[2].set_yscale('log')
+    ax[2].legend(loc=0)
+
+
+
+    #ax[2].plot(np.asarray(data['weights']['h0'][0]), label='h0',c='r')
+    #ax[2].plot(np.asarray(data['weights']['h1'][0]), label='h1',c='g')
+    #ax[3].plot(np.vstack(data['weights']['out0'][0]), label='p',c='b')
+    #ax[3].plot(np.vstack(data['weights']['out1'][0]), label='v',c='k')
+
+    #ax[2].plot(data['weights']['h0'][1], ':', label='h0',c='r')
+    #ax[2].plot(data['weights']['h1'][1], ':', label='h1',c='g')
+    #ax[2].plot(data['weights']['out0'][1], ':', label='p',c='b')
+    #ax[2].plot(data['weights']['out1'][1], ':', label='v',c='k')
+    ax[2].legend(loc=0)
+    plt.show()
+
+plot_rewards()
 
 '''
 ## show weights 
@@ -140,6 +178,6 @@ plt.show()
 
 
 
-#plot_maps(start=0,stop=150, step=1, policy=True)
+#plot_maps(start=0,stop=550, step=1, policy=True)
 #plot_pol_evol((5,6))
 #x = trajectories(995)
