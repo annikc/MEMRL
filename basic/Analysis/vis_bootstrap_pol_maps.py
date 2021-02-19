@@ -8,8 +8,8 @@ import os
 from basic.modules.Utils import running_mean as rm
 from basic.modules.Utils.gridworld_plotting import plot_polmap, plot_pref_pol, plot_valmap, plot_world
 
-run_id = 'f96cadce-7d2c-4e5e-a6a4-ff075c49eb82' #'df092c0a-5478-41e1-a34a-43ecdb53262f' #'466ae988-ea1b-4d73-8d24-ca783f941153' #'df092c0a-5478-41e1-a34a-43ecdb53262f'
-env_id = 'gym_grid:gridworld-v1'
+run_id = '9fc4e152-388f-4a19-838a-4dceb4717644' #'df092c0a-5478-41e1-a34a-43ecdb53262f' #'466ae988-ea1b-4d73-8d24-ca783f941153' #'df092c0a-5478-41e1-a34a-43ecdb53262f'
+env_id = 'gym_grid:gridworld-v111'
 
 env = gym.make(env_id)
 plt.close()
@@ -18,7 +18,8 @@ with open(f'../Data/results/{run_id}_data.p', 'rb') as f:
     data = pickle.load(f)
 for key in data.keys():
     print(key, len(data[key]))
-def plot_maps(start, stop, step=5, policy=False, pref_pol=False, value=False):
+
+def plot_maps(env, data, start, stop, step=5, policy=False, pref_pol=False, value=False):
     if policy:
         parent_dir = './figures/maps/policy/'
     if pref_pol:
@@ -39,7 +40,7 @@ def plot_maps(start, stop, step=5, policy=False, pref_pol=False, value=False):
         if policy:
             plot_polmap(env, mf_pol,save=True, directory=dir, title=f'{index}',show=False)
         if value:
-            plot_valmap(env, mf_val,save=True, directory=dir, title=f'{run_id[0:8]}_{index}',show=False, v_range=[-2.5,10])
+            plot_valmap(env, mf_val,save=True, directory=dir, title=f'{index}',show=False, v_range=[-2.5,10])
         plt.close()
 
 def trajectories(index):
@@ -94,39 +95,35 @@ def daves_idea():
     plt.show()
 #daves_idea()
 
-def plot_rewards():
-    fig, ax = plt.subplots(4,1, sharex=True)
+def plot_rewards(data):
+    fig, ax = plt.subplots(3,1, sharex=True)
     smoothing=10
-    ax[0].plot(rm(data['total_reward'],smoothing), c='k', alpha=0.5)
+    ax[0].plot(rm(data['total_reward'],smoothing), c='k', alpha=0.5, label='EC')
     if 'bootstrap_reward' in data.keys():
-        ax[0].plot(rm(data['bootstrap_reward'],smoothing), c='r')
+        ax[0].plot(rm(data['bootstrap_reward'],smoothing), c='r', label='MF')
+    ax[0].set_ylabel('Reward')
+    ax[0].legend(loc=0)
 
     ax[1].plot(rm(data['loss'][0], smoothing), label='ec_p')
-    ax[1].plot(rm(data['mf_loss'][0], smoothing), label='mf_p')
-    #ax[1].set_ylim([-1000,1000])
-    #ax[1].set_yscale('log')
+    ax[1].plot(rm(data['loss'][1],smoothing),':', label='ec_v')
+    if 'mf_loss' in data.keys():
+        ax[1].plot(rm(data['mf_loss'][0], smoothing), label='mf_p')
+        ax[1].plot(rm(data['mf_loss'][1],smoothing), ':',label='mf_v')
+    ax[1].set_ylabel('Loss')
     ax[1].legend(loc=0)
 
-    ax[2].plot(rm(data['loss'][1],smoothing), label='ec_v')
-    ax[2].plot(rm(data['mf_loss'][1],smoothing), label='mf_v')
-    #ax[2].set_yscale('log')
-    ax[2].legend(loc=0)
+    if 'weights' in data.keys():
+        ax[2].plot(rm(data['weights']['h0'],smoothing),':', label='h0',c='k', alpha=0.5)
+        ax[2].plot(rm(data['weights']['h1'],smoothing), label='h1',c='k', alpha=0.7)
+        ax[2].plot(rm(data['weights']['p'],smoothing), label='p',c='r')
+        ax[2].plot(rm(data['weights']['v'],smoothing), label='v',c='g')
+        ax[2].set_ylabel('Gradient \nNorm')
+        ax[2].legend(loc=0)
 
-
-
-    #ax[2].plot(np.asarray(data['weights']['h0'][0]), label='h0',c='r')
-    #ax[2].plot(np.asarray(data['weights']['h1'][0]), label='h1',c='g')
-    #ax[3].plot(np.vstack(data['weights']['out0'][0]), label='p',c='b')
-    #ax[3].plot(np.vstack(data['weights']['out1'][0]), label='v',c='k')
-
-    #ax[2].plot(data['weights']['h0'][1], ':', label='h0',c='r')
-    #ax[2].plot(data['weights']['h1'][1], ':', label='h1',c='g')
-    #ax[2].plot(data['weights']['out0'][1], ':', label='p',c='b')
-    #ax[2].plot(data['weights']['out1'][1], ':', label='v',c='k')
-    ax[2].legend(loc=0)
     plt.show()
 
-plot_rewards()
+#print(data['weights']['h0'][0])
+#plot_rewards(data)
 
 '''
 ## show weights 
@@ -174,10 +171,6 @@ plt.scatter(xdat,yv, label='val', color=RGB_tuples)
 plt.legend(loc=0)
 plt.show()
 '''
-
-
-
-
-#plot_maps(start=0,stop=550, step=1, policy=True)
+#plot_maps(start=0,stop=999, step=10, value=True)
 #plot_pol_evol((5,6))
 #x = trajectories(995)
