@@ -496,8 +496,9 @@ class LinearTrack(GridWorld):
         super().__init__(rows=1, cols=track_length, actionlist=self.action_list, rewarded_action=self.rewarded_action, rewards=self.rewards)
 
 class LinearTrack_1(GridWorld):
+    # difference from Linear track = only has left-right transitions
     def __init__(self):
-        self.action_list = ['Down', 'Up', 'Right', 'Left']
+        self.action_list = ['Right', 'Left']
         self.rewarded_action = None
         self.rewards = {(0,19):5}
         super().__init__(rows=1, cols=20, actionlist=self.action_list, rewarded_action=self.rewarded_action, rewards=self.rewards)

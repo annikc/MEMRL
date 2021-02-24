@@ -255,6 +255,7 @@ class gridworldExperiment(expt):
 
 	def run(self, NUM_TRIALS, NUM_EVENTS, **kwargs):
 		self.print_freq = kwargs.get('printfreq', 100)
+		log_snapshot = kwargs.get('snap', True)
 		self.reset_data_logs()
 		self.t = time.time()
 
@@ -269,7 +270,8 @@ class gridworldExperiment(expt):
 					break
 
 			self.take_snapshot() # only differentce from expt.run()
-			self.end_of_trial(trial)
+			if log_snapshot:
+				self.end_of_trial(trial)
 
 
 #TODO write bootstrap as more general class
