@@ -1,20 +1,24 @@
 # =====================================
 #           IMPORT MODULES            #
 # =====================================
-import gym
-from gym import spaces, error, utils
+from __future__ import division
+from gym import spaces
 import numpy as np
-from gym.utils import seeding
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 
 # =====================================
 #              GW CLASS               #
 # =====================================
-class GridWorld(gym.Env):
-    metadata = {'render.modes':['human']}
-    def __init__(self, rows=20, cols=20, rewards={(5,5):10},
-                 env_type=None, rho=0.0, step_penalization=-0.01,
+class GridWorld(object):
+    # TODO: build transition matrix
+    # TODO: action-dependent reward function -- ask Blake
+    # TODO: reset env
+    # TODO: moves
+    # TODO: reward mover
+    # TODO: get frame
+    # TODO: environment wrapper
+
+    def __init__(self, rows, cols, rewards,
+                 env_type=None, rho=0.0, step_penalization=0,
                  terminals=None, obstacles=None, jumps=None,
                  port_shift=None, barheight=None,
                  around_reward=False,
@@ -81,8 +85,8 @@ class GridWorld(gym.Env):
             self.jump_to = []
 
         # Actions
+        self.action_dict 	= kwargs.get('actiondict', {'D':0, 'U':1, 'R':2, 'L':3, 'J':4, 'P':5})
         self.action_list    = kwargs.get('actionlist', ['Down', 'Up', 'Right', 'Left', 'Jump', 'Poke'])
-        self.action_dict    = kwargs.get('actiondict', {x: ind for ind, x in enumerate([x[0] for x in self.action_list])})
         self.action_space   = spaces.Discrete(len(self.action_list))
         self.buildTransitionMatrix()
 
@@ -105,31 +109,9 @@ class GridWorld(gym.Env):
             self.starter 		= kwargs.get('t_r_start', (0,0))
             self.start_loc      = self.starter
 
-
-
         # TODO - reset environment including initializing start state
-        self.reset()
+        self.resetEnvironment()
         self.finish_after_first_reward = True
-
-        self.observation_space = self.get_observation()  # TODO -- make more consistent with openai gym attribute observation_space
-
-        self.view = True
-        if self.view:
-            self.reset_viewer()
-            self.viewer = self.figure[0].canvas
-
-    def reset_viewer(self, **kwargs):
-        trial = kwargs.get('trial', 'Grid World')
-        self.figure = plot_world(self, title=f'Trial {trial}')
-        ## test
-        fig, ax = self.figure
-        agent_r, agent_c = self.oneD2twoD(self.state)
-        patch = patches.Circle((agent_c + .5, agent_r + .5), 0.35,
-                               fc='b')  ## plot functions use x,y we use row(y), col(x)
-        ax.add_patch(patch)
-        fig.canvas.draw()
-        plt.show(block=False)
-        ## /test
 
     def oneD2twoD(self, idx):
         return (int(idx / self.shape[1]),np.mod(idx,self.shape[1]))
@@ -295,6 +277,17 @@ class GridWorld(gym.Env):
 
         print("transition probs remapped")
 
+    def resetEnvironment(self, random_start=True):
+        self.random_start = random_start
+        if self.random_start:
+            self.start = self.get_random_start_location()
+        else:
+            self.start = self.useable[0]
+        self.state = self.twoD2oneD(self.start)
+
+        self.observation = self.get_observation()
+        self.done = False
+
     def get_random_start_location(self):
         get_start = np.random.choice(len(self.useable))
         start_r = self.useable[get_start][0]
@@ -349,8 +342,8 @@ class GridWorld(gym.Env):
         # recalculate reward function
         self.buildRewardFunction()
 
+
     def get_reward(self, action):
-        action = self.action_list[action][0]
         if len(self.R.shape) > 1:
             reward = self.R[self.state,self.action_dict[action]]
         else:
@@ -423,21 +416,7 @@ class GridWorld(gym.Env):
         else:
             print('is not works good')
 
-    #########################
-    def reset(self, random_start=True):
-        self.random_start = random_start
-        if self.random_start:
-            self.start = self.get_random_start_location()
-        else:
-            self.start = self.useable[0]
-        self.state = self.twoD2oneD(self.start)
-
-        self.observation = self.get_observation()
-        self.done = False
-
-        return self.state
-
-    def step(self, action):
+    def move(self, action):
         """
         Args:
             move (str): one of ['D','U','R','L','J'] for down, up, right, left, and jump, respectively.
@@ -447,143 +426,18 @@ class GridWorld(gym.Env):
 
         # check if move is valid, and then move
         x = self.get_actions()
-        if not self.get_actions()[action]:
+        if not self.get_actions()[self.action_dict[action]]:
             #raise Exception('Agent has tried an invalid action!')
             pass
         else:
-            transition_probs = self.P[action, self.state,:]
+            transition_probs = self.P[self.action_dict[action], self.state,:]
             self.state = np.nonzero(transition_probs)[0][0]  # update to new state
 
-        reward = self.get_reward(action) ## self.done is set in this function
+        reward = self.get_reward(action)
 
         # check if this is a terminal state
         #is_terminal = True if self.state in self.terminal else False
         is_terminal = self.done
 
-        return self.state, reward, is_terminal, {}
+        return (self.state, reward, is_terminal)
 
-    def render(self, pause_time=0.01, mode='human', **kwargs):
-        trial = kwargs.get('trial', None)
-        if mode == 'human':
-            agent_r, agent_c = self.oneD2twoD(self.state)
-            self.figure[1].patches[1].set_center([agent_r + 0.5, agent_c + 0.5])
-            self.figure[0].canvas.draw()
-            plt.pause(pause_time)
-
-            # TODO: fix this so render just updates the current_state patch
-            # TODO: base object to write current_state patch on top of
-        else:
-            assert 0, "Render mode '%s' is not supported" %mode
-
-    def close(self):
-        if self.viewer is not None:
-            self.viewer.close()
-            self.viewer = None
-
-
-class GridWorld4(GridWorld):
-    def __init__(self):
-        self.action_list = ['Down', 'Up', 'Right', 'Left']
-        self.rewarded_action = None
-        super().__init__(actionlist=self.action_list, rewarded_action=self.rewarded_action)
-
-class MiniGrid(GridWorld):
-    def __init__(self):
-        self.action_list = ['Down', 'Up', 'Right', 'Left']
-        self.rewarded_action = None
-        super().__init__(rows=7, cols=7, actionlist=self.action_list, rewarded_action=self.rewarded_action)
-
-class GridWorld4_movedR(GridWorld):
-    def __init__(self):
-        self.action_list = ['Down', 'Up', 'Right', 'Left']
-        self.rewarded_action = None
-        self.rewards = {(15,15):10}
-        super().__init__(actionlist=self.action_list, rewarded_action=self.rewarded_action, rewards=self.rewards)
-
-class GridWorld4_random_obstacle(GridWorld):
-    def __init__(self):
-        self.action_list = ['Down', 'Up', 'Right', 'Left']
-        self.rewarded_action = None
-        # obstacles list corresponds to one instance of rho = 0.1
-        # using list of obstacles instead so that they are the same each instantiation
-        # using rho generates new obstacles each time
-        self.obstacles_list = [(0, 11), (0, 14), (3, 1), (3, 19), (4, 4), (4, 11), (4, 15), (4, 17), (6, 4), (6, 18), (7, 6), (8, 1), (8, 11), (9, 0), (9, 8), (9, 14), (10, 13), (11, 4), (11, 16), (12, 5), (12, 18), (12, 19), (13, 2), (13, 5), (13, 15), (14, 6), (14, 9), (14, 14), (14, 19), (15, 4), (15, 7), (15, 15), (15, 19), (16, 7), (17, 0), (17, 2), (17, 11), (18, 1), (19, 5), (19, 7), (19, 11)]
-        super(GridWorld4_random_obstacle, self).__init__(actionlist=self.action_list, rewarded_action=self.rewarded_action,obstacles=self.obstacles_list)
-
-class GridWorld4_rooms(GridWorld):
-    def __init__(self):
-        self.action_list = ['Down', 'Up', 'Right', 'Left']
-        self.rewarded_action = None
-        self.obstacles_list = [(0, 10), (1, 10), (2, 10), (3, 10), (5, 10), (6, 10), (7, 10), (8, 10), (9, 10), (10, 0), (10, 1), (10, 3), (10, 4), (10, 5), (10, 6), (10, 7), (10, 8), (10, 9), (10, 10), (10, 11), (10, 12), (10, 13), (10, 14), (10, 16), (10, 17), (10, 18), (10, 19), (11, 10), (12, 10), (14, 10), (15, 10), (16, 10), (17, 10), (18, 10), (19, 10)]
-        super(GridWorld4_rooms, self).__init__(actionlist=self.action_list, rewarded_action=self.rewarded_action,obstacles=self.obstacles_list)
-
-class GridWorld4_bar(GridWorld):
-    def __init__(self):
-        self.action_list = ['Down', 'Up', 'Right', 'Left']
-        self.rewarded_action = None
-        self.maze_type = 'bar'
-        self.barheight = 8
-        super(GridWorld4_bar, self).__init__(actionlist=self.action_list, rewarded_action=self.rewarded_action,env_type=self.maze_type, barheight=self.barheight)
-
-
-def plot_world(world, **kwargs):
-    scale = kwargs.get('scale', 0.35)
-    title = kwargs.get('title', 'Grid World')
-    ax_labels = kwargs.get('ax_labels', False)
-    state_labels = kwargs.get('states', False)
-    invert_ = kwargs.get('invert', False)
-    if invert_:
-        cmap = 'bone'
-    else:
-        cmap = 'bone_r'
-    r,c = world.shape
-
-    fig = plt.figure(figsize=(c*scale, r*scale))
-    ax = fig.add_subplot(1,1,1)
-
-    gridMat = np.zeros(world.shape)
-    for i, j in world.obstacle2D:
-        gridMat[i, j] = 1.0
-    for i, j in world.terminal2D:
-        gridMat[i, j] = 0.2
-    ax.pcolor(world.grid, edgecolors='k', linewidths=0.75, cmap=cmap, vmin=0, vmax=1)
-
-    U = np.zeros((r, c))
-    V = np.zeros((r, c))
-    U[:] = np.nan
-    V[:] = np.nan
-
-    if len(world.action_list) >4 :
-        if world.jump is not None:
-            for (a, b) in world.jump.keys():
-                (a2, b2) = world.jump[(a, b)]
-                U[a, b] = (b2 - b)
-                V[a, b] = (a - a2)
-
-    C, R = np.meshgrid(np.arange(0, c) + 0.5, np.arange(0, r) + 0.5)
-    ax.quiver(C, R, U, V, scale=1, units='xy')
-
-    for rwd_loc in world.rewards.keys():
-        rwd_r, rwd_c = rwd_loc
-        if world.rewards[rwd_loc] < 0:
-            colorcode = 'red'
-        else:
-            colorcode = 'darkgreen'
-        ax.add_patch(plt.Rectangle((rwd_c, rwd_r), width=1, height=1, linewidth=2, facecolor=colorcode, alpha=0.5))
-
-    if state_labels:
-        for (i,j) in world.useable:
-            # i = row, j = col
-            ax.annotate(f'{world.twoD2oneD((i,j))}', (j+0.3,i+0.7))
-
-
-    #ax.set_xticks([np.arange(c) + 0.5, np.arange(c)])
-    #ax.set_yticks([np.arange(r) + 0.5, np.arange(r)])
-    ax.invert_yaxis()
-    ax.set_aspect('equal')
-    if not ax_labels:
-        ax.get_xaxis().set_ticks([])
-        ax.get_yaxis().set_ticks([])
-    ax.set_title(title)
-
-    return fig, ax

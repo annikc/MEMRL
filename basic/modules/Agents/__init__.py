@@ -42,7 +42,7 @@ class Agent(object):
         a = Categorical(probs=policy,logits=None)
 
         action = a.sample()
-        return action.item(), a.log_prob(action), value.view(-1) ##TODO: why view instead of item
+        return action.item(), a.log_prob(action), value.view(-1), a ##TODO: why view instead of item
 
     def EC_action(self, state_observation):
         MF_policy, value = self.MFC(state_observation)
@@ -55,7 +55,7 @@ class Agent(object):
         b = Categorical(probs=MF_policy,logits=None)
 
         action = a.sample() # select action using episodic
-        return action.item(), b.log_prob(action), value.view(-1)
+        return action.item(), b.log_prob(action), value.view(-1), a
 
     def EC_storage(self):
         mem_dict = {}
@@ -125,19 +125,10 @@ class Agent(object):
         transitions = self.transition_cache.transition_cache
 
         running_add = 0
-        returns = []
         for t in reversed(range(len(transitions))):
             running_add = running_add*self.gamma + transitions[t].reward
             transitions[t] = transitions[t]._replace(target_value = running_add)
-            #returns.insert(0, running_add)
-        # Scale rewards
-        #returns = torch.FloatTensor(returns)
-        #returns = (returns - returns.mean()) / (returns.std() + np.finfo(np.float32).eps)
-
         # update transition cache with computed return values
-        #for i in range(len(transitions)):
-        #    transitions[i]._replace(target_value = returns[i])
-
         self.transition_cache.transition_cache = transitions
 
     def log_event(self, episode, event, state, action, reward, next_state, log_prob, expected_value, target_value, done, readable_state):

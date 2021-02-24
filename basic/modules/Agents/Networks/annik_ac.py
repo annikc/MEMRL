@@ -56,6 +56,9 @@ class ActorCritic(torch.nn.Module):
             self.temperature = kwargs.get('softmax_temp', 1)
         else:
             self.temperature = agent_params.temp
+        print(self.temperature, "SOFTMAX TEMP")
+
+
 
         if 'hidden_types' in params_dict.keys():
             if len(agent_params.hidden_dims) != len(agent_params.hidden_types):
