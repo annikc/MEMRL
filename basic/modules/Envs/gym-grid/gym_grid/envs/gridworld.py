@@ -487,6 +487,30 @@ class GridWorld4(GridWorld):
         self.rewarded_action = None
         super().__init__(actionlist=self.action_list, rewarded_action=self.rewarded_action)
 
+class LinearTrack(GridWorld):
+    def __init__(self):
+        self.action_list = ['Down', 'Up', 'Right', 'Left']
+        self.rewarded_action = None
+        track_length = 20
+        self.rewards = {(0,track_length-1):10}
+        super().__init__(rows=1, cols=track_length, actionlist=self.action_list, rewarded_action=self.rewarded_action, rewards=self.rewards)
+
+class LinearTrack_1(GridWorld):
+    # difference from Linear track = only has left-right transitions
+    def __init__(self):
+        self.action_list = ['Right', 'Left']
+        self.rewarded_action = None
+        self.rewards = {(0,19):5}
+        super().__init__(rows=1, cols=20, actionlist=self.action_list, rewarded_action=self.rewarded_action, rewards=self.rewards)
+
+    def buildTransitionMatrix(self):
+        # initialize
+        self.P = np.zeros((len(self.action_list), self.nstates, self.nstates))  # down, up, right, left, jump, poke
+
+        self.P[0, list(range(0, self.nstates-1)), list(range(1, self.nstates))] = 1  							# right
+        self.P[1, list(range(1, self.nstates)), list(range(0, self.nstates-1))] = 1  							# left
+
+
 class MiniGrid(GridWorld):
     def __init__(self):
         self.action_list = ['Down', 'Up', 'Right', 'Left']
