@@ -21,21 +21,11 @@ class expt(object):
 		self.data = self.reset_data_logs()
 		self.agent.counter = 0
 
-	def get_representation(self, state):
-		# TODO
-		# use self.representation_network
-		# pass observation from environment
-		# output representation to be used for self.agent input
-		##### trivial representation: one-hot rep of state
-		onehot_state = np.zeros(self.env.nstates)
-		onehot_state[state] = 1
-
-		return onehot_state
-
 	def record_log(self, expt_type, env_name, n_trials, n_steps, **kwargs): ## TODO -- set up logging
 		parent_folder = kwargs.get('dir', './Data/')
-		log_name     = kwargs.get('file', 'test_bootstrap.csv')
-		load_from = kwargs.get('load_from', ' ')
+		log_name      = kwargs.get('file', 'test_bootstrap.csv')
+		load_from     = kwargs.get('load_from', ' ')
+		mock_log      = kwargs.get('mock_log', False)
 		MF_temp = self.agent.MFC.temperature
 		if self.agent.EC is not None:
 			EC_temp = self.agent.EC.mem_temp
@@ -86,17 +76,21 @@ class expt(object):
 		# write to logger
 		with open(parent_folder + log_name, 'a+', newline='') as file:
 			writer = csv.writer(file)
-			writer.writerow(log_jam)
+			if mock_log:
+				writer.writerow(log_jam+["mock log"])
+			else:
+				writer.writerow(log_jam)
 
-		# save data
-		with open(f'{parent_folder}results/{save_id}_data.p', 'wb') as savedata:
-			pickle.dump(self.data, savedata)
-		# save agent weights
-		torch.save(self.agent.MFC, f=f'{parent_folder}agents/{save_id}.pt')
-		# save episodic dictionary
-		if self.agent.EC != None:
-			with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
-				pickle.dump(self.agent.EC.cache_list, saveec)
+		if not mock_log: ## can turn on flag to write to csv without saving files
+			# save data
+			with open(f'{parent_folder}results/{save_id}_data.p', 'wb') as savedata:
+				pickle.dump(self.data, savedata)
+			# save agent weights
+			torch.save(self.agent.MFC, f=f'{parent_folder}agents/{save_id}.pt')
+			# save episodic dictionary
+			if self.agent.EC != None:
+				with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
+					pickle.dump(self.agent.EC.cache_list, saveec)
 		print(f'Logged with ID {save_id}')
 
 	def reset_data_logs(self):
@@ -132,7 +126,7 @@ class expt(object):
 
 	def single_step(self,trial):
 		# get representation for given state of env. TODO: should be in agent to get representation?
-		state_representation = self.get_representation(self.state)
+		state_representation = self.agent.get_state_representation(self.state)
 		readable = 0
 
 		# get action from agent

@@ -13,12 +13,14 @@ from torch.distributions import Categorical
 
 from .Transition_Cache import Transition_Cache
 
+from .Networks.DQN import DQ_agent
+
 
 Transition = namedtuple('Transition', 'episode, transition, state, action, reward, \
                                 next_state, log_prob, expected_value, target_value, done, readable_state')
 
 class Agent(object):
-    def __init__(self, network, memory=None, **kwargs):
+    def __init__(self, network, memory=None, state_representations=[], **kwargs):
         self.MFC = network
         self.EC = memory
         self.transition_cache = Transition_Cache(cache_size=10000)
@@ -35,6 +37,14 @@ class Agent(object):
             self.calc_loss = self.TD_loss
         else:
             self.calc_loss = self.MC_loss
+
+        self.state_reps = state_representations
+
+    def get_state_representation(self,state):
+        if self.state_reps == []:
+            return state
+        else:
+            return self.state_reps[state]
 
     def MF_action(self, state_observation):
         policy, value = self.MFC(state_observation)

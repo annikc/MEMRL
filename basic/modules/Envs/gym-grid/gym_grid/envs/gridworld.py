@@ -549,7 +549,6 @@ class GridWorld4_bar(GridWorld):
         self.barheight = 8
         super(GridWorld4_bar, self).__init__(actionlist=self.action_list, rewarded_action=self.rewarded_action,env_type=self.maze_type, barheight=self.barheight)
 
-
 def plot_world(world, **kwargs):
     scale = kwargs.get('scale', 0.35)
     title = kwargs.get('title', 'Grid World')

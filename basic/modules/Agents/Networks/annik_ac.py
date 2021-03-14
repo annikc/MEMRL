@@ -11,9 +11,46 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
+import torch.nn as nn # to handle layers
+import torch.optim as optim # for optimizer
 
 
-class ActorCritic(torch.nn.Module):
+
+class fully_connected_AC_network(nn.Module):
+    def __init__(self, input_dims, fc1_dims, fc2_dims, output_dims, lr):
+        super(fully_connected_AC_network,self).__init__()
+        self.input_dims = input_dims
+        self.fc1_dims   = fc1_dims
+        self.fc2_dims   = fc2_dims
+        self.output_dims= output_dims
+
+        self.fc1 = nn.Linear(*self.input_dims,self.fc1_dims)
+        self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
+        self.pol = nn.Linear(self.fc2_dims, self.output_dims)
+        self.val = nn.Linear(self.fc2_dims, 1)
+
+        self.lr         = lr
+        self.optimizer  = optim.Adam(self.parameters(), lr=self.lr)
+
+        self.temperature = 1
+
+        # need loss function?
+
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.to(self.device)
+
+    def forward(self,state):
+        state = torch.Tensor(state)
+        x = F.relu(self.fc1(state))
+        x = F.relu(self.fc2(x))
+
+        value   = self.val(x)
+        policy = F.softmax(self.pol(x)/self.temperature,dim=-1)
+
+        return policy, value
+
+
+class flex_ActorCritic(torch.nn.Module):
     def __init__(self, agent_params, **kwargs):
         # call the super-class init
         super(ActorCritic, self).__init__()

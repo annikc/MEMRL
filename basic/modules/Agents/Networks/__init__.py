@@ -1,11 +1,9 @@
 import gym
-from .annik_ac import ActorCritic
 
-from .cnn import CNN_AC
-from .cnn_2n import CNN_2N
+from .annik_ac import fully_connected_AC_network as ActorCritic
+from .annik_ac import flex_ActorCritic
 
-from .fcx2 import FullyConnected_AC as FC
-from .fcx2_2n import FullyConnected_2N as FC2N
+from .DQN import DQN
 
 # for actor critic agent
 class params(object):

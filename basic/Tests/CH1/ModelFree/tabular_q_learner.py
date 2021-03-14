@@ -26,7 +26,7 @@ env_name   = 'gym_grid:gridworld-v1'
 env = gym.make(env_name)
 plt.close()
 
-class Q_Agent(object):
+class Tabular_Q_Agent(object):
     def __init__(self, env, n_eps, learning_rate=0.1, discount=0.98):
         self.action_space= np.arange(env.action_space.n)
         self.q_table = np.random.uniform(low=-1, high=1, size=(env.nstates, env.action_space.n))
@@ -183,7 +183,7 @@ class Q_Expt(expt):
 
 # generate agent
 ntrials = 100000
-agent = Q_Agent(env,n_eps=ntrials)
+agent = Tabular_Q_Agent(env,n_eps=ntrials)
 run = Q_Expt(agent, env)
 
 

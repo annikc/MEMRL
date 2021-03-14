@@ -39,11 +39,11 @@ class EpisodicMemory(object):
 	def add_mem(self, item):
 		activity 	= item['activity']
 		action		= item['action']
-		delta 		= item['delta']
+		delta 		= item['delta'] #return
 		timestamp	= item['timestamp']
-		trial       = item['trial']
+		trial       = item['trial'] # episode (i.e. collection of transitions)
 		#
-		readable    = item['readable']
+		readable    = item['readable'] # 2d coordinate just to know what state we're looking at
 
 		# Case 1: memory is not full
 		if len(self.cache_list) < self.cache_limit:
