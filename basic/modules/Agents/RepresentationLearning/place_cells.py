@@ -47,12 +47,15 @@ class place_cells(object):
                 ax.axis('off')
             else:
                 # for every state, get what the place cell activity is
-                ax.scatter(states[:,0],states[:,1], c =gridworld_pc_reps[:,get_rand_cells[i]])
+                ax.scatter(states[:,1],states[:,0], c =gridworld_pc_reps[:,get_rand_cells[i]])
                 cell_center = np.round(np.multiply(self.cell_centres[get_rand_cells[i]],self.env_shape),1)
                 ax.set_title(f'{cell_center}')
                 ax.set_yticks([])
                 ax.set_xticks([])
-        plt.show()
+                ax.invert_yaxis()
+                ax.set_aspect('equal')
+        #plt.show()
+        return get_rand_cells
 
 
 '''

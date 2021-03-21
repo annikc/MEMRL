@@ -21,6 +21,26 @@ def running_mean(x, N):
     return (cumsum[N:] - cumsum[:-N]) / float(N)
 
 
+def one_hot_state(env,state):
+    vec = np.zeros(env.nstates)
+    vec[state] = 1
+    return vec
+
+def onehot_state_collection(env):
+    collection = []
+    for state in range(env.nstates):
+        vec = one_hot_state(state)
+        collection.append(vec)
+    return collection
+
+def twoD_states(env):
+    twods = []
+    for state in range(env.nstates):
+        twod = env.oneD2twoD(state)
+        twods.append(twod)
+    return twods
+
+
 
 
 def plot_learning_curve(x, scores, figure_file):

@@ -5,6 +5,7 @@ import matplotlib.patches as patches
 import time
 import sys
 import torch
+import pickle
 sys.path.insert(0, '../../../modules/')
 from modules.Utils import running_mean as rm
 
@@ -55,13 +56,14 @@ plt.close()
 # 4. ActorCritic
 input_dims = 400
 
+data_dir = '../../../Data/'
+load_id = 'b6f51c73-ebc0-467a-b5e5-5b51a5a3208d'
+
 ### place cell representations
-place_cells = PlaceCells(env.shape, input_dims, field_size=0.25)
-
-plt.figure()
-plt.scatter(place_cells.cell_centres[:,0], place_cells.cell_centres[:,1])
-plt.show()
-
+#place_cells = PlaceCells(env.shape, input_dims, field_size=0.25)
+# load place cells
+with open(data_dir+ f'results/{load_id}_data.p', 'rb') as f:
+    place_cells = (pickle.load(f))['place_cells']
 
 pc_state_reps = {}
 oh_state_reps = {}
@@ -70,24 +72,27 @@ for state in env.useable:
 	pc_state_reps[env.twoD2oneD(state)] = place_cells.get_activities([state])[0]
 
 
-data_dir = '../../../Data/'
-load_id = 'd80ea92c-422c-436a-b0ff-84673d43a30d'
 
-oh_network = Network(input_dims=[input_dims],fc1_dims=200,fc2_dims=200,output_dims=env.action_space.n, lr=0.0005)
-oh_network = torch.load(data_dir+f'agents/{load_id}.pt')
-oh_agent = Agent(oh_network, state_representations=oh_state_reps)
 
-pc_network = Network(input_dims=[input_dims],fc1_dims=200,fc2_dims=200,output_dims=env.action_space.n, lr=0.0005)
+#oh_network = Network(input_dims=[input_dims],fc1_dims=200,fc2_dims=200,output_dims=env.action_space.n, lr=0.0005)
+#oh_network = torch.load(data_dir+f'agents/{load_id}.pt')
+#oh_agent = Agent(oh_network, state_representations=oh_state_reps)
+
+#pc_network = Network(input_dims=[input_dims],fc1_dims=200,fc2_dims=200,output_dims=env.action_space.n, lr=0.0005)
+pc_network = torch.load(data_dir+f'agents/{load_id}.pt')
 pc_agent = Agent(pc_network, state_representations=pc_state_reps)
 
 # retraining
 env.set_reward({(15,15):10})
 
-ex = expt(oh_agent, env)
+ex = expt(pc_agent, env)
 ntrials = 10000
 nsteps = 250
 ex.run(ntrials, nsteps)
-ex.record_log('oh_retraining',env_name,ntrials,nsteps, dir=data_dir,file='ac_representation.csv', mock_log=True)
+ex.data['place_cells'] = place_cells
+ex.record_log('pc_retraining',env_name,ntrials,nsteps, dir=data_dir,file='ac_representation.csv')
+# save place cells
+
 
 
 
