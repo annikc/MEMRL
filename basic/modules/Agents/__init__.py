@@ -29,7 +29,10 @@ class Agent(object):
 
         self.gamma = kwargs.get('discount',0.98) # discount factor for return computation
 
-        self.get_action = self.MF_action
+        if self.EC != None:
+            self.get_action = self.MF_action
+        else:
+            self.get_action = self.EC_action
         self.counter = 0
 
         self.TD = kwargs.get('td_learn', False)
