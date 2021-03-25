@@ -15,7 +15,9 @@ import matplotlib.colors as colors
 import matplotlib.colorbar as colorbar
 import matplotlib.cm as cmx
 
-from basic.modules.Utils import softmax
+import sys
+sys.path.append('../Utils')
+from Utils import softmax
 from scipy.stats import entropy
 
 # =====================================
@@ -119,6 +121,8 @@ def plot_valmap(maze, value_array, save=False, **kwargs):
     ax1.set_aspect('equal')
     ax1.invert_yaxis()
     ax1.set_title(title)
+    ax1.get_xaxis().set_visible(False)
+    ax1.get_yaxis().set_visible(False)
 
     if save:
         plt.savefig(f'{directory}v_{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
@@ -172,6 +176,8 @@ def plot_polmap(maze, policy_array, save=False, **kwargs):
     ax1.set_aspect('equal')
     ax1.set_title(title)
     ax1.invert_yaxis()
+    ax1.get_xaxis().set_visible(False)
+    ax1.get_yaxis().set_visible(False)
 
     if save:
         plt.savefig(f'{directory}p_{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
@@ -304,12 +310,15 @@ def plot_pref_pol(maze, policy_array, save=False, **kwargs):
     ax1.set_aspect('equal')
     ax1.set_title(title)
     ax1.invert_yaxis()
+    ax1.get_xaxis().set_visible(False)
+    ax1.get_yaxis().set_visible(False)
 
     if save:
         plt.savefig(f'{directory}pref_{title}.{filetype}', format=f'{filetype}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
+
 def plot_optimal(maze, policy_array, save=False, **kwargs):
     '''
     :param maze: the environment object

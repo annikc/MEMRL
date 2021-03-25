@@ -108,6 +108,7 @@ class GridWorld(gym.Env):
 
 
         # TODO - reset environment including initializing start state
+        self.random_start = kwargs.get('random_start',True)
         self.reset()
         self.finish_after_first_reward = True
 
@@ -424,8 +425,7 @@ class GridWorld(gym.Env):
             print('is not works good')
 
     #########################
-    def reset(self, random_start=True):
-        self.random_start = random_start
+    def reset(self):
         if self.random_start:
             self.start = self.get_random_start_location()
         else:
@@ -531,7 +531,7 @@ class GridWorld4_random_obstacle(GridWorld):
         # obstacles list corresponds to one instance of rho = 0.1
         # using list of obstacles instead so that they are the same each instantiation
         # using rho generates new obstacles each time
-        self.obstacles_list = [(0, 11), (0, 14), (3, 1), (3, 19), (4, 4), (4, 11), (4, 15), (4, 17), (6, 4), (6, 18), (7, 6), (8, 1), (8, 11), (9, 0), (9, 8), (9, 14), (10, 13), (11, 4), (11, 16), (12, 5), (12, 18), (12, 19), (13, 2), (13, 5), (13, 15), (14, 6), (14, 9), (14, 14), (14, 19), (15, 4), (15, 7), (15, 15), (15, 19), (16, 7), (17, 0), (17, 2), (17, 11), (18, 1), (19, 5), (19, 7), (19, 11)]
+        self.obstacles_list = [(0, 11), (0, 14), (3, 1), (3, 19), (4, 4), (4, 11), (4, 15), (4, 17), (6, 4), (6, 18), (7, 6), (8, 1), (8, 11), (9, 0), (9, 8), (9, 14), (10, 13), (11, 4), (11, 16), (12, 5), (12, 18), (12, 19), (13, 2), (13, 5), (13, 15), (14, 6), (14, 9), (14, 14), (14, 19), (15, 4), (15, 7), (15, 19), (16, 7), (17, 0), (17, 2), (17, 11), (18, 1), (19, 5), (19, 7), (19, 11)]
         super(GridWorld4_random_obstacle, self).__init__(actionlist=self.action_list, rewarded_action=self.rewarded_action,obstacles=self.obstacles_list)
 
 class GridWorld4_rooms(GridWorld):
@@ -548,6 +548,59 @@ class GridWorld4_bar(GridWorld):
         self.maze_type = 'bar'
         self.barheight = 8
         super(GridWorld4_bar, self).__init__(actionlist=self.action_list, rewarded_action=self.rewarded_action,env_type=self.maze_type, barheight=self.barheight)
+
+class GridWorld4_tunnel(GridWorld):
+    def __init__(self):
+        self.action_list = ['Down', 'Up', 'Right', 'Left']
+        self.rewarded_action = None
+        # obstacles list corresponds to one instance of rho = 0.1
+        # using list of obstacles instead so that they are the same each instantiation
+        # using rho generates new obstacles each time
+        tunnel_blocks = []
+        for i in range(7,13):
+            for j in range(21):
+                if j == 10:
+                    pass
+                else:
+                    tunnel_blocks.append((i,j))
+
+        self.obstacles_list = tunnel_blocks
+        self.rewards = {(3,10):10}
+        super(GridWorld4_tunnel, self).__init__(cols=21,rows=20,actionlist=self.action_list, rewards=self.rewards,rewarded_action=self.rewarded_action,obstacles=self.obstacles_list)
+
+class GridWorld4_hairpin(GridWorld):
+    def __init__(self):
+        self.action_list = ['Down', 'Up', 'Right', 'Left']
+        self.rewarded_action = None
+        # obstacles list corresponds to one instance of rho = 0.1
+        # using list of obstacles instead so that they are the same each instantiation
+        # using rho generates new obstacles each time
+        hairpin_blocks = []
+        ncols = 9
+        nrows = 10
+        for i in range(ncols):
+            for j in range(nrows):
+                if i%2==0:
+                    pass
+                else:
+                    hairpin_blocks.append((j,i))
+        for i in range(ncols):
+            if i%2==0:
+                pass
+            elif i%4==1:
+                hairpin_blocks.remove((nrows-1,i))
+            elif i%4==3:
+                hairpin_blocks.remove((0, i))
+
+        self.obstacles_list = hairpin_blocks
+        self.rewards = {(nrows-1,ncols-1):10}
+        super(GridWorld4_hairpin, self).__init__(cols=ncols,rows=nrows,
+                                                 actionlist=self.action_list,
+                                                 rewards=self.rewards,
+                                                 rewarded_action=self.rewarded_action,
+                                                 obstacles=self.obstacles_list,
+                                                 random_start=False)
+
 
 def plot_world(world, **kwargs):
     scale = kwargs.get('scale', 0.35)

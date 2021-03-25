@@ -2,11 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class place_cells(object):
-    def __init__(self, env_shape, num_cells, field_size):
+    def __init__(self, env_shape, num_cells, field_size, **kwargs):
         self.env_shape = env_shape
         self.num_cells = num_cells
         self.field_size = field_size
-        self.cell_centres = self.get_cell_centres()
+        self.cell_centres = kwargs.get('cell_centres',self.get_cell_centres())
 
     def get_cell_centres(self):
         cell_centres = []
@@ -19,8 +19,8 @@ class place_cells(object):
     def gaus2d(self, state):
         x  = state[0]
         y  = state[1]
-        mx = self.cell_centres[:,0]
-        my = self.cell_centres[:,1]
+        mx = self.cell_centres[:,1]
+        my = self.cell_centres[:,0]
         sx = sy = self.field_size
         return 1. / (2. * np.pi * sx * sy) * np.exp(-((x - mx)**2. / (2. * sx**2.) + (y - my)**2. / (2. * sy**2.)))
 

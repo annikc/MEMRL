@@ -4,7 +4,7 @@ import numpy as np
 import modules.Agents.Networks as nets
 import modules.Agents.EpisodicMemory as Memory
 from modules.Agents import Agent
-from modules.Experiments import gridworldBootstrap as expt
+from modules.Experiments import expt
 import matplotlib.pyplot as plt
 from basic.modules.Utils.gridworld_plotting import plot_polmap, plot_pref_pol, plot_valmap, plot_world
 

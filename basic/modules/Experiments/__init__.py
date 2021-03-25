@@ -20,6 +20,8 @@ class expt(object):
 		# self.rep_learner = rep_learner  #TODO add in later
 		self.data = self.reset_data_logs()
 		self.agent.counter = 0
+		self.pol_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
+		self.val_grid = np.empty(self.env.shape)
 
 	def record_log(self, expt_type, env_name, n_trials, n_steps, **kwargs): ## TODO -- set up logging
 		parent_folder = kwargs.get('dir', './Data/')
@@ -108,8 +110,33 @@ class expt(object):
 		# to be run before experiment to learn representations of states
 		pass
 
+	def snapshot(self, states, observations):
+		# initialize empty data frames
+		pol_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
+		val_grid = np.empty(self.env.shape)
+
+		mem_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
+
+		# forward pass through network
+		pols, vals = self.agent.MFC(observations)
+
+		# populate with data from network
+		for s, p, v in zip(states, pols, vals):
+			pol_grid[s] = tuple(p.data.numpy())
+			val_grid[s] = v.item()
+
+		return pol_grid, val_grid
+
 	def end_of_trial(self, trial):
 		p, v = self.agent.finish_()
+
+		# temp
+		states = [self.env.oneD2twoD(x) for x in list(self.agent.state_reps.keys())]
+		observations = list(self.agent.state_reps.values())
+		MF_pols, MF_vals = self.snapshot(states,observations)
+		self.data['V_snap'].append(MF_vals)
+		self.data['P_snap'].append(MF_pols)
+		# /temp
 
 		self.data['total_reward'].append(self.reward_sum) # removed for bootstrap expts
 		self.data['loss'][0].append(p)

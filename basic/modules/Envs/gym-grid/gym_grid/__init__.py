@@ -42,3 +42,13 @@ register(
     id='gridworld-v4',
     entry_point='gym_grid.envs:GridWorld4_bar',
 )
+
+register(
+    id='gridworld-v5',
+    entry_point='gym_grid.envs:GridWorld4_tunnel',
+)
+
+register(
+    id='gridworld-v6',
+    entry_point='gym_grid.envs:GridWorld4_hairpin',
+)
