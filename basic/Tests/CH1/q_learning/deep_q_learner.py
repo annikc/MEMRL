@@ -1,8 +1,20 @@
-import torch
-import gym
 import numpy as np
+import gym
+
+from basic.modules.Agents import DQ_agent
+
+
+import torch
+
 import matplotlib.pyplot as plt
 from basic.modules.Agents.RepresentationLearning import PlaceCells
+from basic.modules.Utils import one_hot_state, onehot_state_collection, twoD_states
+
+env_name = 'gym_grid:gridworld-v1'
+env = gym.make(env_name)
+
+
+
 '''
 import modules.Agents.Networks as nets
 import modules.Agents.EpisodicMemory as Memory
@@ -18,33 +30,15 @@ import pickle
 '''
 
 
-from basic.modules.Agents import DQ_agent
 
-env = gym.make('gym_grid:gridworld-v1')
+
+
 print(env.shape)
 num_cells = 1
 field_size = 0.1
 
 pcs = PlaceCells(env.shape, num_cells, field_size)
 
-def one_hot_state(state):
-    vec = np.zeros(env.nstates)
-    vec[state] = 1
-    return vec
-
-def onehot_state_collection(env):
-    collection = []
-    for state in range(env.nstates):
-        vec = one_hot_state(state)
-        collection.append(vec)
-    return collection
-
-def twoD_states(env):
-    twods = []
-    for state in range(env.nstates):
-        twod = env.oneD2twoD(state)
-        twods.append(twod)
-    return twods
 
 gridworld_onehots = onehot_state_collection(env)
 

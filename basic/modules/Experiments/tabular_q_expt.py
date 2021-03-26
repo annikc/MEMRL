@@ -1,63 +1,29 @@
-import torch
-import gym
 import numpy as np
-import modules.Agents.Networks as nets
-import modules.Agents.EpisodicMemory as Memory
-from modules.Agents import Agent
-from modules.Experiments import expt as expt
-import matplotlib.pyplot as plt
-from modules.Utils import running_mean as rm
 import time
-import uuid
-import csv
-import pickle
 
+def pref_Q_action(env, qtable):
+    action_table = np.zeros(env.shape)
+    for state in range(env.nstates):
+        state2d = env.oneD2twoD(state)
+        action_table[state2d] = np.argmax(qtable[state,:])
 
-'''
-Q learner needs to encounter reward in order to make useful updates to Q table; therefore run(NUM_TRIALS) but no 
-num_events argument   
-'''
+    return action_table
 
+class Q_Expt(object):
+    def __init__(self, agent, environment, **kwargs):
+        self.env = environment
+        self.agent = agent
+        self.data = self.reset_data_logs()
 
-
-env_name   = 'gym_grid:gridworld-v1'
-
-# create environment
-env = gym.make(env_name)
-plt.close()
-
-class Tabular_Q_Agent(object):
-    def __init__(self, env, n_eps, learning_rate=0.1, discount=0.98):
-        self.action_space= np.arange(env.action_space.n)
-        self.q_table = np.random.uniform(low=-1, high=1, size=(env.nstates, env.action_space.n))
-        self.LEARNING_RATE=learning_rate
-        self.DISCOUNT=discount
-        self.epsilon      = 0.4
-        self.start_eps_decay = 1
-        num_episodes = n_eps #TODO clean up
-        self.end_eps_decay= num_episodes//2
-        self.eps_decay_val= self.epsilon/(self.end_eps_decay-self.start_eps_decay)
-
-    def choose_action(self, state):
-        if np.random.random() > self.epsilon:
-            action= np.argmax(self.q_table[state,:])
-        else:
-            action = np.random.randint(len(self.q_table[state,:]))
-
-        return action
-
-    def q_update(self, current_state, current_action, reward, new_state, done):
-        if not done:
-            current_q = self.q_table[ current_state, current_action]
-            max_future_q = np.max(self.q_table[new_state,:])
-            new_q = (1-self.LEARNING_RATE)*current_q + self.LEARNING_RATE*(reward + self.DISCOUNT*max_future_q)
-            self.q_table[current_state, current_action] = new_q
-        else:
-            self.q_table[current_state, current_action] = 0
-
-class Q_Expt(expt):
-    def __init__(self, agent, environment):
-        super(Q_Expt,self).__init__(agent, environment)
+    def reset_data_logs(self):
+        data_log = {'total_reward': [],
+                    'loss': [[], []],
+                    'trial_length': [],
+                    'EC_snap': [],
+                    'P_snap': [],
+                    'V_snap': []
+                    }
+        return data_log
 
     def record_log(self, expt_type, env_name, n_trials, n_steps, **kwargs): ## TODO -- set up logging
         parent_folder = kwargs.get('dir', './Data/')
@@ -177,40 +143,3 @@ class Q_Expt(expt):
                 done = self.single_step(trial)
 
             self.end_of_trial(trial)
-
-
-
-
-# generate agent
-ntrials = 100000
-agent = Tabular_Q_Agent(env,n_eps=ntrials)
-run = Q_Expt(agent, env)
-
-
-run.run(NUM_TRIALS=ntrials, printfreq=1000)
-run.record_log(dir='../../../Data/',file='Qlearning.csv',expt_type='MF_Q',env_name=env_name,n_trials=ntrials,n_steps='Inf')
-
-
-def pref_Q_action(qtable):
-    action_table = np.zeros(env.shape)
-    for state in range(env.nstates):
-        state2d = env.oneD2twoD(state)
-        action_table[state2d] = np.argmax(qtable[state,:])
-
-    return action_table
-
-pref_action = pref_Q_action(run.agent.q_table)
-
-
-fig,ax = plt.subplots(2,1,sharex=False)
-agg_ep_rewards = run.agg_ep_rewards
-ax[0].plot(agg_ep_rewards['ep'], agg_ep_rewards['avg'], label='avg')
-ax[0].plot(agg_ep_rewards['ep'], agg_ep_rewards['min'], label='min')
-ax[0].plot(agg_ep_rewards['ep'], agg_ep_rewards['max'], label='max')
-ax[0].legend(loc=0)
-a = ax[1].imshow(pref_action, interpolation='none')
-cbar = fig.colorbar(a, ax=ax[1],ticks=[0,1,2,3])
-cbar.ax.set_yticklabels(['Down','Up','Right','Left'])
-
-
-plt.show()

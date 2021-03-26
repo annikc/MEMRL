@@ -13,7 +13,7 @@ from modules.Utils import one_hot_state, onehot_state_collection, twoD_states
 # get environment
 import gym
 
-from modules.Agents.RepresentationLearning.tabular_sr import Tabular_SR_Agent
+from modules.Agents import Tabular_SR_Agent
 
 env_id = 'gym_grid:gridworld-v6'
 env = gym.make(env_id)

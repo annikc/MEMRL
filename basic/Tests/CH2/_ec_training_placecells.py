@@ -1,3 +1,9 @@
+####
+# Determine similarity between states from a given representation type
+# Onehot / place cells / SR
+#
+#####
+
 # import packages
 import numpy as np
 import matplotlib.pyplot as plt
