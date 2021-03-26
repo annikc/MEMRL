@@ -6,9 +6,6 @@ import sys
 import gym
 
 
-cmap = plt.cm.viridis
-cmap.set_bad(color='white')
-
 def onehot(state_index, nstates):
     vec = np.zeros(nstates)
     vec[state_index] = 1

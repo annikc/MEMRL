@@ -11,7 +11,7 @@ from modules.Utils import one_hot_state
 # get environment
 env_name = 'gym_grid:gridworld-v4'
 env = gym.make(env_name)
-plt.show()
+plt.close()
 
 # make collection of one-hot state representations
 oh_state_reps = {}

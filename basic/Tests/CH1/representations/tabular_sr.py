@@ -15,7 +15,7 @@ import gym
 
 from modules.Agents.RepresentationLearning.tabular_sr import Tabular_SR_Agent
 
-env_id = 'gym_grid:gridworld-v5'
+env_id = 'gym_grid:gridworld-v6'
 env = gym.make(env_id)
 
 n_episodes = 50000
@@ -27,7 +27,8 @@ gamma = 0.99
 agent = Tabular_SR_Agent(env,gamma,learning_rate,epsilon=1) ## random walk agent
 
 for i in range(n_episodes):
-    state = env.reset(random_start=True)
+    env.random_start=True
+    state = env.reset()
     for j in range(n_steps):
         state = agent.step_in_env(state)
         if j>1:
@@ -40,7 +41,7 @@ for i in range(n_episodes):
 plt.figure()
 plt.imshow(agent.M[0,:,:])
 
-state = 150
+state = 1
 action = 2 # right
 sr = agent.M[action,state,:]
 sr_env = sr.reshape(*env.shape)
