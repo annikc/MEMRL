@@ -145,7 +145,7 @@ class expt(object):
 		if trial <= 10:
 			self.running_rwdavg = np.mean(self.data['total_reward'])
 		else:
-			self.running_rwdavg = np.mean(self.data['total_reward'][-10:-1])
+			self.running_rwdavg = np.mean(self.data['total_reward'][-10:])
 
 		if trial % self.print_freq == 0:
 			print(f"Episode: {trial}, Score: {self.reward_sum} (Running Avg:{self.running_rwdavg}) [{time.time() - self.t}s]")
