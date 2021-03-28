@@ -122,7 +122,7 @@ class expt(object):
 
 		# populate with data from network
 		for s, p, v in zip(states, pols, vals):
-			pol_grid[s] = tuple(p.data.numpy())
+			pol_grid[s] = tuple(p.cpu().data.numpy())
 			val_grid[s] = v.item()
 
 		return pol_grid, val_grid

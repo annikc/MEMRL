@@ -23,7 +23,7 @@ class Agent(object):
 
         self.optimizer = network.optimizer
 
-        self.gamma = kwargs.get('discount',0.98) # discount factor for return computation
+        self.gamma = kwargs.get('discount', 0.98) # discount factor for return computation
 
         if self.EC == None:
             self.get_action = self.MF_action
@@ -50,7 +50,7 @@ class Agent(object):
     def MF_action(self, state_observation):
         policy, value = self.MFC(state_observation)
 
-        a = Categorical(probs=policy,logits=None)
+        a = Categorical(probs=policy, logits=None)
 
         action = a.sample()
         return action.item(), a.log_prob(action), value.view(-1) ##TODO: why view instead of item
@@ -103,7 +103,7 @@ class Agent(object):
             log_prob = transition.log_prob
             #print("comput loss for step:", transition.readable_state, log_prob)
             pol_loss += -log_prob * delta
-            G_t = torch.Tensor([G_t])
+            G_t = torch.Tensor([G_t]).to(self.MFC.device)
             v_loss = torch.nn.L1Loss()(V_t, G_t)
             val_loss += v_loss
         return pol_loss, val_loss

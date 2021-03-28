@@ -17,7 +17,7 @@ import torch.optim as optim # for optimizer
 
 
 class fully_connected_AC_network(nn.Module):
-    def __init__(self, input_dims, fc1_dims, fc2_dims, output_dims, lr):
+    def __init__(self, input_dims, fc1_dims, fc2_dims, output_dims, lr, **kwargs):
         super(fully_connected_AC_network,self).__init__()
         self.input_dims = input_dims
         self.fc1_dims   = fc1_dims
@@ -36,11 +36,11 @@ class fully_connected_AC_network(nn.Module):
 
         # need loss function?
 
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = kwargs.get('device', torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
         self.to(self.device)
 
     def forward(self,state):
-        state = torch.Tensor(state)
+        state = torch.Tensor(state).to(self.device)
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
 

@@ -2,12 +2,18 @@ import numpy as np
 import gym
 import matplotlib.pyplot as plt
 import sys
-sys.path.append('../modules/')
-from modules.Agents.Networks import ActorCritic as Network
-from modules.Agents import Agent
-from modules.Experiments import expt
-from modules.Utils import one_hot_state
 
+from basic.modules.Agents.Networks import ActorCritic as Network
+from basic.modules.Agents import Agent
+from basic.modules.Experiments import expt
+from basic.modules.Utils import one_hot_state
+import torch
+
+print(torch.cuda.current_device())
+print(torch.cuda.is_available())
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+print(torch.cuda.get_device_name(device=torch.cuda.current_device()))
 # get environment
 env_name = 'gym_grid:gridworld-v4'
 env = gym.make(env_name)
@@ -20,7 +26,7 @@ for state in env.useable:
 
 input_dims = len(oh_state_reps[list(oh_state_reps.keys())[0]])
 
-network = Network(input_dims=[input_dims],fc1_dims=200,fc2_dims=200,output_dims=env.action_space.n, lr=0.0005)
+network = Network(input_dims=[input_dims],fc1_dims=200,fc2_dims=200,output_dims=env.action_space.n, lr=0.0005, device=torch.device('cpu'))
 
 agent = Agent(network, state_representations=oh_state_reps)
 
