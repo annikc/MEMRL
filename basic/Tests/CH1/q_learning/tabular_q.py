@@ -11,7 +11,7 @@ env_name   = 'gym_grid:gridworld-v1'
 env = gym.make(env_name)
 plt.close()
 
-N_epsiodes =5000
+N_epsiodes = 5000
 # create agent
 agent = Q_Agent(env,end_eps_decay=N_epsiodes/2)
 
@@ -27,6 +27,7 @@ pref_action = pref_Q_action(env, agent.q_table)
 fig,ax = plt.subplots(1,2)
 ax[0].plot(collected_rewards)
 ax[1].imshow(pref_action, interpolation='none')
+ax[1].axis('off')
 plt.show()
 
 '''
