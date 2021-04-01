@@ -8,7 +8,7 @@ from modules.Experiments import gridworldExperiment as expt
 import matplotlib.pyplot as plt
 
 # set up parameters
-env_name   = 'gym_grid:gridworld-v1' #v1 novel #v11 moved reward
+env_name   = 'gridworld:gridworld-v1' #v1 novel #v11 moved reward
 network_id = None # '97b5f281-a60e-4738-895d-191a04edddd6'
 actor      = 'EC'
 ntrials    = 5000

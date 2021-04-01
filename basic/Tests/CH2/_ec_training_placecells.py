@@ -36,7 +36,7 @@ import gym
 
 
 # make env
-env_name = 'gym_grid:gridworld-v4'
+env_name = 'gridworld:gridworld-v4'
 env = gym.make(env_name)
 env.set_reward({(15,15):2})
 env.reset_viewer()
@@ -48,11 +48,11 @@ plt.show()
 # 4. ActorCritic
 input_dims = 400
 
-data_dir = '../../../Data/'
+data_dir = '../../Data/'
 load_id = 'b6f51c73-ebc0-467a-b5e5-5b51a5a3208d'
 
 memory = EpisodicMemory(env.action_space.n, cache_limit=env.nstates)
-with open(data_dir+ f'/ec_dicts/dc126211-0af0-4fc1-8788-3f1b8567cdc2_EC.p', 'rb') as f:
+with open(data_dir+ f'ec_dicts/dc126211-0af0-4fc1-8788-3f1b8567cdc2_EC.p', 'rb') as f:
     memory.cache_list = pickle.load(f)
 
 ### place cell representations

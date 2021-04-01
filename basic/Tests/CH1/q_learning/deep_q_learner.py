@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from basic.modules.Agents.RepresentationLearning import PlaceCells
 from basic.modules.Utils import one_hot_state, onehot_state_collection, twoD_states
 
-env_name = 'gym_grid:gridworld-v1'
+env_name = 'gridworld:gridworld-v1'
 env = gym.make(env_name)
 
 

@@ -15,9 +15,7 @@ import matplotlib.colors as colors
 import matplotlib.colorbar as colorbar
 import matplotlib.cm as cmx
 
-import sys
-sys.path.append('../Utils')
-from Utils import softmax
+from ..Utils import softmax
 from scipy.stats import entropy
 
 # =====================================

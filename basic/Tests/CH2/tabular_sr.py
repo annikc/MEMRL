@@ -15,7 +15,7 @@ import gym
 
 from modules.Agents import Tabular_SR_Agent
 
-env_id = 'gym_grid:gridworld-v6'
+env_id = 'gridworld:gridworld-v6'
 env = gym.make(env_id)
 
 n_episodes = 50000
@@ -51,7 +51,7 @@ plt.imshow(sr_env)
 
 plt.show()
 x = agent.M.copy()
-with open(f'../../../modules/Agents/RepresentationLearning/SR_{env_id}.p', 'wb') as savedata:
+with open(f'../../../modules/Agents/RepresentationLearning/SR_{env_id[10:]}.p', 'wb') as savedata:
     pickle.dump(x, savedata)
 
 

@@ -15,7 +15,7 @@ from modules.Agents import Agent
 from modules.Experiments import gridworldExperiment as expt
 
 # build environment
-linear_track = 'gym_grid:gridworld-v112' # 1x20 gridworld with reward at (0,19)
+linear_track = 'gridworld:gridworld-v112' # 1x20 gridworld with reward at (0,19)
 env_name = linear_track
 
 env = gym.make(env_name)

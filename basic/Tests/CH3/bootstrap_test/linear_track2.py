@@ -15,8 +15,8 @@ from modules.Agents import Agent
 from modules.Experiments import Bootstrap_viewMF as expt
 
 # build environment
-linear_track = 'gym_grid:gridworld-v112' # 1x20 gridworld with reward at (0,19)
-mini_grid = 'gym_grid:gridworld-v111' # 7x7 gridworld with reward at (5,5)
+linear_track = 'gridworld:gridworld-v112' # 1x20 gridworld with reward at (0,19)
+mini_grid = 'gridworld:gridworld-v111' # 7x7 gridworld with reward at (5,5)
 
 env_name = linear_track
 

@@ -18,13 +18,13 @@ import gym
 
 
 # make env
-env_name = 'gym_grid:gridworld-v4'
+env_name = 'gridworld:gridworld-v4'
 env = gym.make(env_name)
 plt.close()
 
 input_dims = 400
 
-data_dir = '../../../Data/'
+data_dir = '../../Data/'
 load_id = 'b6f51c73-ebc0-467a-b5e5-5b51a5a3208d'
 
 ### place cell representations

@@ -7,7 +7,7 @@ from modules.Experiments.tabular_q_expt import Q_Expt, pref_Q_action
 from modules.Utils import running_mean as rm
 
 # create environment
-env_name   = 'gym_grid:gridworld-v1'
+env_name   = 'gridworld:gridworld-v1'
 env = gym.make(env_name)
 plt.close()
 

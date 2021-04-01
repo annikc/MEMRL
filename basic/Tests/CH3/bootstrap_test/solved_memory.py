@@ -8,7 +8,7 @@ from modules.Experiments import gridworldBootstrap as expt
 import matplotlib.pyplot as plt
 from basic.modules.Utils.gridworld_plotting import plot_polmap, plot_pref_pol, plot_valmap, plot_world
 
-env_name   = 'gym_grid:gridworld-v111'
+env_name   = 'gridworld:gridworld-v111'
 network_id = None # '97b5f281-a60e-4738-895d-191a04edddd6'
 ntrials    = 1000
 

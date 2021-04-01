@@ -8,7 +8,7 @@ from modules.Experiments import gridworldExperiment as expt
 import matplotlib.pyplot as plt
 from modules.Utils import running_mean as rm
 
-env_name   = 'gym_grid:gridworld-v112'
+env_name   = 'gridworld:gridworld-v112'
 network_id = None # '97b5f281-a60e-4738-895d-191a04edddd6'
 ntrials    = 1000
 

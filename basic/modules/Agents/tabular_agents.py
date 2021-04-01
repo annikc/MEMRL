@@ -1,5 +1,20 @@
 import numpy as np
 
+class TabularV_SR_Agent(object):
+    def __init__(self, env, gamma, learning_rate, epsilon=1):
+        self.env = env
+        self.state_space = env.nstates
+        self.action_space = env.action_space.n
+        self.M          = np.zeros((self.state_space, self.state_space))
+        self.reward_est = np.zeros(self.state_space)
+        self.v_table    = np.zeros((self.state_space)) ## come back to this
+
+        self.lr = learning_rate
+        self.gamma = gamma
+        self.epsilon = epsilon
+
+        self.transitions = []
+
 
 class Tabular_SR_Agent(object):
     def __init__(self, env, gamma, learning_rate, epsilon=1):

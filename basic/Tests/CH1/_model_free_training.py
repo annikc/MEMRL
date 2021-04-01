@@ -17,7 +17,7 @@ from modules.Experiments import expt
 from modules.Utils import one_hot_state
 
 # get environment
-env_name = 'gym_grid:gridworld-v4'
+env_name = 'gridworld:gridworld-v4'
 env = gym.make(env_name)
 plt.close()
 

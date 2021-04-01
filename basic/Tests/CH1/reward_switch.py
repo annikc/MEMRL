@@ -18,7 +18,7 @@ import torch
 
 
 # Make Environment to Test Agent in
-env_name = 'gym_grid:gridworld-v11'
+env_name = 'gridworld:gridworld-v11'
 expt_type = 'EC'
 env = gym.make(env_name)
 

@@ -13,7 +13,7 @@ import basic.modules.Utils.gridworld_plotting as gp
 import matplotlib.pyplot as plt
 import torch
 # Make Environment to Test Agent in
-env_name = 'gym_grid:gridworld-v1'
+env_name = 'gridworld:gridworld-v1'
 expt_type = 'MF'
 env = gym.make(env_name)
 
