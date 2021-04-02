@@ -66,6 +66,8 @@ class Agent(object):
         b = Categorical(probs=MF_policy,logits=None)
 
         action = a.sample() # select action using episodic
+        #action = torch.argmax(EC_policy)
+
         return action.item(), b.log_prob(action), value.view(-1)
 
     def EC_storage(self):

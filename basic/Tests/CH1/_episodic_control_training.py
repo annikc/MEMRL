@@ -42,7 +42,6 @@ agent = Agent(network, memory, state_representations=oh_state_reps)
 ex = expt(agent,env)
 
 num_trials = 2000
-
 num_events = 250
 
 ex.run(num_trials, num_events)

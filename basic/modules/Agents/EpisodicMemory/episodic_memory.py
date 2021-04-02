@@ -21,7 +21,7 @@ class EpisodicMemory(object):
 		self.memory_envelope 	= kwargs.get('mem_envelope', 50)    # speed of memory decay
 		self.use_pvals          = kwargs.get('pvals', False)
 
-		self.similarity_measure = self.key_sim
+		self.similarity_measure = self.L1_norm
 
 	def reset_cache(self):
 		self.cache_list.clear()
@@ -126,7 +126,7 @@ class EpisodicMemory(object):
 		lin_act = mem_cache[np.argmax(cosine_similarity)]
 		return  tuple(lin_act), max(cosine_similarity)
 
-	def key_sim(self, key):
+	def L1_norm(self, key):
 		mem_cache = np.asarray(list(self.cache_list.keys()))
 		entry 	  = np.asarray(key)
 

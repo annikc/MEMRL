@@ -112,7 +112,7 @@ class GridWorld(gym.Env):
         self.reset()
         self.finish_after_first_reward = True
 
-        self.observation_space = self.get_observation()  # TODO -- make more consistent with openai gym attribute observation_space
+        #self.observation_space = self.get_observation()  # TODO -- make more consistent with openai gym attribute observation_space
 
         self.view = True
         if self.view:
@@ -432,7 +432,7 @@ class GridWorld(gym.Env):
             self.start = self.useable[0]
         self.state = self.twoD2oneD(self.start)
 
-        self.observation = self.get_observation()
+        #self.observation = self.get_observation()
         self.done = False
 
         return self.state

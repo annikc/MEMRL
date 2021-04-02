@@ -53,3 +53,29 @@ register(
     id='gridworld-v1122',
     entry_point='gridworld.environments:LinearTrack_1',
 )
+
+# training environments
+register(
+    id='gridworld-v21',
+    entry_point='gridworld.environments:GridWorld4_random_obstacle_movedR',
+)
+
+register(
+    id='gridworld-v31',
+    entry_point='gridworld.environments:GridWorld4_rooms_movedR',
+)
+
+register(
+    id='gridworld-v41',
+    entry_point='gridworld.environments:GridWorld4_bar_movedR',
+)
+
+register(
+    id='gridworld-v51',
+    entry_point='gridworld.environments:GridWorld4_tunnel_movedR',
+)
+
+register(
+    id='gridworld-v61',
+    entry_point='gridworld.environments:GridWorld4_hairpin_movedR',
+)
