@@ -1,11 +1,11 @@
 import numpy as np
 import sys
 sys.path.append('../../../modules')
-from basic.modules.Utils import one_hot_state
-from basic.modules.Agents.RepresentationLearning import PlaceCells
+#from basic.modules.Utils import one_hot_state
+#from basic.modules.Agents.RepresentationLearning import PlaceCells
 # for jupyter no call to basic
-#from modules.Utils import one_hot_state
-#from modules.Agents.RepresentationLearning import PlaceCells
+from modules.Utils import one_hot_state
+from modules.Agents.RepresentationLearning import PlaceCells
 import pickle
 import os
 abspath = os.path.dirname(__file__)
