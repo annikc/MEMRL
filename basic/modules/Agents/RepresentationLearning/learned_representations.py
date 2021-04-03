@@ -50,22 +50,19 @@ def rand_place_cell(env, **kwargs):
 
     return pc_state_reps, name, dim
 
-def sr(env):
-    env_name = env.unwrapped.spec.id
-    with open(f'{abspath}/Learned_Rep_pickles/SR_{env_name}.p', 'rb') as f:
-        sr_ = pickle.load(f)
-    ### TODO - update with analytically calculated sr from adjacency matrix
-    SR_matrix = np.sum(sr_, axis=0)
-
-    name = 'successor'
-    dim = SR_matrix.shape[1]
-
+def sr(env, **kwargs):
+    discount = kwargs.get('discount', 0.98)
+    adj = np.sum(env.P/len(env.action_list),axis=0)
+    nstates = adj.shape[0]
+    sr_mat = np.linalg.inv(np.eye(nstates) - discount*adj)
+    name = 'analytic successor'
+    dim = sr_mat.shape[1]
 
     sr_reps = {}
-    for index in range(SR_matrix.shape[0]):
-        if max(SR_matrix[index])==0:
-            sr_reps[index] = np.zeros_like(SR_matrix[index])
+    for index in range(sr_mat.shape[0]):
+        if max(sr_mat[index])==0:
+            sr_reps[index] = np.zeros_like(sr_mat[index])
         else:
-            sr_reps[index] = SR_matrix[index]/max(SR_matrix[index])
+            sr_reps[index] = sr_mat[index]/max(sr_mat[index])
 
     return sr_reps, name, dim
