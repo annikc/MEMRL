@@ -18,10 +18,9 @@ def onehot(env):
     return oh_state_reps, name, dim
 
 def place_cell(env, **kwargs):
-    name = 'state-centred pc'
-    dim = env.nstates
     f_size = kwargs.get('field_size', 1/(max(*env.shape)))
-    print('field size is ', f_size)
+    name = f'state-centred pc f{f_size}'
+    dim = env.nstates
     # place cells centred at each state of the environment
     # for randomly distributed centres use rand_place_cell
     cell_centres = []
@@ -37,11 +36,12 @@ def place_cell(env, **kwargs):
 
     return pc_state_reps, name, dim
 
-def rand_place_cell(env):
+def rand_place_cell(env, **kwargs):
+    f_size = kwargs.get('field_size', 1/(max(*env.shape)))
     pc_state_reps = {}
-    name = 'random-centred pc'
+    name = f'random-centred pc f_{f_size}'
     dim = env.nstates
-    pcs = PlaceCells(env.shape, dim, field_size=1/(max(*env.shape))) # centres of cells are randomly distributed
+    pcs = PlaceCells(env.shape, dim, field_size=f_size) # centres of cells are randomly distributed
     for state in env.useable:
         pc_state_reps[env.twoD2oneD(state)] = pcs.get_activities([state])[0]
 
