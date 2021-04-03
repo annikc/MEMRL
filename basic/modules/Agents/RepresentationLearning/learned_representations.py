@@ -1,8 +1,11 @@
 import numpy as np
 import sys
 sys.path.append('../../../modules')
-from modules.Utils import one_hot_state
-from modules.Agents.RepresentationLearning import PlaceCells
+from basic.modules.Utils import one_hot_state
+from basic.modules.Agents.RepresentationLearning import PlaceCells
+# for jupyter no call to basic
+#from modules.Utils import one_hot_state
+#from modules.Agents.RepresentationLearning import PlaceCells
 import pickle
 import os
 abspath = os.path.dirname(__file__)
@@ -25,14 +28,14 @@ def place_cell(env, **kwargs):
     # for randomly distributed centres use rand_place_cell
     cell_centres = []
     for i in range(env.nstates):
-        cell_centres.append(env.oneD2twoD(i))
+        cell_centres.append(np.divide(env.oneD2twoD(i),env.shape) )
 
     pc_state_reps = {}
 
     pcs = PlaceCells(env.shape, dim, field_size=f_size, cell_centres=np.asarray(cell_centres))
 
     for state in env.useable:
-        pc_state_reps[env.twoD2oneD(state)] = pcs.get_activities([state])[0]
+        pc_state_reps[env.twoD2oneD(state)] = pcs.get_activities([state])[0]/max(pcs.get_activities([state])[0])
 
     return pc_state_reps, name, dim
 
@@ -43,7 +46,7 @@ def rand_place_cell(env, **kwargs):
     dim = env.nstates
     pcs = PlaceCells(env.shape, dim, field_size=f_size) # centres of cells are randomly distributed
     for state in env.useable:
-        pc_state_reps[env.twoD2oneD(state)] = pcs.get_activities([state])[0]
+        pc_state_reps[env.twoD2oneD(state)] = pcs.get_activities([state])[0]/max(pcs.get_activities([state])[0])
 
     return pc_state_reps, name, dim
 
@@ -60,6 +63,9 @@ def sr(env):
 
     sr_reps = {}
     for index in range(SR_matrix.shape[0]):
-        sr_reps[index] = SR_matrix[index]
+        if max(SR_matrix[index])==0:
+            sr_reps[index] = np.zeros_like(SR_matrix[index])
+        else:
+            sr_reps[index] = SR_matrix[index]/max(SR_matrix[index])
 
     return sr_reps, name, dim
