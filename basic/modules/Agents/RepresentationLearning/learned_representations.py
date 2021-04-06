@@ -20,7 +20,7 @@ def onehot(env):
     for state in env.useable:
         oh_state_reps[env.twoD2oneD(state)] = one_hot_state(env,env.twoD2oneD(state))
 
-    return oh_state_reps, name, dim
+    return oh_state_reps, name, dim, []
 
 def place_cell(env, **kwargs):
     f_size = kwargs.get('field_size', 1/(max(*env.shape)))
@@ -39,18 +39,26 @@ def place_cell(env, **kwargs):
     for state in env.useable:
         pc_state_reps[env.twoD2oneD(state)] = pcs.get_activities([state])[0]/max(pcs.get_activities([state])[0])
 
-    return pc_state_reps, name, dim
+    return pc_state_reps, name, dim, pcs.cell_centres
 
 def rand_place_cell(env, **kwargs):
+    sort_rands = kwargs.get('sort', True)
     f_size = kwargs.get('field_size', 1/(max(*env.shape)))
     pc_state_reps = {}
     name = f'random-centred pc f_{f_size}'
     dim = env.nstates
     pcs = PlaceCells(env.shape, dim, field_size=f_size) # centres of cells are randomly distributed
+    if sort_rands:
+        centres = pcs.cell_centres
+        a = centres[centres[:,1].argsort()]
+        b = a[a[:,0].argsort()]
+
+        pcs.cell_centres = b
+
     for state in env.useable:
         pc_state_reps[env.twoD2oneD(state)] = pcs.get_activities([state])[0]/max(pcs.get_activities([state])[0])
 
-    return pc_state_reps, name, dim
+    return pc_state_reps, name, dim, pcs.cell_centres
 
 def sr(env, **kwargs):
     discount = kwargs.get('discount', 0.98)
@@ -67,4 +75,4 @@ def sr(env, **kwargs):
         else:
             sr_reps[index] = sr_mat[index]/max(sr_mat[index])
 
-    return sr_reps, name, dim
+    return sr_reps, name, dim, []

@@ -15,7 +15,7 @@ import matplotlib.colors as colors
 import matplotlib.colorbar as colorbar
 import matplotlib.cm as cmx
 
-from ..Utils import softmax
+from Utils import softmax
 from scipy.stats import entropy
 
 # =====================================
