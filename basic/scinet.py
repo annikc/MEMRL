@@ -11,35 +11,33 @@ import gym
 #import matplotlib.pyplot as plt
 import sys
 sys.path.append('../../modules/')
-from .modules.Agents.Networks import ActorCritic as Network
-from basic.modules.Agents.EpisodicMemory import EpisodicMemory as Memory
-from basic.modules.Agents import Agent
-from basic.modules.Agents.RepresentationLearning.learned_representations import onehot, place_cell, rand_place_cell, sr
+from modules.Agents.Networks import ActorCritic as Network
+from modules.Agents.EpisodicMemory import EpisodicMemory as Memory
+from modules.Agents import Agent
+from modules.Agents.RepresentationLearning.learned_representations import onehot, place_cell, rand_place_cell, sr
 rep_types = {'onehot':onehot, 'place_cell':place_cell, 'rand_place_cell':rand_place_cell, 'sr':sr}
 
-from basic.modules.Experiments import expt
-from basic.modules.Utils.gridworld_plotting import plot_pref_pol, plot_polmap
-
+from modules.Experiments import expt
+from modules.Utils.gridworld_plotting import plot_pref_pol, plot_polmap
 ## set parameters for run -- environment, representation type
 write_to_file = 'ec_training.csv'
-env_name = 'gridworld:gridworld-v1'
-representation_type = 'rand_place_cell'
+env_name = 'gridworld:gridworld-v4'
+representation_type = 'onehot'
 num_trials = 5000
 num_events = 250
 
 
-for _ in range(3):
+for _ in range(1):
     ## generate the environment object
     env = gym.make(env_name)
-    plt.close()
+    #plt.close()
 
     ## get state representations to be used
     state_reps, representation_name, input_dims = rep_types[representation_type](env)
-    print(representation_name)
 
     ## create an actor-critic network and associated agent
     network = Network(input_dims=[input_dims], fc1_dims=200, fc2_dims=200, output_dims=env.action_space.n, lr=0.0005)
-    memory = Memory(entry_size=env.action_space.n, cache_limit=400, mem_temp=1)
+    memory = Memory(entry_size=env.action_space.n, cache_limit=300, mem_temp=1)
     agent = Agent(network, state_representations=state_reps, memory=memory)
 
     # create an experiment class instance
@@ -49,7 +47,7 @@ for _ in range(3):
 
     ex.record_log(env_name=env_name, representation_type=representation_name,
                   n_trials=num_trials, n_steps=num_events,
-                  dir='../../Data/', file=write_to_file)
+                  dir='./Data/', file=write_to_file)
 '''
 # print results of training
 fig, ax = plt.subplots(2,1, sharex=True)

@@ -6,8 +6,6 @@ sys.path.append('../../../modules')
 # for jupyter no call to basic
 from modules.Utils import one_hot_state
 from modules.Agents.RepresentationLearning import PlaceCells
-
-
 import pickle
 import os
 abspath = os.path.dirname(__file__)
@@ -76,3 +74,4 @@ def sr(env, **kwargs):
             sr_reps[index] = sr_mat[index]/max(sr_mat[index])
 
     return sr_reps, name, dim, []
+
