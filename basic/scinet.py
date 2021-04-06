@@ -21,8 +21,8 @@ from modules.Experiments import expt
 from modules.Utils.gridworld_plotting import plot_pref_pol, plot_polmap
 ## set parameters for run -- environment, representation type
 write_to_file = 'ec_training.csv'
-env_name = 'gridworld:gridworld-v21'
-representation_type = 'place_cell'
+env_name = 'gridworld:gridworld-v4'
+representation_type = 'onehot'
 num_trials = 5000
 num_events = 250
 
@@ -37,7 +37,7 @@ for _ in range(1):
 
     ## create an actor-critic network and associated agent
     network = Network(input_dims=[input_dims], fc1_dims=200, fc2_dims=200, output_dims=env.action_space.n, lr=0.0005)
-    memory = Memory(entry_size=env.action_space.n, cache_limit=400, mem_temp=1)
+    memory = Memory(entry_size=env.action_space.n, cache_limit=300, mem_temp=1)
     agent = Agent(network, state_representations=state_reps, memory=memory)
 
     # create an experiment class instance
