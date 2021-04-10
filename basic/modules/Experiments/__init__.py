@@ -101,6 +101,142 @@ class expt(object):
 					pickle.dump(self.agent.EC.cache_list, saveec)
 		print(f'Logged with ID {save_id}')
 
+	def flat_record_log(self, env_name, representation_type, n_trials, n_steps, **kwargs): ## TODO -- set up logging
+		parent_folder = kwargs.get('dir', './Data/')
+		log_name      = kwargs.get('file', 'test_bootstrap.csv')
+		load_from     = kwargs.get('load_from', ' ')
+		mock_log      = kwargs.get('mock_log', False)
+
+		save_id = uuid.uuid4()
+		timestamp = time.asctime(time.localtime())
+
+		field_names = [
+		'timestamp', #datetime experiment recorded
+		'save_id',  # uuid
+		'load_from',  # str
+		'num_trials',  # int
+		'num_events',  # int
+		'env_name',  # str
+		'representation', # str
+		'MF_input_dims',  # arch
+		'MF_lr',  # list
+		'MF_temp',  # list
+		'MF_gamma',  # float
+		'EC_cache_limit',  # float
+		'EC_temp',  # torch optim. class
+		'EC_mem_decay',  # # string
+		'EC_use_pvals',  # bool
+		'EC_similarity_meas', # string
+		'extra_info'
+		]
+		run_data = [timestamp, save_id, load_from, n_trials, n_steps, env_name, representation_type]
+		network_keys = ['input_dims', 'lr', 'temperature']
+		ec_keys = ['cache_limit', 'mem_temp', 'memory_envelope', 'use_pvals']
+		agent_data = [self.agent.MFC.__dict__[k] for k in network_keys] + [self.agent.gamma]
+		if self.agent.EC != None:
+			ec_data = [self.agent.EC.__dict__[k] for k in ec_keys]
+			ec_data.append(self.agent.EC.__dict__['similarity_measure'].__name__)
+		else:
+			ec_data = ["None" for k in ec_keys] + ["None"]
+
+		extra_info = kwargs.get('extra', [])
+
+		log_jam = run_data + agent_data + ec_data + extra_info
+
+		# write to logger
+		if not os.path.exists(parent_folder+log_name):
+			with open(parent_folder + log_name, 'a+', newline='') as file:
+				writer = csv.writer(file)
+				writer.writerow(field_names)
+
+		with open(parent_folder + log_name, 'a+', newline='') as file:
+			writer = csv.writer(file)
+			if mock_log:
+				writer.writerow(log_jam+["mock log"])
+			else:
+				writer.writerow(log_jam)
+
+		if not mock_log: ## can turn on flag to write to csv without saving files
+			# save data
+			with open(f'{parent_folder}results/{save_id}_data.p', 'wb') as savedata:
+				pickle.dump(self.data, savedata)
+			# save agent weights
+			torch.save(self.agent.MFC, f=f'{parent_folder}agents/{save_id}.pt')
+			# save episodic dictionary
+			if self.agent.EC != None:
+				with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
+					pickle.dump(self.agent.EC.cache_list, saveec)
+		print(f'Logged with ID {save_id}')
+
+	def conv_record_log(self, env_name, representation_type, n_trials, n_steps, **kwargs): ## TODO -- set up logging
+		parent_folder = kwargs.get('dir', './Data/')
+		log_name      = kwargs.get('file', 'test_bootstrap.csv')
+		load_from     = kwargs.get('load_from', ' ')
+		mock_log      = kwargs.get('mock_log', False)
+
+		save_id = uuid.uuid4()
+		timestamp = time.asctime(time.localtime())
+
+		field_names = [
+		'timestamp', #datetime experiment recorded
+		'save_id',  # uuid
+		'load_from',  # str
+		'num_trials',  # int
+		'num_events',  # int
+		'env_name',  # str
+		'representation', # str
+		'MF_input_dims',  # arch
+		'MF_hidden_types',
+		'MF_hidden_dims',
+		'MF_lr',  # list
+		'MF_temp',  # list
+		'MF_gamma',  # float
+		'EC_cache_limit',  # float
+		'EC_temp',  # torch optim. class
+		'EC_mem_decay',  # # string
+		'EC_use_pvals',  # bool
+		'EC_similarity_meas', # string
+		'extra_info'
+		]
+		run_data = [timestamp, save_id, load_from, n_trials, n_steps, env_name, representation_type]
+		network_keys = ['input_dims', 'hidden_types', 'hidden_dims', 'lr', 'temperature']
+		ec_keys = ['cache_limit', 'mem_temp', 'memory_envelope', 'use_pvals']
+		agent_data = [self.agent.MFC.__dict__[k] for k in network_keys] + [self.agent.gamma]
+		if self.agent.EC != None:
+			ec_data = [self.agent.EC.__dict__[k] for k in ec_keys]
+			ec_data.append(self.agent.EC.__dict__['similarity_measure'].__name__)
+		else:
+			ec_data = ["None" for k in ec_keys] + ["None"]
+
+		extra_info = kwargs.get('extra', [])
+
+		log_jam = run_data + agent_data + ec_data + extra_info
+
+		# write to logger
+		if not os.path.exists(parent_folder+log_name):
+			with open(parent_folder + log_name, 'a+', newline='') as file:
+				writer = csv.writer(file)
+				writer.writerow(field_names)
+
+		with open(parent_folder + log_name, 'a+', newline='') as file:
+			writer = csv.writer(file)
+			if mock_log:
+				writer.writerow(log_jam+["mock log"])
+			else:
+				writer.writerow(log_jam)
+
+		if not mock_log: ## can turn on flag to write to csv without saving files
+			# save data
+			with open(f'{parent_folder}results/{save_id}_data.p', 'wb') as savedata:
+				pickle.dump(self.data, savedata)
+			# save agent weights
+			torch.save(self.agent.MFC, f=f'{parent_folder}agents/{save_id}.pt')
+			# save episodic dictionary
+			if self.agent.EC != None:
+				with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
+					pickle.dump(self.agent.EC.cache_list, saveec)
+		print(f'Logged with ID {save_id}')
+
 	def reset_data_logs(self):
 		data_log = {'total_reward': [],
 					'loss': [[], []],
@@ -133,15 +269,16 @@ class expt(object):
 
 		return pol_grid, val_grid
 
-	def end_of_trial(self, trial):
+	def end_of_trial(self, trial, logsnap=False):
 		p, v = self.agent.finish_()
 
 		# temp
-		states = [self.env.oneD2twoD(x) for x in list(self.agent.state_reps.keys())]
-		observations = list(self.agent.state_reps.values())
-		MF_pols, MF_vals = self.snapshot(states,observations)
-		self.data['V_snap'].append(MF_vals)
-		self.data['P_snap'].append(MF_pols)
+		if logsnap:
+			states = [self.env.oneD2twoD(x) for x in list(self.agent.state_reps.keys())]
+			observations = list(self.agent.state_reps.values())
+			MF_pols, MF_vals = self.snapshot(states,observations)
+			self.data['V_snap'].append(MF_vals)
+			self.data['P_snap'].append(MF_pols)
 		# /temp
 
 		self.data['total_reward'].append(self.reward_sum) # removed for bootstrap expts
@@ -183,6 +320,7 @@ class expt(object):
 		self.print_freq = kwargs.get('printfreq', 100)
 		self.reset_data_logs()
 		self.t = time.time()
+		logsnap = kwargs.get('snapshot_logging', False)
 
 		for trial in range(NUM_TRIALS):
 			self.state = self.env.reset()
@@ -194,7 +332,7 @@ class expt(object):
 				if done:
 					break
 
-			self.end_of_trial(trial)
+			self.end_of_trial(trial,logsnap=logsnap)
 
 
 class gridworldExperiment(expt):

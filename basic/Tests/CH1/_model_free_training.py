@@ -8,10 +8,10 @@
 #####
 import numpy as np
 import gym
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import sys
 sys.path.append('../../modules/')
-from .modules.Agents.Networks import ActorCritic as Network
+from basic.modules.Agents.Networks import fc_ActorCritic as Network
 from basic.modules.Agents.EpisodicMemory import EpisodicMemory as Memory
 from basic.modules.Agents import Agent
 from basic.modules.Agents.RepresentationLearning.learned_representations import onehot, place_cell, rand_place_cell, sr
@@ -23,18 +23,20 @@ from basic.modules.Utils.gridworld_plotting import plot_pref_pol, plot_polmap
 ## set parameters for run -- environment, representation type
 write_to_file = 'ec_training.csv'
 env_name = 'gridworld:gridworld-v1'
-representation_type = 'onehot'
+representation_type = 'rand_place_cell'
 num_trials = 5000
 num_events = 250
 
 
-for _ in range(5):
+for _ in range(1):
     ## generate the environment object
     env = gym.make(env_name)
     plt.close()
 
     ## get state representations to be used
-    state_reps, representation_type, input_dims = rep_types[representation_type](env)
+    state_reps, representation_name, input_dims, _ = rep_types[representation_type](env)
+
+
 
     ## create an actor-critic network and associated agent
     network = Network(input_dims=[input_dims], fc1_dims=200, fc2_dims=200, output_dims=env.action_space.n, lr=0.0005)
@@ -46,7 +48,7 @@ for _ in range(5):
 
     ex.run(num_trials, num_events)
 
-    ex.record_log(env_name=env_name, representation_type=representation_type,
+    ex.record_log(env_name=env_name, representation_type=representation_name,
                   n_trials=num_trials, n_steps=num_events,
                   dir='../../Data/', file=write_to_file)
 '''

@@ -33,11 +33,16 @@ for _ in range(1):
     #plt.close()
 
     ## get state representations to be used
-    state_reps, representation_name, input_dims = rep_types[representation_type](env)
+    state_reps, representation_name, input_dims, _ = rep_types[representation_type](env)
 
     ## create an actor-critic network and associated agent
+<<<<<<< HEAD
     network = Network(input_dims=[input_dims], fc1_dims=200, fc2_dims=200, output_dims=env.action_space.n, lr=0.0005)
     memory = Memory(entry_size=env.action_space.n, cache_limit=200, mem_temp=1)
+=======
+    network = Network(input_dims=[input_dims], fc1_dims=200, fc2_dims=200, output_dims=env.action_space.n, lr=0.00005)
+    memory = Memory(entry_size=env.action_space.n, cache_limit=400, mem_temp=1)
+>>>>>>> bb0a1e4dd49e05b8b633cab86811478e5f0842f6
     agent = Agent(network, state_representations=state_reps, memory=memory)
 
     # create an experiment class instance
