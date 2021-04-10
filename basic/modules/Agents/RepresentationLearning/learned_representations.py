@@ -151,3 +151,16 @@ def latents(env, path_to_saved_agent):
     return latents, name, dim, []
 
 
+def saved_latents(env):
+    env_name = env.unwrapped.spec.id
+    with open(abspath+f'/Learned_Rep_pickles/conv_{env_name}.p', 'rb') as f:
+        latent_array = pickle.load(f)
+
+    latent_reps = {}
+    for state in env.useable:
+        latent_reps[env.twoD2oneD(state)] = latent_array[env.twoD2oneD(state)]
+
+    name = 'saved_latents'
+    dim = latent_reps[0].shape[0]
+    return latent_reps, name, dim, []
+
