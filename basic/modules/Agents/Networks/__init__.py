@@ -1,6 +1,6 @@
 import gym
-
-from .annik_ac import fully_connected_AC_network as ActorCritic
+from .annik_ac import shallow_AC_network as flat_ActorCritic
+from .annik_ac import fully_connected_AC_network as fc_ActorCritic
 from .annik_ac import flex_ActorCritic
 
 from .DQN import DQN
@@ -8,10 +8,10 @@ from .DQN import DQN
 # for actor critic agent
 class params(object):
     def __init__(self, env):
-        self.input_dims = self.get_input_dims(env)
+        self.input_dims = (3,*env.shape)
         self.action_dims = env.action_space.n
         self.hidden_types = ['conv', 'pool', 'conv', 'pool', 'linear', 'linear']
-        self.hidden_dims = [None, None, None, None, 1000, 1000]
+        self.hidden_dims = [None, None, None, None, 600, 400]
         self.lr = 5e-4
 
     def get_input_dims(self,env):

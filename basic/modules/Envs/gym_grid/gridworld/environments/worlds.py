@@ -82,16 +82,16 @@ class GridWorld4_tunnel(GridWorld):
         # using list of obstacles instead so that they are the same each instantiation
         # using rho generates new obstacles each time
         tunnel_blocks = []
-        for i in range(7,13):
-            for j in range(21):
-                if j == 10:
+        for i in range(20):
+            for j in range(7,13):
+                if i == 9:
                     pass
                 else:
                     tunnel_blocks.append((i,j))
 
         self.obstacles_list = tunnel_blocks
-        self.rewards = {(3,10):10}
-        super().__init__(cols=21,rows=20,actionlist=self.action_list, rewards=self.rewards,rewarded_action=self.rewarded_action,obstacles=self.obstacles_list)
+        self.rewards = {(9,3):10}
+        super().__init__(cols=20,rows=20,actionlist=self.action_list, rewards=self.rewards,rewarded_action=self.rewarded_action,obstacles=self.obstacles_list)
 class GridWorld4_tunnel_movedR(GridWorld):
     def __init__(self):
         self.action_list = ['Down', 'Up', 'Right', 'Left']
@@ -100,16 +100,16 @@ class GridWorld4_tunnel_movedR(GridWorld):
         # using list of obstacles instead so that they are the same each instantiation
         # using rho generates new obstacles each time
         tunnel_blocks = []
-        for i in range(7,13):
-            for j in range(21):
-                if j == 10:
+        for i in range(20):
+            for j in range(7,13):
+                if i == 9:
                     pass
                 else:
                     tunnel_blocks.append((i,j))
 
         self.obstacles_list = tunnel_blocks
-        self.rewards = {(16,10):10}
-        super().__init__(cols=21,rows=20,actionlist=self.action_list, rewards=self.rewards,rewarded_action=self.rewarded_action,obstacles=self.obstacles_list)
+        self.rewards = {(9,16):10}
+        super().__init__(cols=20,rows=20,actionlist=self.action_list, rewards=self.rewards,rewarded_action=self.rewarded_action,obstacles=self.obstacles_list)
 
 
 class GridWorld4_hairpin(GridWorld):
