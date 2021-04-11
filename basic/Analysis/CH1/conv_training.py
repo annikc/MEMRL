@@ -71,7 +71,7 @@ if plot_all:
         axs[i,0].invert_yaxis()
 
     for ind, name in enumerate(env_names):
-        for rep_to_plot in reps:
+        for rep_to_plot in ['conv']: #reps:
             v_list = master_dict[name][rep_to_plot]
             avg_, std_ = get_avg_std(v_list)
             axs[ind,1].plot(avg_, label=f'{rep_to_plot}')
