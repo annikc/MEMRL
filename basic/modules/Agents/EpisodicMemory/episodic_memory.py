@@ -17,7 +17,7 @@ class EpisodicMemory(object):
 		self.cache_limit 		= cache_limit                       # size of memory bank
 		self.n_actions			= entry_size						# number of rows in each memory unit
 
-		self.mem_temp           = kwargs.get('mem_temp', 0.05)      # softmax temp for memory recall
+		self.mem_temp           = kwargs.get('mem_temp', 1)      # softmax temp for memory recall
 		self.memory_envelope 	= kwargs.get('mem_envelope', 50)    # speed of memory decay
 		self.use_pvals          = kwargs.get('pvals', False)
 
