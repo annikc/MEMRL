@@ -7,56 +7,48 @@ import pandas as pd
 
 sys.path.append('../../modules/')
 from Utils import running_mean as rm
-
-
-
-environment_to_plot = 'gridworld:gridworld-v5'
-env = gym.make(environment_to_plot)
-
-rep_to_plot = 'reward_conv'
+from Analysis.analysis_utils import get_avg_std, get_id_dict
 
 data_dir = '../../Data/results/'
-df = pd.read_csv('../../Data/conv_mf_training.csv')
+df1 = pd.read_csv('../../Data/flat_ac_training.csv')
+df2 = pd.read_csv('../../Data/ec_testing.csv')
 
-master_dict = {}
-envs = df.env_name.unique()
-reps = df.representation.unique()
+ids1 = get_id_dict(df1)
+ids2 = get_id_dict(df2)
 
-for env in envs:
-    master_dict[env] = {}
-    for rep in reps:
-        id_list = list(df.loc[(df['env_name']==env)
-         & (df['representation']==rep)]['save_id'])
 
-        master_dict[env][rep]=id_list
-
-def get_avg_std(list_of_ids, cutoff=5000):
-    results = []
-    for id_num in list_of_ids:
-        if id_num in ['69aa8807-5077-4530-be95-f4a875f5eba2', '9ea97939-565e-4885-a4bd-c419e3dc7d8f']:
-            pass
-        else:
-            with open(data_dir+ f'{id_num}_data.p', 'rb') as f:
-                dats = pickle.load(f)
-                reward_info = dats['total_reward'][0:cutoff]
-                results.append(reward_info)
-
-    pp = np.vstack(results)
-
-    smoothing = 50
-    avg_ = rm(np.mean(pp,axis=0),smoothing)
-    std_ = rm(np.std(pp, axis=0), smoothing)
-
-    return avg_, std_
-
-env_names = ['gridworld:gridworld-v1','gridworld:gridworld-v4','gridworld:gridworld-v3', 'gridworld:gridworld-v5']
+env_names = ['gridworld:gridworld-v1','gridworld:gridworld-v11', 'gridworld:gridworld-v4','gridworld:gridworld-v3', 'gridworld:gridworld-v5']
+'''
 grids = []
 for ind, environment_to_plot in enumerate(env_names):
     env = gym.make(environment_to_plot)
     plt.close()
     grids.append(env.grid)
+'''
+
+#fig, ax = plt.subplots(1,2, sharey=True)
+reps = df1.representation.unique()
+print(reps)
+fig, ax = plt.subplots(1,2, sharey=True)
+for rep_str in reps:
+    av, sd = get_avg_std(ids2[env_names[0]][rep_str], cutoff=25000)
+    ax[0].plot(av, label=rep_str)
+    ax[0].fill_between(np.arange(len(av)),av-sd, av+sd, alpha=0.3)
+
+for rep_str in ['state-centred pc f0.05', 'analytic successor', 'saved_latents']:
+    av, sd = get_avg_std(ids2[env_names[1]][rep_str], cutoff=25000)
+    ax[1].plot(av, label=rep_str)
+    ax[1].fill_between(np.arange(len(av)),av-sd, av+sd, alpha=0.3)
+
+ax[0].legend(loc=0)
+ax[1].legend(loc=0)
+ax[0].set_ylim([-4,12])
+plt.show()
 
 
+
+### JUNKYARD
+'''
 plot_all = True
 
 if plot_all:
@@ -82,3 +74,4 @@ if plot_all:
     plt.savefig('../figures/CH1/conv_training.png')
 
 plt.show()
+'''
