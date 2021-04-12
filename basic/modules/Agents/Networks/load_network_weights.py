@@ -1,8 +1,6 @@
 import numpy as np
 import torch
 import sys
-sys.path.append('../../../../basic/')
-from basic.modules.Agents.Networks import flex_ActorCritic as Network
 
 def load_saved_head_weights(AC_head_agent, path_to_saved_agent):
     # load in agent weights for full conv network
