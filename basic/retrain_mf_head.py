@@ -6,6 +6,7 @@ import torch
 import sys
 sys.path.append('../../modules')
 from modules.Agents.Networks import flat_ActorCritic as head_AC
+from modules.Agents.Networks import flex_ActorCritic as Network
 from modules.Agents.Networks.load_network_weights import load_saved_head_weights
 from modules.Agents.RepresentationLearning.learned_representations import latents
 from modules.Agents import Agent
