@@ -87,7 +87,7 @@ class expt(object):
 			with open(f'{parent_folder}results/{save_id}_data.p', 'wb') as savedata:
 				pickle.dump(self.data, savedata)
 			# save agent weights
-			torch.save(self.agent.MFC, f=f'{parent_folder}agents/{save_id}.pt')
+			torch.save(self.agent.MFC.state_dict(), f=f'{parent_folder}agents/{save_id}.pt')
 			# save episodic dictionary
 			if self.agent.EC != None:
 				with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
@@ -259,7 +259,7 @@ class conv_expt(expt):
 			with open(f'{parent_folder}results/{save_id}_data.p', 'wb') as savedata:
 				pickle.dump(self.data, savedata)
 			# save agent weights
-			torch.save(self.agent.MFC, f=f'{parent_folder}agents/{save_id}.pt')
+			torch.save(self.agent.MFC.state_dict(), f=f'{parent_folder}agents/{save_id}.pt')
 			# save episodic dictionary
 			if self.agent.EC != None:
 				with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
@@ -330,7 +330,7 @@ class flat_expt(expt):
 			with open(f'{parent_folder}results/{save_id}_data.p', 'wb') as savedata:
 				pickle.dump(self.data, savedata)
 			# save agent weights
-			torch.save(self.agent.MFC, f=f'{parent_folder}agents/{save_id}.pt')
+			torch.save(self.agent.MFC.state_dict(), f=f'{parent_folder}agents/{save_id}.pt')
 			# save episodic dictionary
 			if self.agent.EC != None:
 				with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
