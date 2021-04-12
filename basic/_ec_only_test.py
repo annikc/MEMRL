@@ -15,11 +15,13 @@ sys.path.append('../../../')
 
 
 write_to_file = 'ec_latent_testing.csv'
+
 version = 5
 train_env_name = f'gridworld:gridworld-v{version}'
 test_env_name = train_env_name+'1'
 
 representation_type = 'sr'
+
 num_trials = 5000
 num_events = 250
 
@@ -43,3 +45,4 @@ for _ in range(1):
     ex.record_log(env_name=test_env_name, representation_type=representation_name,
                   n_trials=num_trials, n_steps=num_events,
                   dir='./Data/', file=write_to_file)
+

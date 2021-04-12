@@ -13,11 +13,12 @@ data_dir = '../../Data/results/'
 df1 = pd.read_csv('../../Data/flat_ac_training.csv')
 df2 = pd.read_csv('../../Data/ec_testing.csv')
 
-ids1 = get_id_dict(df1)
+#ids1 = get_id_dict(df1)
 ids2 = get_id_dict(df2)
 
 
-env_names = ['gridworld:gridworld-v1','gridworld:gridworld-v11', 'gridworld:gridworld-v4','gridworld:gridworld-v3', 'gridworld:gridworld-v5']
+env_names = ['gridworld:gridworld-v1','gridworld:gridworld-v4','gridworld:gridworld-v3', 'gridworld:gridworld-v5']
+test_env_names = ['gridworld:gridworld-v11','gridworld:gridworld-v41','gridworld:gridworld-v31','gridworld:gridworld-v51']
 '''
 grids = []
 for ind, environment_to_plot in enumerate(env_names):
@@ -25,18 +26,35 @@ for ind, environment_to_plot in enumerate(env_names):
     plt.close()
     grids.append(env.grid)
 '''
+fig, ax = plt.subplots(1,2)
+env_number = 1
+print(ids2[test_env_names[env_number]])
 
-#fig, ax = plt.subplots(1,2, sharey=True)
+for ind, rep_str in enumerate(df2.representation.unique()):
+    print(rep_str)
+    av, sd = get_avg_std(ids2[test_env_names[env_number]][rep_str], cutoff=25000)
+    ax[0].plot(av, label=rep_str)
+    ax[0].fill_between(np.arange(len(av)),av-sd, av+sd, alpha=0.3)
+    ax[1].bar(ind,np.mean(sd))
+
+ax[0].legend(loc=0)
+#plt.ylim([-4,12])
+plt.show()
+
+
+
+'''
 reps = df1.representation.unique()
 print(reps)
 fig, ax = plt.subplots(1,2, sharey=True)
+env_number = 1
 for rep_str in reps:
-    av, sd = get_avg_std(ids2[env_names[0]][rep_str], cutoff=25000)
+
+    av, sd = get_avg_std(ids1[env_names[env_number]][rep_str], cutoff=25000)
     ax[0].plot(av, label=rep_str)
     ax[0].fill_between(np.arange(len(av)),av-sd, av+sd, alpha=0.3)
 
-for rep_str in ['state-centred pc f0.05', 'analytic successor', 'saved_latents']:
-    av, sd = get_avg_std(ids2[env_names[1]][rep_str], cutoff=25000)
+    av, sd = get_avg_std(ids2[test_env_names[env_number]][rep_str], cutoff=25000)
     ax[1].plot(av, label=rep_str)
     ax[1].fill_between(np.arange(len(av)),av-sd, av+sd, alpha=0.3)
 
@@ -45,7 +63,7 @@ ax[1].legend(loc=0)
 ax[0].set_ylim([-4,12])
 plt.show()
 
-
+'''
 
 ### JUNKYARD
 '''

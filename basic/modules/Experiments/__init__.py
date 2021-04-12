@@ -192,9 +192,6 @@ class expt(object):
 					break
 
 			self.end_of_trial(trial,logsnap=logsnap)
-			#print(len(self.agent.EC.cache_list))
-			#if len(self.agent.EC.cache_list)==len(self.env.useable):
-			#	break
 
 class conv_expt(expt):
 	def __init__(self, agent, environment):
