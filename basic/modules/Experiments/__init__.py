@@ -156,7 +156,7 @@ class expt(object):
 	def single_step(self,trial):
 		# get representation for given state of env. TODO: should be in agent to get representation?
 		state_representation = self.agent.get_state_representation(self.state)
-		readable = 0
+		readable = self.state
 
 		# get action from agent
 		action, log_prob, expected_value = self.agent.get_action(state_representation)
@@ -192,6 +192,9 @@ class expt(object):
 					break
 
 			self.end_of_trial(trial,logsnap=logsnap)
+			#print(len(self.agent.EC.cache_list))
+			#if len(self.agent.EC.cache_list)==len(self.env.useable):
+			#	break
 
 class conv_expt(expt):
 	def __init__(self, agent, environment):
