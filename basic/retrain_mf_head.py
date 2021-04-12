@@ -7,7 +7,7 @@ import sys
 sys.path.append('../../modules')
 from modules.Agents.Networks import flat_ActorCritic as head_AC
 from modules.Agents.Networks import flex_ActorCritic as Network
-from modules.Agents.Networks.load_network_weights import load_saved_head_weights
+from modules.Agents.Networks.load_network_weights import load_saved_head_weights, convert_agent_to_weight_dict
 from modules.Agents.RepresentationLearning.learned_representations import latents
 from modules.Agents import Agent
 from modules.Experiments import flat_expt
@@ -15,7 +15,7 @@ sys.path.append('../../../')
 
 
 write_to_file = 'head_only_retrain.csv'
-version = 1
+version = 5
 training_env_name = f'gridworld:gridworld-v{version}'
 test_env_name = training_env_name+'1'
 
@@ -39,7 +39,7 @@ plt.close()
 # load latent states to use as state representations to actor-critic heads
 agent_path = f'./Data/agents/{run_id}.pt'
 state_reps, representation_name, input_dims, _ = latents(train_env,agent_path)
-
+convert_agent_to_weight_dict(agent_path)
 # load weights to head_ac network from previously learned agent
 empty_net = head_AC(input_dims, test_env.action_space.n, lr=0.0005)
 AC_head_agent = load_saved_head_weights(empty_net, agent_path)

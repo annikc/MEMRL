@@ -9,11 +9,18 @@ sys.path.append('../../../modules')
 from modules.Utils import one_hot_state
 from modules.Agents.RepresentationLearning import PlaceCells
 from modules.Agents.Networks import flex_ActorCritic as ac_net
+from modules.Agents.Networks import conv_PO_params
 import pickle
 import os
 
 abspath = os.path.dirname(__file__)
-
+class gridworldparam():
+    def __init__(self):
+        self.input_dims = (2,20,20)
+        self.action_dims = 4
+        self.hidden_types = ['conv', 'pool', 'conv', 'pool', 'linear', 'linear']
+        self.hidden_dims = [None, None, None, None, 600, 400]
+        self.lr = 5e-4
 
 def onehot(env):
     name = 'onehot'
@@ -134,7 +141,9 @@ def random(env):
 
 def latents(env, path_to_saved_agent):
     # TODO - shift saved agents to saved weight dicts
-    network = torch.load(path_to_saved_agent)
+    state_dict = torch.load(path_to_saved_agent)
+    params = gridworldparam()
+    network = ac_net(params)
 
     # states from learned representations
     state_reps, _, __, ___ = convs(env)
