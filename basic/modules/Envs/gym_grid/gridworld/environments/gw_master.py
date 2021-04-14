@@ -122,7 +122,8 @@ class GridWorld(gym.Env):
 
     def reset_viewer(self, **kwargs):
         trial = kwargs.get('trial', 'Grid World')
-        self.figure = plot_world(self, title=f'Trial {trial}')
+        states = kwargs.get('states',False)
+        self.figure = plot_world(self, title=f'Trial {trial}',states=states)
         ## test
         fig, ax = self.figure
         agent_r, agent_c = self.oneD2twoD(self.state)

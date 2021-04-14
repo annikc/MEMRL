@@ -13,7 +13,7 @@ data_dir = '../../Data/results/'
 df1 = pd.read_csv('../../Data/flat_ac_training.csv')
 df2 = pd.read_csv('../../Data/ec_testing.csv')
 
-#ids1 = get_id_dict(df1)
+ids1 = get_id_dict(df1)
 ids2 = get_id_dict(df2)
 
 
@@ -43,7 +43,30 @@ plt.show()
 
 
 
+
+
+### JUNKYARD
 '''
+reps = df1.representation.unique()
+print(reps)
+fig, ax = plt.subplots(1,2, sharey=True)
+env_number = 1
+for rep_str in reps:
+
+    av, sd = get_avg_std(ids1[env_names[env_number]][rep_str], cutoff=25000)
+    ax[0].plot(av, label=rep_str)
+    ax[0].fill_between(np.arange(len(av)),av-sd, av+sd, alpha=0.3)
+
+    av, sd = get_avg_std(ids2[test_env_names[env_number]][rep_str], cutoff=25000)
+    ax[1].plot(av, label=rep_str)
+    ax[1].fill_between(np.arange(len(av)),av-sd, av+sd, alpha=0.3)
+
+ax[0].legend(loc=0)
+ax[1].legend(loc=0)
+ax[0].set_ylim([-4,12])
+plt.show()
+
+''''''
 reps = df1.representation.unique()
 print(reps)
 fig, ax = plt.subplots(1,2, sharey=True)
@@ -65,7 +88,6 @@ plt.show()
 
 '''
 
-### JUNKYARD
 '''
 plot_all = True
 

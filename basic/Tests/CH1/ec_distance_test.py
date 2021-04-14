@@ -47,17 +47,16 @@ for key in memory.cache_list.keys():
     distance = np.linalg.norm(key-rep)
     memory_[env.oneD2twoD(state_id)]=distance
 
-metric = 'canberra'
+metric = 'chebyshev'
 alt_dist = cdist([rep], list(state_reps.values()), metric=metric)
 
 
-fig, ax = plt.subplots(6,5)
-ax[0,0].axis('off')
-ax[0,1].axis('off')
-ax[0,2].imshow(memory_)
-ax[0,2].set_title(f'EC dist \n(L1 Norm)')
-ax[1,0].imshow(alt_dist[0,:].reshape(env.shape))
-ax[1,0].set_title(f'Test Metric \n({metric})')
+fig, ax = plt.subplots(1,2)
+
+ax[0].imshow(memory_)
+ax[0].set_title(f'EC dist \n(L1 Norm)')
+ax[1].imshow(alt_dist[0,:].reshape(env.shape))
+ax[1].set_title(f'Test Metric \n({metric})')
 plt.suptitle(f'{rep_name}')
 plt.show()
 

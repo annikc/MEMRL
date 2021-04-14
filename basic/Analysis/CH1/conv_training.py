@@ -1,3 +1,5 @@
+## plot training of full convolutional neural network using partially / fully observable states
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
@@ -6,17 +8,13 @@ import gym
 import pandas as pd
 
 sys.path.append('../../modules/')
+from Analysis.analysis_utils import get_avg_std
 from Utils import running_mean as rm
-
-
-
-environment_to_plot = 'gridworld:gridworld-v5'
-env = gym.make(environment_to_plot)
 
 rep_to_plot = 'reward_conv'
 
 data_dir = '../../Data/results/'
-df = pd.read_csv('../../Data/conv_mf_training.csv')
+df = pd.read_csv('../../Data/head_only_retrain.csv')
 
 master_dict = {}
 envs = df.env_name.unique()
@@ -30,26 +28,7 @@ for env in envs:
 
         master_dict[env][rep]=id_list
 
-def get_avg_std(list_of_ids, cutoff=5000):
-    results = []
-    for id_num in list_of_ids:
-        if id_num in ['69aa8807-5077-4530-be95-f4a875f5eba2', '9ea97939-565e-4885-a4bd-c419e3dc7d8f']:
-            pass
-        else:
-            with open(data_dir+ f'{id_num}_data.p', 'rb') as f:
-                dats = pickle.load(f)
-                reward_info = dats['total_reward'][0:cutoff]
-                results.append(reward_info)
-
-    pp = np.vstack(results)
-
-    smoothing = 50
-    avg_ = rm(np.mean(pp,axis=0),smoothing)
-    std_ = rm(np.std(pp, axis=0), smoothing)
-
-    return avg_, std_
-
-env_names = ['gridworld:gridworld-v1','gridworld:gridworld-v4','gridworld:gridworld-v3', 'gridworld:gridworld-v5']
+env_names = ['gridworld:gridworld-v11', 'gridworld:gridworld-v41','gridworld:gridworld-v31', 'gridworld:gridworld-v51']
 grids = []
 for ind, environment_to_plot in enumerate(env_names):
     env = gym.make(environment_to_plot)
@@ -71,14 +50,14 @@ if plot_all:
         axs[i,0].invert_yaxis()
 
     for ind, name in enumerate(env_names):
-        for rep_to_plot in ['conv']: #reps:
+        for rep_to_plot in reps:
             v_list = master_dict[name][rep_to_plot]
-            avg_, std_ = get_avg_std(v_list)
+            avg_, std_ = get_avg_std(v_list,cutoff=25000)
             axs[ind,1].plot(avg_, label=f'{rep_to_plot}')
             axs[ind,1].fill_between(np.arange(len(avg_)),avg_-std_, avg_+std_, alpha=0.3)
         if ind == len(env_names)-1:
             axs[ind,1].set_xlabel('Episodes')
             axs[ind,1].set_ylabel('Cumulative \nReward')
-    plt.savefig('../figures/CH1/conv_training.png')
+    plt.savefig('../figures/CH1/conv_testing.png')
 
 plt.show()
