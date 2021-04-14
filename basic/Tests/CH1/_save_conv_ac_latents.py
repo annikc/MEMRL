@@ -12,7 +12,7 @@ from modules.Experiments import expt
 from modules.Agents.Networks.load_network_weights import convert_agent_to_weight_dict
 sys.path.append('../../../')
 
-latent_type = 'rwd_conv'
+latent_type = 'conv'
 save = True
 version = 5
 for version in [1,2,3,4,5]:
@@ -49,5 +49,5 @@ for version in [1,2,3,4,5]:
         latent_array[i] = reps[i]
 
     if save:
-        with open(f'../../modules/Agents/RepresentationLearning/Learned_Rep_pickles/conv_{env_id[-12:]}.p', 'wb') as f:
+        with open(f'../../modules/Agents/RepresentationLearning/Learned_Rep_pickles/{latent_type}_{env_id[-12:]}.p', 'wb') as f:
             pickle.dump(file=f, obj=latent_array.copy())
