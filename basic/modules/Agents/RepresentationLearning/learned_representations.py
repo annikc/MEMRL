@@ -170,7 +170,7 @@ def saved_latents(env, **kwargs):
     for state in env.useable:
         latent_reps[env.twoD2oneD(state)] = latent_array[env.twoD2oneD(state)]
 
-    name = 'saved_latents'
+    name = f'{latent_type}_saved_latents'
     dim = latent_reps[0].shape[0]
     return latent_reps, name, dim, []
 
