@@ -145,7 +145,7 @@ def latents(env, path_to_saved_agent, **kwargs):
         input_dim = 2
     elif type == 'rwd_conv':
         input_dim = 3
-    # TODO - shift saved agents to saved weight dicts
+
     state_dict = torch.load(path_to_saved_agent)
     params = gridworldparam(input_dim)
     network = ac_net(params)
@@ -164,12 +164,12 @@ def latents(env, path_to_saved_agent, **kwargs):
         # get hidden_layer activity
         latents[index] = network.h_act.detach().numpy()[0]
 
-    name = 'conv_latents'
+    name = f'{type}_latents'
     dim = latents[0].shape[0]
     return latents, name, dim, []
 
 
-def saved_latents(env, **kwargs):
+def load_saved_latents(env, **kwargs):
     latent_type = kwargs.get('type','conv') #either conv or rwd_conv
     env_name = env.unwrapped.spec.id
     with open(abspath+f'/Learned_Rep_pickles/{latent_type}_{env_name}.p', 'rb') as f:
