@@ -15,8 +15,8 @@ import os
 
 abspath = os.path.dirname(__file__)
 class gridworldparam():
-    def __init__(self):
-        self.input_dims = (2,20,20)
+    def __init__(self,inp):
+        self.input_dims = (inp,20,20)
         self.action_dims = 4
         self.hidden_types = ['conv', 'pool', 'conv', 'pool', 'linear', 'linear']
         self.hidden_dims = [None, None, None, None, 600, 400]
@@ -139,14 +139,23 @@ def random(env):
     return rand_state_reps, name, dim, []
 
 
-def latents(env, path_to_saved_agent):
+def latents(env, path_to_saved_agent, **kwargs):
+    type = kwargs.get('type','conv')
+    if type == 'conv':
+        input_dim = 2
+    elif type == 'rwd_conv':
+        input_dim = 3
     # TODO - shift saved agents to saved weight dicts
     state_dict = torch.load(path_to_saved_agent)
-    params = gridworldparam()
+    params = gridworldparam(input_dim)
     network = ac_net(params)
+    network.load_state_dict(state_dict)
 
     # states from learned representations
-    state_reps, _, __, ___ = convs(env)
+    if type =='conv':
+        state_reps, _, __, ___ = convs(env)
+    elif type =='rwd_conv':
+        state_reps, _, __, ___ = reward_convs(env)
 
     latents = {}
     for index, inp in state_reps.items():
