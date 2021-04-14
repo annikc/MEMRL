@@ -42,7 +42,7 @@ if plot_all:
     fig, axs = plt.subplots(4, 2, sharex='col')
     #rect = plt.Rectangle((5,5), 1, 1, color='r', alpha=0.3)
     for i in range(len(grids)):
-        rect = plt.Rectangle((5,5), 1, 1, color='g', alpha=0.3)
+        rect = plt.Rectangle((15,15), 1, 1, color='g', alpha=0.3)
         axs[i,0].pcolor(grids[i],cmap='bone_r',edgecolors='k', linewidths=0.1)
         axs[i,0].axis(xmin=0, xmax=20, ymin=0,ymax=20)
         axs[i,0].set_aspect('equal')
@@ -58,6 +58,7 @@ if plot_all:
         if ind == len(env_names)-1:
             axs[ind,1].set_xlabel('Episodes')
             axs[ind,1].set_ylabel('Cumulative \nReward')
-    plt.savefig('../figures/CH1/conv_testing.png')
+        ax[0,1].legend(loc='upper center', ncol=2, bbox_to_anchor = (0.1,1.1))
+    plt.savefig('../figures/CH1/conv_testing.svg',format='svg')
 
 plt.show()

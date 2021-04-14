@@ -20,7 +20,7 @@ version = 1
 latent_type = 'conv'
 training_env_name = f'gridworld:gridworld-v{version}'
 test_env_name = training_env_name+'1'
-cache_limit = 300 
+cache_limit = 300
 
 relative_path_to_data = '../../Data/' # from within Tests/CH1
 
