@@ -10,9 +10,7 @@ from Utils import running_mean as rm
 def get_id_dict(df):
     master_dict = {}
     envs = df.env_name.unique()
-    print('all envs: ', envs)
     reps = df.representation.unique()
-    print('all reps:', reps)
     for env in envs:
         master_dict[env] = {}
         for rep in reps:

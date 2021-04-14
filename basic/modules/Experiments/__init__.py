@@ -24,6 +24,21 @@ class expt(object):
 		self.pol_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
 		self.val_grid = np.empty(self.env.shape)
 
+	def update_ledger(self, parent_folder, file_name, info_list):
+		with open(parent_folder + file_name, 'a+', newline='') as file:
+			writer = csv.writer(file)
+			writer.writerow(info_list)
+
+	def save_objects(self, parent_folder, save_id):
+		# save data
+		with open(f'{parent_folder}results/{save_id}_data.p', 'wb') as savedata:
+			pickle.dump(self.data, savedata)
+		# save agent weights
+		torch.save(self.agent.MFC.state_dict(), f=f'{parent_folder}agents/{save_id}.pt')
+		# save episodic dictionary
+		if self.agent.EC != None:
+			with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
+				pickle.dump(self.agent.EC.cache_list, saveec)
 
 	def record_log(self, env_name, representation_type, n_trials, n_steps, **kwargs): ## TODO -- set up logging
 		parent_folder = kwargs.get('dir', './Data/')
@@ -71,27 +86,15 @@ class expt(object):
 
 		# write to logger
 		if not os.path.exists(parent_folder+log_name):
-			with open(parent_folder + log_name, 'a+', newline='') as file:
-				writer = csv.writer(file)
-				writer.writerow(field_names)
+			self.update_ledger(parent_folder,log_name,info_list=field_names)
 
-		with open(parent_folder + log_name, 'a+', newline='') as file:
-			writer = csv.writer(file)
-			if mock_log:
-				writer.writerow(log_jam+["mock log"])
-			else:
-				writer.writerow(log_jam)
+		if mock_log:
+			log_jam = log_jam+['mock log']
+
+		self.update_ledger(parent_folder,log_name,info_list=log_jam)
 
 		if not mock_log: ## can turn on flag to write to csv without saving files
-			# save data
-			with open(f'{parent_folder}results/{save_id}_data.p', 'wb') as savedata:
-				pickle.dump(self.data, savedata)
-			# save agent weights
-			torch.save(self.agent.MFC.state_dict(), f=f'{parent_folder}agents/{save_id}.pt')
-			# save episodic dictionary
-			if self.agent.EC != None:
-				with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
-					pickle.dump(self.agent.EC.cache_list, saveec)
+			self.save_objects(parent_folder,save_id)
 		print(f'Logged with ID {save_id}')
 
 

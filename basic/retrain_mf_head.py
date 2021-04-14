@@ -39,7 +39,7 @@ plt.close()
 # load latent states to use as state representations to actor-critic heads
 agent_path = f'./Data/agents/{run_id}.pt'
 state_reps, representation_name, input_dims, _ = latents(train_env,agent_path)
-convert_agent_to_weight_dict(agent_path)
+#convert_agent_to_weight_dict(agent_path)
 # load weights to head_ac network from previously learned agent
 empty_net = head_AC(input_dims, test_env.action_space.n, lr=0.0005)
 AC_head_agent = load_saved_head_weights(empty_net, agent_path)

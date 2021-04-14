@@ -36,10 +36,11 @@ def load_saved_head_weights(AC_head_agent, path_to_saved_agent):
     AC_head_agent.load_state_dict(new_state_dict)
     return AC_head_agent
 
-def convert_agent_to_weight_dict(path_to_saved_agent):
+def convert_agent_to_weight_dict(path_to_saved_agent, **kwargs):
+    destination_path = kwargs.get('destination_path', path_to_saved_agent)
     # load in agent weights for full conv network
     saved_network = torch.load(path_to_saved_agent)
     dict_ = saved_network.state_dict()
 
-    torch.save(dict_, path_to_saved_agent)
+    torch.save(dict_, destination_path)
 
