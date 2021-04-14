@@ -12,7 +12,7 @@ from modules.Experiments import expt
 from modules.Agents.Networks.load_network_weights import convert_agent_to_weight_dict
 sys.path.append('../../../')
 
-
+latent_type = 'rwd_conv'
 save = True
 version = 5
 for version in [1,2,3,4,5]:
@@ -28,8 +28,8 @@ for version in [1,2,3,4,5]:
                        '4ebe79ad-c5e6-417c-8823-a5fceb65b4e0',
                        '062f76a0-ce05-4cce-879e-2c3e7d00d543',
                        'fee85163-212e-4010-b90a-580e6671a454'] # example of each using conv_reward representation (rewards in input tensor)
-
-    example_run_ids = conv_example_run_ids
+    ids = {'conv': conv_example_run_ids, 'rwd_conv':rwd_conv_example_run_ids}
+    example_run_ids = ids[latent_type]
 
     run_id = example_run_ids[version-1]
     try:
@@ -41,12 +41,13 @@ for version in [1,2,3,4,5]:
     env = gym.make(env_id)
     plt.close()
 
-    reps, name, dim, _ = latents(env, f'./../../Data/agents/{run_id}.pt' )
+    reps, name, dim, _ = latents(env, f'./../../Data/agents/{run_id}.pt', type=latent_type )
+    print(reps[0][0:20])
 
     latent_array = np.zeros((env.nstates,env.nstates))
     for i in reps.keys():
         latent_array[i] = reps[i]
 
     if save:
-        with open(f'../../modules/Agents/RepresentationLearning/Learned_Rep_pickles/rwd_conv_{env_id[-12:]}.p', 'wb') as f:
+        with open(f'../../modules/Agents/RepresentationLearning/Learned_Rep_pickles/{latent_type}_{env_id[-12:]}.p', 'wb') as f:
             pickle.dump(file=f, obj=latent_array.copy())
