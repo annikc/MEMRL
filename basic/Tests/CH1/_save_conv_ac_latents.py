@@ -12,7 +12,7 @@ from modules.Experiments import expt
 from modules.Agents.Networks.load_network_weights import convert_agent_to_weight_dict
 sys.path.append('../../../')
 
-latent_type = 'rwd_conv'
+latent_type = 'conv'
 save = True
 version = 5
 for version in [1,2,3,4,5]:
