@@ -15,12 +15,12 @@ sys.path.append('../../../')
 
 
 write_to_file = 'head_only_retrain.csv'
-version = 4
+version = 1
 latent_type = 'conv'
 training_env_name = f'gridworld:gridworld-v{version}'
 test_env_name = training_env_name+'1'
 
-relative_path_to_data = './Data/' # from within Tests/CH1
+relative_path_to_data = '../../Data/' # from within Tests/CH1
 
 num_trials = 25000
 num_events = 250
@@ -53,13 +53,12 @@ agent_path = relative_path_to_data+f'agents/{run_id}.pt'
 state_reps, representation_name, input_dims, _ = latents(train_env, agent_path, type=latent_type)
 
 # load weights to head_ac network from previously learned agent
-empty_net = head_AC(input_dims, test_env.action_space.n, lr=0.0005)
-AC_head_agent = load_saved_head_weights(empty_net, agent_path)
+AC_head_agent = head_AC(input_dims, test_env.action_space.n, lr=0.0005)
 
 agent = Agent(AC_head_agent, state_representations=state_reps)
 
 ex = flat_expt(agent, test_env)
 ex.run(num_trials,num_events,snapshot_logging=False)
 ex.record_log(env_name=test_env_name, representation_type=representation_name,
-              n_trials=num_trials, n_steps=num_events,load_from=run_id,
+              n_trials=num_trials, n_steps=num_events,
               dir=relative_path_to_data, file=write_to_file)
