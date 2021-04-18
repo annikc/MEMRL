@@ -1,3 +1,4 @@
+# copy of basic/Tests/CH1/_4ec_latent_test.py using fewer trials 
 import numpy as np
 import matplotlib.pyplot as plt
 import gym
@@ -65,5 +66,5 @@ agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 ex = flat_expt(agent, test_env)
 ex.run(num_trials,num_events,snapshot_logging=False)
 ex.record_log(env_name=test_env_name, representation_type=representation_name,
-              n_trials=num_trials, n_steps=num_events,
+              n_trials=num_trials, n_steps=num_events,load_from=run_id,
               dir=relative_path_to_data, file=write_to_file)

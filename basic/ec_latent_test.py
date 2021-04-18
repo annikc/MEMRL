@@ -1,3 +1,4 @@
+# copy of basic/Tests/CH1/_4ec_latent_test.py
 import numpy as np
 import matplotlib.pyplot as plt
 import gym
@@ -21,7 +22,7 @@ latent_type = 'conv'
 training_env_name = f'gridworld:gridworld-v{version}'
 test_env_name = training_env_name+'1'
 
-relative_path_to_data = './Data/' # from within Tests/CH1
+relative_path_to_data = './Data/' # ../../Data from within Tests/CH1
 
 num_trials = 25000
 num_events = 250
