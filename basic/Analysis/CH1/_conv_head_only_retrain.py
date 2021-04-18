@@ -1,5 +1,6 @@
-## plot training of full convolutional neural network using partially / fully observable states
-
+## plot retraining of actor critic head using latent state representations of partially / fully observable states
+# conv_head_only_retraing = latent states and loaded output layer weights
+# empty_head_only_retraining = latent states and a clean init of ac output layer ("flat ac")
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
@@ -8,12 +9,12 @@ import gym
 import pandas as pd
 
 sys.path.append('../../modules/')
-from Analysis.analysis_utils import get_avg_std, get_id_dict
+from Analysis.analysis_utils import get_avg_std, get_id_dict, get_grids
 from Utils import running_mean as rm
 
 data_dir = '../../Data/results/'
-#df = pd.read_csv('../../Data/conv_mf_training.csv')
-df = pd.read_csv('../../Data/head_only_retrain.csv')
+filename = 'conv_head_only_retrain' #'empty_head_only_retrain'
+df = pd.read_csv(f'../../Data/{filename}.csv')
 envs = df.env_name.unique()
 reps = df.representation.unique()
 print(reps)
@@ -23,17 +24,14 @@ print('#####', envs)
 
 master_dict = get_id_dict(df)
 
-grids=[]
-for ind, environment_to_plot in enumerate(envs):
-    env = gym.make(environment_to_plot)
-    plt.close()
-    grids.append(env.grid)
+grids = get_grids([11,31,41,51])
 
-labels_for_plot = {'conv_saved_latents':'Partially Observable State', 'rwd_conv_saved_latents':'Fully Observable State'}
+labels_for_plot = {'conv_saved_latents':'Partially Observable State', 'rwd_conv_saved_latents':'Fully Observable State'} # for conv_head_only_retrain
+#labels_for_plot = {'conv_latents':'Partially Observable State', 'rwd_conv_latents':'Fully Observable State'} # for empty_head_only_retrain
 def plot_all(save=True, cutoff=25000):
     fig, axs = plt.subplots(4, 2, sharex='col')
     for i in range(len(grids)):
-        rect = plt.Rectangle((5,5), 1, 1, color='g', alpha=0.3)
+        rect = plt.Rectangle((15,15), 1, 1, color='g', alpha=0.3)
         axs[i,0].pcolor(grids[i],cmap='bone_r',edgecolors='k', linewidths=0.1)
         axs[i,0].axis(xmin=0, xmax=20, ymin=0,ymax=20)
         axs[i,0].set_aspect('equal')
@@ -58,7 +56,7 @@ def plot_all(save=True, cutoff=25000):
             #axs[ind,1].set_ylabel('Cumulative \nReward')
     axs[0,1].legend(loc='upper center', ncol=1, bbox_to_anchor=(0.2,1.1))
     if save:
-        plt.savefig('../figures/CH1/conv_training.svg',format='svg')
+        plt.savefig(f'../figures/CH1/{filename}.svg',format='svg')
 
     plt.show()
 
@@ -75,5 +73,5 @@ def plot_each(env_name, rep,cutoff=25000, smoothing=500):
     plt.ylim([-4,12])
     plt.show()
 
-plot_each('gridworld:gridworld-v41','conv_saved_latents')
-#plot_all()
+plot_all(cutoff=25000)
+#plot_each(envs[2],reps[1])

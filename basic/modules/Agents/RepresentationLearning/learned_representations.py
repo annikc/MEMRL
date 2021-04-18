@@ -141,21 +141,18 @@ def random(env):
 
 def latents(env, path_to_saved_agent, **kwargs):
     type = kwargs.get('type','conv')
-    if type == 'conv':
-        input_dim = 2
-    elif type == 'rwd_conv':
-        input_dim = 3
-
-    state_dict = torch.load(path_to_saved_agent)
-    params = gridworldparam(input_dim)
-    network = ac_net(params)
-    network.load_state_dict(state_dict)
-
     # states from learned representations
     if type =='conv':
         state_reps, _, __, ___ = convs(env)
     elif type =='rwd_conv':
         state_reps, _, __, ___ = reward_convs(env)
+
+    input_dim = state_reps[list(state_reps.keys())[0]].shape[1]
+
+    state_dict = torch.load(path_to_saved_agent)
+    params = gridworldparam(input_dim)
+    network = ac_net(params)
+    network.load_state_dict(state_dict)
 
     latents = {}
     for index, inp in state_reps.items():

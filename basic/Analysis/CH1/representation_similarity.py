@@ -7,9 +7,9 @@ import torch
 import sys
 sys.path.append('../../modules')
 from scipy.spatial.distance import pdist, squareform
-from basic.modules.Agents.RepresentationLearning.learned_representations import onehot, random, place_cell, sr, saved_latents
+from modules.Agents.RepresentationLearning.learned_representations import onehot, random, place_cell, sr, load_saved_latents
 
-rep_types = {'random':random, 'onehot':onehot, 'latent':saved_latents, 'place cell':place_cell, 'sr':sr }
+rep_types = {'random':random, 'onehot':onehot, 'latent':load_saved_latents, 'place cell':place_cell, 'sr':sr }
 
 sys.path.append('../../../')
 
@@ -32,13 +32,15 @@ def plot_all_reps():
         for key, value in state_reps.items():
             representation_matrix[key] = value/np.max(value)
 
+        sim_matrix = squareform(pdist(representation_matrix, metric='cosine'))
         ax[0,i].imshow(representation_matrix)
-        ax[1,i].imshow(representation_matrix[0:50,0:50])
-        ax[2,i].imshow(representation_matrix[90].reshape(env.shape))
+
+        ax[1,i].imshow(sim_matrix)
+        ax[2,i].imshow(sim_matrix[90].reshape(env.shape))
         ax[0,i].set_title(representation_type)
     ax[0,0].set_ylabel('All States')
-    ax[1,0].set_ylabel('States[0:50]')
-    ax[2,0].set_ylabel('Representation \n for state (4,10)')
+    ax[1,0].set_ylabel('Similarity Matrix')
+    ax[2,0].set_ylabel('Distance \n from state (4,10)')
     plt.show()
 
 
@@ -83,7 +85,7 @@ if version==3:
 
 
 
-
+plot_all_reps()
 
 
 

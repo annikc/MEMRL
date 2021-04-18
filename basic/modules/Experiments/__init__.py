@@ -97,8 +97,6 @@ class expt(object):
 			self.save_objects(parent_folder,save_id)
 		print(f'Logged with ID {save_id}')
 
-
-
 	def reset_data_logs(self):
 		data_log = {'total_reward': [],
 					'loss': [[], []],
@@ -339,6 +337,33 @@ class flat_expt(expt):
 				with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
 					pickle.dump(self.agent.EC.cache_list, saveec)
 		print(f'Logged with ID {save_id}')
+
+class flat_random_walk(flat_expt):
+	def __init__(self, agent, environment):
+		super().__init__(agent,environment)
+
+	def single_step(self,trial):
+		# get representation for given state of env. TODO: should be in agent to get representation?
+		state_representation = self.agent.get_state_representation(self.state)
+		readable = self.state
+
+		# get action from agent
+		action, log_prob, expected_value = self.agent.get_action(state_representation)
+		action = np.random.choice(4)
+		# take step in environment
+		next_state, reward, done, info = self.env.step(action)
+
+		# end of event
+		target_value = 0
+		self.reward_sum += reward
+
+		self.agent.log_event(episode=trial, event=self.agent.counter,
+							 state=state_representation, action=action, reward=reward, next_state=next_state,
+							 log_prob=log_prob, expected_value=expected_value, target_value=target_value,
+							 done=done, readable_state=readable)
+		self.agent.counter += 1
+		self.state = next_state
+		return done
 
 
 class gridworldExperiment(expt):
