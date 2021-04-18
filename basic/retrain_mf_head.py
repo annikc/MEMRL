@@ -15,8 +15,8 @@ sys.path.append('../../../')
 
 
 write_to_file = 'head_only_retrain.csv'
-version = 4
-latent_type = 'conv'
+version = 1
+latent_type = 'rwd_conv'
 training_env_name = f'gridworld:gridworld-v{version}'
 test_env_name = training_env_name+'1'
 
@@ -50,7 +50,7 @@ plt.close()
 agent_path = relative_path_to_data+f'agents/{run_id}.pt'
 
 # save latents by loading network, passing appropriate tensor, getting top fc layer activity
-state_reps, representation_name, input_dims, _ = latents(train_env, agent_path, type=latent_type)
+state_reps, representation_name, input_dims, _ = latents(test_env, agent_path, type=latent_type)
 
 # load weights to head_ac network from previously learned agent
 empty_net = head_AC(input_dims, test_env.action_space.n, lr=0.0005)
