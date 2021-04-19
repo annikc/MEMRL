@@ -21,7 +21,7 @@ parser.add_argument('-v', type=int, default=1)
 parser.add_argument('-rep', default='conv')
 parser.add_argument('-load', type=bool, default=True)
 parser.add_argument('-lr', default=0.0005)
-parser.add_argument('-cache', type=int, default=400)
+parser.add_argument('-cache', type=int, default=100)
 args = parser.parse_args()
 
 # parameters set with command line arugments
@@ -74,8 +74,13 @@ if load_weights:
 else:
     AC_head_agent = head_AC(input_dims, test_env.action_space.n, lr=learning_rate)
     loaded_from = ' '
-
-memory = Memory(entry_size=test_env.action_space.n, cache_limit=cache_size)
+cache_limits = {'gridworld:gridworld-v11':{100:400, 75:300, 50:200, 25:100},
+                'gridworld:gridworld-v31':{100:365, 75:273, 50:182, 25:91},
+                'gridworld:gridworld-v41':{100:384, 75:288, 50:192, 25:96},
+                'gridworld:gridworld-v51':{100:286, 75:214, 50:143, 25:71}}
+cache_size_for_env = cache_limits[test_env_name][cache_size]
+print(cache_size_for_env)
+memory = Memory(entry_size=test_env.action_space.n, cache_limit=cache_size_for_env)
 
 agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 
