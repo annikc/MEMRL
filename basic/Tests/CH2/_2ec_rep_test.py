@@ -1,3 +1,4 @@
+# Tests/CH2/_2ec_rep_test.py
 import numpy as np
 import matplotlib.pyplot as plt
 import gym
@@ -47,13 +48,14 @@ plt.close()
 rep_types = {'onehot':onehot, 'random':random, 'place_cell':place_cell, 'sr':sr}
 state_reps, representation_name, input_dims, _ = rep_types[rep_type](env)
 
-AC_head_agent = head_AC(input_dims, test_env.action_space.n, lr=learning_rate)
+AC_head_agent = head_AC(input_dims, env.action_space.n, lr=learning_rate)
 
 memory = Memory(entry_size=env.action_space.n, cache_limit=cache_size)
 
 agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 
 ex = flat_expt(agent, env)
+print(f"Experiment running {env.unwrapped.spec.id} \nRepresentation: {representation_name} \nCache Limit:{cache_size}")
 ex.run(num_trials,num_events,snapshot_logging=False)
 ex.record_log(env_name=test_env_name, representation_type=representation_name,
               n_trials=num_trials, n_steps=num_events,
