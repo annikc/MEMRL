@@ -26,8 +26,8 @@ master_dict = get_id_dict(df)
 
 grids = get_grids([11,31,41,51])
 
-labels_for_plot = {'conv_saved_latents':'Partially Observable State', 'rwd_conv_saved_latents':'Fully Observable State'} # for conv_head_only_retrain
-#labels_for_plot = {'conv_latents':'Partially Observable State', 'rwd_conv_latents':'Fully Observable State'} # for empty_head_only_retrain
+#labels_for_plot = {'conv_saved_latents':'Partially Observable State', 'rwd_conv_saved_latents':'Fully Observable State'} # for conv_head_only_retrain
+labels_for_plot = {'conv_latents':'Partially Observable State', 'rwd_conv_latents':'Fully Observable State'} # for empty_head_only_retrain
 def plot_all(save=True, cutoff=25000):
     fig, axs = plt.subplots(4, 2, sharex='col')
     for i in range(len(grids)):

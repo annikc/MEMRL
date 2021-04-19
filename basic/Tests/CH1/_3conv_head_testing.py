@@ -12,6 +12,18 @@ from modules.Agents.RepresentationLearning.learned_representations import latent
 from modules.Agents import Agent
 from modules.Experiments import flat_expt
 sys.path.append('../../../')
+import argparse
+
+# set up arguments to be passed in and their defauls
+parser = argparse.ArgumentParser()
+parser.add_argument('-v', type=int, default=1)
+parser.add_argument('-rep', default='conv')
+
+args = parser.parse_args()
+
+# parameters set with command line arugments
+version     = args.v
+latent_type = args.rep
 
 
 write_to_file = 'head_only_retrain.csv'
