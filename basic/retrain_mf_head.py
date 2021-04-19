@@ -15,7 +15,7 @@ sys.path.append('../../../')
 
 
 write_to_file = 'head_only_retrain.csv'
-version = 1
+version = 3
 latent_type = 'rwd_conv'
 training_env_name = f'gridworld:gridworld-v{version}'
 test_env_name = training_env_name+'1'
