@@ -1,3 +1,4 @@
+# Tests/CH1/_0random_walk_head_test.py
 import numpy as np
 import matplotlib.pyplot as plt
 import gym
@@ -25,10 +26,9 @@ args = parser.parse_args()
 version     = args.v
 latent_type = args.rep
 
-
-# parameters set for this code
-write_to_file         = 'random_walk.csv'
+# parameters set for this file
 relative_path_to_data = '../../Data/' # from within Tests/CH1
+write_to_file         = 'random_walk.csv'
 training_env_name     = f'gridworld:gridworld-v{version}'
 test_env_name         = training_env_name+'1'
 num_trials            = 5000
