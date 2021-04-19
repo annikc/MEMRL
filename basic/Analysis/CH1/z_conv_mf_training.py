@@ -6,39 +6,23 @@ import pickle
 import sys
 import gym
 import pandas as pd
-
 sys.path.append('../../modules/')
-from Analysis.analysis_utils import get_avg_std
+from Analysis.analysis_utils import get_avg_std, get_id_dict, get_grids
 from Utils import running_mean as rm
 
-rep_to_plot = 'reward_conv'
 
-data_dir = '../../Data/results/'
-df = pd.read_csv('../../Data/head_only_retrain.csv')
-
-master_dict = {}
+data_dir = '../../Data/'
+df = pd.read_csv(data_dir+'conv_mf_training.csv')
 envs = df.env_name.unique()
+envs.remove('gridworld:gridworld-v2')
 reps = df.representation.unique()
 
-for env in envs:
-    master_dict[env] = {}
-    for rep in reps:
-        id_list = list(df.loc[(df['env_name']==env)
-         & (df['representation']==rep)]['save_id'])
+master_dict = get_id_dict(df)
 
-        master_dict[env][rep]=id_list
-
-env_names = ['gridworld:gridworld-v11', 'gridworld:gridworld-v41','gridworld:gridworld-v31', 'gridworld:gridworld-v51']
-grids = []
-for ind, environment_to_plot in enumerate(env_names):
-    env = gym.make(environment_to_plot)
-    plt.close()
-    grids.append(env.grid)
+grids = get_grids([1,3,4,5])
 
 
-plot_all = True
-
-if plot_all:
+def plot_all(save=False):
     fig, axs = plt.subplots(4, 2, sharex='col')
     #rect = plt.Rectangle((5,5), 1, 1, color='r', alpha=0.3)
     for i in range(len(grids)):
@@ -49,16 +33,18 @@ if plot_all:
         axs[i,0].add_patch(rect)
         axs[i,0].invert_yaxis()
 
-    for ind, name in enumerate(env_names):
+    for ind, name in enumerate(envs):
         for rep_to_plot in reps:
             v_list = master_dict[name][rep_to_plot]
-            avg_, std_ = get_avg_std(v_list,cutoff=25000)
+            avg_, std_ = get_avg_std(v_list,cutoff=5000)
             axs[ind,1].plot(avg_, label=f'{rep_to_plot}')
             axs[ind,1].fill_between(np.arange(len(avg_)),avg_-std_, avg_+std_, alpha=0.3)
-        if ind == len(env_names)-1:
+        if ind == len(envs)-1:
             axs[ind,1].set_xlabel('Episodes')
             axs[ind,1].set_ylabel('Cumulative \nReward')
-        ax[0,1].legend(loc='upper center', ncol=2, bbox_to_anchor = (0.1,1.1))
-    plt.savefig('../figures/CH1/conv_testing.svg',format='svg')
+        axs[0,1].legend(loc='upper center', ncol=2, bbox_to_anchor = (0.1,1.1))
+    if save:
+        plt.savefig('../figures/CH1/conv_training.svg',format='svg')
+    plt.show()
 
-plt.show()
+plot_all()
