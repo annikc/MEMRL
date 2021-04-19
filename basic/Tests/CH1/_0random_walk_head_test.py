@@ -11,7 +11,9 @@ from modules.Agents.Networks import flex_ActorCritic as Network
 from modules.Agents.Networks.load_network_weights import load_saved_head_weights, convert_agent_to_weight_dict
 from modules.Agents.RepresentationLearning.learned_representations import latents
 from modules.Agents import Agent
+
 from modules.Experiments import flat_random_walk as flat_expt
+
 sys.path.append('../../../')
 import argparse
 
@@ -26,7 +28,6 @@ args = parser.parse_args()
 version     = args.v
 latent_type = args.rep
 
-# parameters set for this file
 relative_path_to_data = '../../Data/' # from within Tests/CH1
 write_to_file         = 'random_walk.csv'
 training_env_name     = f'gridworld:gridworld-v{version}'
@@ -57,16 +58,16 @@ agent_path = relative_path_to_data+f'agents/{run_id}.pt'
 # save latents by loading network, passing appropriate tensor, getting top fc layer activity
 state_reps, representation_name, input_dims, _ = latents(test_env, agent_path, type=latent_type)
 
+
 # load weights to head_ac network from previously learned agent
 empty_net = head_AC(input_dims, test_env.action_space.n, lr=0.0005)
 AC_head_agent = load_saved_head_weights(empty_net, agent_path)
-
 
 agent = Agent(AC_head_agent, state_representations=state_reps)
 
 ex = flat_expt(agent, test_env)
 ex.run(num_trials,num_events,snapshot_logging=False)
 ex.record_log(env_name=test_env_name, representation_type=representation_name,
-              n_trials=num_trials, n_steps=num_events,
+              n_trials=num_trials, n_steps=num_events,load_from=run_id,
               dir=relative_path_to_data, file=write_to_file)
 

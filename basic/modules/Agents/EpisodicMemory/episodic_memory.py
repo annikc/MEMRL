@@ -89,6 +89,7 @@ class EpisodicMemory(object):
 		#specify decay envelope for memory relevance calculation
 		envelope = kwargs.get('pval_decay_env', self.memory_envelope)
 
+		
 		if len(self.cache_list) == 0:
 			random_policy = softmax(np.zeros(self.n_actions))
 			return random_policy
