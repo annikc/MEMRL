@@ -33,7 +33,7 @@ cache_size    = args.cache
 
 
 # parameters set for this file
-relative_path_to_data = '../../Data/' # from within Tests/CH1
+relative_path_to_data = './Data/' # from within Tests/CH1
 write_to_file         = 'ec_rep_test.csv'
 training_env_name     = f'gridworld:gridworld-v{version}'
 test_env_name         = training_env_name+'1'
