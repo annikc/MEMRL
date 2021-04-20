@@ -44,9 +44,8 @@ cache_limits = {'gridworld:gridworld-v11':{100:400, 75:300, 50:200, 25:100},
                 'gridworld:gridworld-v31':{100:365, 75:273, 50:182, 25:91},
                 'gridworld:gridworld-v41':{100:384, 75:288, 50:192, 25:96},
                 'gridworld:gridworld-v51':{100:286, 75:214, 50:143, 25:71}}
-cache_size_for_env = cache_limits[test_env_name][cache_size]
-print(cache_size_for_env)
 
+cache_size_for_env = cache_limits[test_env_name][cache_size]
 
 # make new env to run test in
 env = gym.make(test_env_name)
@@ -62,7 +61,7 @@ memory = Memory(entry_size=env.action_space.n, cache_limit=cache_size_for_env)
 agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 
 ex = flat_expt(agent, env)
-print(f"Experiment running {env.unwrapped.spec.id} \nRepresentation: {representation_name} \nCache Limit:{cache_size}")
+print(f"Experiment running {env.unwrapped.spec.id} \nRepresentation: {representation_name} \nCache Limit:{cache_size_for_env}")
 ex.run(num_trials,num_events,snapshot_logging=False)
 ex.record_log(env_name=test_env_name, representation_type=representation_name,
               n_trials=num_trials, n_steps=num_events,
