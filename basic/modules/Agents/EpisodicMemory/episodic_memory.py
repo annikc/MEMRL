@@ -7,21 +7,22 @@
 # =====================================
 from __future__ import division, print_function
 import numpy as np
+from scipy.spatial.distance import cdist
 import sys
 sys.path.append('../../../modules/')
 from modules.Utils import softmax
 
 class EpisodicMemory(object):
 	def __init__(self, entry_size, cache_limit,**kwargs):
-		self.cache_list 		= {}								# memory bank object
-		self.cache_limit 		= cache_limit                       # size of memory bank
-		self.n_actions			= entry_size						# number of rows in each memory unit
+		self.cache_list 	 = {}								# memory bank object
+		self.cache_limit 	 = cache_limit                      # size of memory bank
+		self.n_actions		 = entry_size						# number of rows in each memory unit
 
-		self.mem_temp           = kwargs.get('mem_temp', 1)      # softmax temp for memory recall
-		self.memory_envelope 	= kwargs.get('mem_envelope', 50)    # speed of memory decay
-		self.use_pvals          = kwargs.get('pvals', False)
+		self.mem_temp        = kwargs.get('mem_temp', 1)        # softmax temp for memory recall
+		self.memory_envelope = kwargs.get('mem_envelope', 50)   # speed of memory decay
+		self.use_pvals       = kwargs.get('pvals', False)
 
-		self.similarity_measure = self.L1_norm
+		self.distance_metric = kwargs.get('distance', 'euclidean')
 
 	def reset_cache(self):
 		self.cache_list.clear()
@@ -127,11 +128,10 @@ class EpisodicMemory(object):
 		lin_act = mem_cache[np.argmax(cosine_similarity)]
 		return  tuple(lin_act), max(cosine_similarity)
 
-	def L1_norm(self, key):
+	def similarity_measure(self, key):
 		mem_cache = np.asarray(list(self.cache_list.keys()))
 		entry 	  = np.asarray(key)
-
-		distance = np.linalg.norm(mem_cache-entry, axis=1)
+		distance  = cdist([entry], mem_cache, metric=self.distance_metric)[0]
 
 		closest_entry = mem_cache[np.argmin(distance)]
 		return tuple(closest_entry), min(distance)

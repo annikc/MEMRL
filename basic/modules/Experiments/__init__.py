@@ -76,7 +76,7 @@ class expt(object):
 		agent_data = [self.agent.MFC.__dict__[k] for k in network_keys] + [self.agent.gamma]
 		if self.agent.EC != None:
 			ec_data = [self.agent.EC.__dict__[k] for k in ec_keys]
-			ec_data.append(self.agent.EC.__dict__['similarity_measure'].__name__)
+			ec_data.append(self.agent.EC.__dict__['distance_metric'])
 		else:
 			ec_data = ["None" for k in ec_keys] + ["None"]
 
@@ -234,7 +234,7 @@ class conv_expt(expt):
 		agent_data = [self.agent.MFC.__dict__[k] for k in network_keys] + [self.agent.gamma]
 		if self.agent.EC != None:
 			ec_data = [self.agent.EC.__dict__[k] for k in ec_keys]
-			ec_data.append(self.agent.EC.__dict__['similarity_measure'].__name__)
+			ec_data.append(self.agent.EC.__dict__['distance_metric'])
 		else:
 			ec_data = ["None" for k in ec_keys] + ["None"]
 
@@ -305,7 +305,7 @@ class flat_expt(expt):
 		agent_data = [self.agent.MFC.__dict__[k] for k in network_keys] + [self.agent.gamma]
 		if self.agent.EC != None:
 			ec_data = [self.agent.EC.__dict__[k] for k in ec_keys]
-			ec_data.append(self.agent.EC.__dict__['similarity_measure'].__name__)
+			ec_data.append(self.agent.EC.__dict__['distance_metric'])
 		else:
 			ec_data = ["None" for k in ec_keys] + ["None"]
 

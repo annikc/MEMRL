@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 sys.path.append('../modules/')
 from Utils import running_mean as rm
 
-def get_id_dict(df, **kwargs):
+def get_env_rep_id_dict(df, **kwargs):
     master_dict = {}
     envs = kwargs.get('envs', df.env_name.unique())
     reps = kwargs.get('reps',df.representation.unique())

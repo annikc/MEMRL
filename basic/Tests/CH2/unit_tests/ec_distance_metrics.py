@@ -40,51 +40,26 @@ ref_state = e_cache[ref_key][2]
 print("reference state: ", ref_state, env.oneD2twoD(ref_state))
 
 
-dist = np.zeros(env.nstates)
-dist[:] = np.nan
-
+entry     = np.asarray(ref_key)
 mem_cache = np.asarray(list(e_cache.keys()))
 sts_ids   = [e_cache[x][2] for x in list(e_cache.keys())]
-print(sts_ids)
-entry     = np.asarray(ref_key)
 
-distance_fro = np.linalg.norm(mem_cache-entry, axis=1)
-print(min(distance_fro), mem_cache[np.argmin(distance_fro)][0:10])
 
-distance_cos = cdist([entry], mem_cache, metric='euclidean')[0]
-print(distance_cos[sts_ids], '######')
+distance_cos = cdist([entry], mem_cache, metric='chebyshev')[0]
 print(min(distance_cos), "closest state is", e_cache[tuple(mem_cache[np.argmin(distance_cos)])][2])
 
+dist = np.zeros(env.nstates)
+dist[:] = np.nan
 for ind,item in enumerate(sts_ids):
     dist[item] = distance_cos[ind]
 
-
-fig, ax = plt.subplots(1,3)
-ax[0].imshow(distance_fro.reshape(env.shape))
-ax[1].imshow(distance_fro[sts_ids].reshape(env.shape))
-ax[2].imshow(dist.reshape(env.shape))
+fig, ax = plt.subplots(1,1)
+ax.imshow(dist.reshape(env.shape))
 plt.show()
 
+memory = Memory(cache_limit=env.nstates, entry_size=env.action_space.n, distance='euclidean')
+memory.cache_list = e_cache
 
-''' ### from episodic memory class
-def L1_norm(self, key):
-    mem_cache = np.asarray(list(self.cache_list.keys()))
-    entry 	  = np.asarray(key)
+closest_key, min_dist = memory.similarity_measure(ref_key)
+print(f'ep recall closest dist = {min_dist}, state = {memory.cache_list[closest_key][2]}')
 
-    distance = np.linalg.norm(mem_cache-entry, axis=1)
-
-    closest_entry = mem_cache[np.argmin(distance)]
-    return tuple(closest_entry), min(distance)
-
-
-for key in list(e_cache.keys()):
-    readable_state = e_cache[key][2]
-    dist[readable_state] = pdist([key], [key], metric='cosine')
-
-
-plt.figure()
-plt.imshow(dist.reshape(env.shape))
-plt.show()
-
-
-'''
