@@ -12,7 +12,7 @@ from Utils import running_mean as rm
 
 # import csv data summary
 parent_path = '../../Data/'
-df = pd.read_csv(parent_path+'throttled_ec_allreps.csv')
+df = pd.read_csv(parent_path+'throttled_ec_allreps_cosine.csv')
 
 gb = df.groupby(['env_name','representation','EC_cache_limit'])["save_id"]#.apply(list)
 
@@ -39,9 +39,9 @@ labels_for_plot = {'analytic successor':'SR', 'onehot':'onehot', 'random':'rando
 # environments = diff figures
 # columns = restricted size
 # rows = performance and average variance in signal
-envs_to_plot = ['gridworld:gridworld-v41']
+envs_to_plot = ['gridworld:gridworld-v51']
 pcts_to_plot = [25,50,75,100]
-reps_to_plot = df.representation.unique()#['random','onehot','analytic successor']
+reps_to_plot = ['analytic successor','state-centred pc f0.05', 'random', 'onehot']#, 'conv_latents'] # df.representation.unique()
 print(reps_to_plot)
 def plot_throttled_performance():
     for i, env in enumerate(envs_to_plot):

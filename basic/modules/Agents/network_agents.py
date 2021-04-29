@@ -14,6 +14,8 @@ from .Transition_Cache import Transition_Cache
 
 Transition = namedtuple('Transition', 'episode, transition, state, action, reward, \
                                 next_state, log_prob, expected_value, target_value, done, readable_state')
+distance_Transition = namedtuple('Transition', 'episode, transition, state, action, reward, \
+                                next_state, log_prob, expected_value, target_value, done, readable_state, distance')
 
 class Agent(object):
     def __init__(self, network, memory=None, state_representations=[], **kwargs):
@@ -286,3 +288,69 @@ class Agent_EC_stores_RPE(Agent):
 
             self.EC.add_mem(mem_dict)
 
+class Agent_EC_report_dist(Agent):
+    def __init__(self, network, memory,state_representations):
+        super().__init__(network, memory,state_representations)
+        self.avg_dist_rtn = []
+
+    def EC_action(self, state_observation):
+        MF_policy, value = self.MFC(state_observation)
+
+        #mem_state = self.memory_query(state_observation)
+        mem_state = tuple(state_observation)
+        EC_policy_, distance = self.EC.recall_mem(mem_state, timestep=self.counter, report_dist=True)
+        EC_policy = torch.Tensor(EC_policy_)
+
+        a = Categorical(probs=EC_policy,logits=None)
+        b = Categorical(probs=MF_policy,logits=None)
+
+        action = a.sample() # select action using episodic
+        #action = torch.argmax(EC_policy)
+
+        return action.item(), b.log_prob(action), value.view(-1), distance
+
+    def log_event(self, episode, event, state, action, reward, next_state, log_prob, expected_value, target_value, done, readable_state, distance):
+        # episode = trial
+        # event = one step in the environment
+        transition = distance_Transition(episode=episode,
+                                transition=event,
+                                state=state,
+                                action=action,
+                                reward=reward,
+                                next_state=next_state,
+                                log_prob=log_prob,
+                                expected_value=expected_value,
+                                target_value=target_value,
+                                done=done,
+                                readable_state=readable_state,
+                                distance=distance
+                                )
+        self.transition_cache.store_transition(transition)
+
+    def EC_storage(self):
+        mem_dict = {}
+        buffer = np.vstack(self.transition_cache.transition_cache)
+
+        states    = buffer[:,2]
+        actions   = buffer[:,3]
+        returns   = buffer[:,8]
+        timesteps = buffer[:,1]
+        readable  = buffer[:,10]
+        trial     = buffer[-1,0]
+        distances = buffer[:,11]
+
+        temp_dist_rtn = [[],[]]
+
+        for s, a, r, event, rdbl, dist in zip(states,actions,returns,timesteps,readable,distances):
+            mem_dict['activity']  = tuple(s)
+            mem_dict['action']    = a
+            mem_dict['delta']     = r
+            mem_dict['timestamp'] = event
+            mem_dict['readable']  = rdbl
+            mem_dict['trial']     = trial
+
+            self.EC.add_mem(mem_dict)
+            temp_dist_rtn[0].append(dist)
+            temp_dist_rtn[1].append(r)
+
+        self.avg_dist_rtn.append((np.nanmean(temp_dist_rtn[0]),np.mean(temp_dist_rtn[1])))

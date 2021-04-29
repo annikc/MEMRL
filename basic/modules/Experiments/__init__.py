@@ -365,6 +365,69 @@ class flat_random_walk(flat_expt):
 		self.state = next_state
 		return done
 
+class flat_dist_return(flat_expt):
+	def __init__(self,agent,envrionment):
+		super().__init__(agent,envrionment)
+		self.data['dist_rtn'] = []
+		self.print_flag = True
+	def single_step(self,trial):
+		# get representation for given state of env.
+		state_representation = self.agent.get_state_representation(self.state)
+		readable = self.state
+
+		# get action from agent
+		action, log_prob, expected_value, distance = self.agent.get_action(state_representation)
+		#get distance from EC
+
+		# take step in environment
+		next_state, reward, done, info = self.env.step(action)
+
+		# end of event
+		target_value = 0
+		self.reward_sum += reward
+
+		self.agent.log_event(episode=trial, event=self.agent.counter,
+							 state=state_representation, action=action, reward=reward, next_state=next_state,
+							 log_prob=log_prob, expected_value=expected_value, target_value=target_value,
+							 done=done, readable_state=readable, distance=distance)
+		self.agent.counter += 1
+		self.state = next_state
+		return done
+
+	def end_of_trial(self, trial, logsnap=False):
+		p, v = self.agent.finish_()
+
+		if self.print_flag:
+			print(len(self.agent.EC.cache_list.keys()))
+
+		if len(self.agent.EC.cache_list.keys()) == self.agent.EC.cache_limit and self.print_flag:
+			print(f"cache limit hit on trial {trial}")
+			self.print_flag = False
+
+		# temp
+		if logsnap:
+			states = [self.env.oneD2twoD(x) for x in list(self.agent.state_reps.keys())]
+			observations = list(self.agent.state_reps.values())
+			MF_pols, MF_vals = self.snapshot(states,observations)
+			self.data['V_snap'].append(MF_vals)
+			self.data['P_snap'].append(MF_pols)
+		# /temp
+
+		self.data['total_reward'].append(self.reward_sum) # removed for bootstrap expts
+		self.data['loss'][0].append(p)
+		self.data['loss'][1].append(v)
+		self.data['dist_rtn'].append(self.agent.avg_dist_rtn[-1])
+
+		if trial <= 10:
+			self.running_rwdavg = np.mean(self.data['total_reward'])
+		else:
+			self.running_rwdavg = np.mean(self.data['total_reward'][-self.print_freq:])
+
+		if trial % self.print_freq == 0:
+			print(f"Episode: {trial}, Score: {self.reward_sum} (Running Avg:{self.running_rwdavg}) [{time.time() - self.t}s]")
+			self.t = time.time()
+
+
 
 class gridworldExperiment(expt):
 	def __init__(self, agent, environment, **kwargs):
