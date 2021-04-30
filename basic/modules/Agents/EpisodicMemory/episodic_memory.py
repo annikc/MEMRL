@@ -265,7 +265,52 @@ class distance_report_EpisodicMemory(object):
 		closest_entry = mem_cache[np.argmin(distance)]
 		return tuple(closest_entry), min(distance)
 
+class random_forget_EC(EpisodicMemory):
+	def __init__(self, entry_size, cache_limit, **kwargs):
+		super(random_forget_EC, self).__init__(entry_size,cache_limit,**kwargs)
 
+	def add_mem(self, item):
+		activity 	= item['activity']
+		action		= item['action']
+		delta 		= item['delta'] #return
+		timestamp	= item['timestamp']
+		trial       = item['trial'] # episode (i.e. collection of transitions)
+		#
+		readable    = item['readable'] # 2d coordinate just to know what state we're looking at
+
+		# Case 1: memory is not full
+		if len(self.cache_list) < self.cache_limit:
+			# Case 1a: key does not yet exist
+			if activity not in self.cache_list.keys(): # if no key for this state exists already, add new one
+				mem_entry = np.empty((self.n_actions, 2))
+				mem_entry[:,0] = np.nan # initialize deltas to nan
+				mem_entry[:,1] = np.inf # initialize timestamps to inf
+				self.cache_list[activity] = [mem_entry, np.inf, None]
+			# Case 1b: key exists, add or replace relevant info in mem container
+			self.cache_list[activity][0][action] = [delta, trial]
+			self.cache_list[activity][1] = timestamp
+			self.cache_list[activity][2] = readable
+			#self.visited_states.append(readable)
+		# Case 2: memory is full
+		else:
+			# Case 2a: key does not yet exist
+			if activity not in self.cache_list.keys():
+				# choose key to be removed
+				cache_keys = list(self.cache_list.keys())
+
+				rand_index = np.random.choice(len(cache_keys))
+				old_activity = cache_keys[rand_index]                   # get key in dictionary corresponding to random index
+				del self.cache_list[old_activity]                       # delete item from dictionary
+
+				# add new mem container
+				mem_entry = np.empty((self.n_actions, 2))
+				mem_entry[:,0] = np.nan
+				mem_entry[:,1] = np.inf # initialize entries to nan
+				self.cache_list[activity] = [mem_entry, np.inf, None]
+			# Case2b: key exists, add or replace relevant info in mem container
+			self.cache_list[activity][0][action] = [delta, trial]
+			self.cache_list[activity][1] = timestamp
+			self.cache_list[activity][2] = readable
 
 
 class RandomPolicy_EC(EpisodicMemory):

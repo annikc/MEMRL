@@ -13,7 +13,7 @@ from Utils import running_mean as rm
 
 # import csv data summary
 parent_path = '../../Data/'
-cos_df = pd.read_csv(parent_path+'throttled_ec_allreps_cosine.csv')
+cos_df = pd.read_csv(parent_path+'throttled_ec_allreps_chebyshev.csv')
 
 # parse data by relevant columns
 gb_cos = cos_df.groupby(['env_name','representation','EC_cache_limit'])["save_id"]
