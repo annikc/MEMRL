@@ -35,7 +35,7 @@ def onehot(env):
 
 def place_cell(env, **kwargs):
     f_size = kwargs.get('field_size', 1 / (max(*env.shape)))
-    name = f'state-centred pc f{f_size}'
+    name = 'place_cell'
     dim = env.nstates
     # place cells centred at each state of the environment
     # for randomly distributed centres use rand_place_cell
@@ -50,7 +50,7 @@ def place_cell(env, **kwargs):
     for state in env.useable:
         pc_state_reps[env.twoD2oneD(state)] = pcs.get_activities([state])[0] / max(pcs.get_activities([state])[0])
 
-    return pc_state_reps, name, dim, pcs.cell_centres
+    return pc_state_reps, name, dim, f_size
 
 
 def rand_place_cell(env, **kwargs):

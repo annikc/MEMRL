@@ -3,9 +3,11 @@ import gym
 import matplotlib.pyplot as plt
 import networkx as nx
 
-env_id = 'gridworld:gridworld-v3'
+env_id = 'gridworld:gridworld-v41'
 env = gym.make(env_id)
-#plt.close()
+plt.close()
+reward_state = env.twoD2oneD(list(env.rewards.keys())[0])
+print(env.rewards,reward_state)
 
 # plot transition graph
 
@@ -39,6 +41,15 @@ def compute_distance_matrix(G, env):
 
     return shortest_dist_array
 
+
+G= make_env_graph(env)
+shortest_dist_array = compute_distance_matrix(G,env)
+print(10- 0.01*np.nanmean(shortest_dist_array[reward_state]))
+
+import matplotlib.pyplot as plt
+plt.figure()
+plt.imshow(shortest_dist_array[reward_state].reshape(env.shape))
+plt.show()
 '''
 if env_id[-1]=='3':
     rooms = []

@@ -32,8 +32,8 @@ master_dict = get_id_dict(df, reps=reps)
 print([x[-2:] for x in envs])
 grids = get_grids([x[-2:] for x in envs])
 
-convert_rep_to_color = {'analytic successor':'C0', 'onehot':'C1', 'random':'C2','state-centred pc f0.05':'C3'}
-labels_for_plot = {'analytic successor':'SR', 'onehot':'onehot', 'random':'random','state-centred pc f0.05':'PC'}
+convert_rep_to_color = {'analytic successor':'C0', 'onehot':'C1', 'random':'C2','place_cell':'C3'}
+labels_for_plot = {'analytic successor':'SR', 'onehot':'onehot', 'random':'random','place_cell':'PC'}
 
 def plot_all(save=False, cutoff=25000, smoothing=5000):
     fig, axs = plt.subplots(4, 3, sharex='col', sharey='col')

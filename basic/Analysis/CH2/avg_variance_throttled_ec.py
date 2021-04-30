@@ -26,8 +26,8 @@ cache_limits = {'gridworld:gridworld-v11':{100:400, 75:300, 50:200, 25:100},
                 'gridworld:gridworld-v51':{100:286, 75:214, 50:143, 25:71}}
 
 
-convert_rep_to_color = {'analytic successor':'C0', 'onehot':'C1', 'random':'C2','state-centred pc f0.05':'C3','conv_latents':'k'}
-labels_for_plot = {'analytic successor':'SR', 'onehot':'onehot', 'random':'random','state-centred pc f0.05':'PC','conv_latents':'latent'}
+convert_rep_to_color = {'analytic successor':'C0', 'onehot':'C1', 'random':'C2','place_cell':'C3','conv_latents':'k'}
+labels_for_plot = {'analytic successor':'SR', 'onehot':'onehot', 'random':'random','place_cell':'PC','conv_latents':'latent'}
 
 # plots
 # environments = diff figures
@@ -35,7 +35,7 @@ labels_for_plot = {'analytic successor':'SR', 'onehot':'onehot', 'random':'rando
 # rows = performance and average variance in signal
 envs_to_plot = ['gridworld:gridworld-v41']
 pcts_to_plot = [25,50,75,100]
-reps_to_plot = ['analytic successor','state-centred pc f0.05', 'random', 'onehot']#, 'conv_latents'] # df.representation.unique()
+reps_to_plot = ['analytic successor','place_cell', 'random', 'onehot']#, 'conv_latents'] # df.representation.unique()
 rep_labels = [labels_for_plot[x] for x in reps_to_plot]
 env = envs_to_plot[0]
 tmp_env_obj = gym.make(env)
