@@ -52,7 +52,16 @@ env = gym.make(test_env_name)
 plt.close()
 
 rep_types = {'onehot':onehot, 'random':random, 'place_cell':place_cell, 'sr':sr}
-state_reps, representation_name, input_dims, _ = rep_types[rep_type](env)
+if rep_type == 'latents':
+    conv_ids = {'gridworld:gridworld-v1':'c34544ac-45ed-492c-b2eb-4431b403a3a8',
+                'gridworld:gridworld-v3':'32301262-cd74-4116-b776-57354831c484',
+                'gridworld:gridworld-v4':'b50926a2-0186-4bb9-81ec-77063cac6861',
+                'gridworld:gridworld-v5':'15b5e27b-444f-4fc8-bf25-5b7807df4c7f'}
+    run_id = conv_ids[f'gridworld:gridworld-v{version}']
+    agent_path = relative_path_to_data+f'agents/{run_id}.pt'
+    state_reps, representation_name, input_dims, _ = latents(env, agent_path)
+else:
+    state_reps, representation_name, input_dims, _ = rep_types[rep_type](env)
 
 AC_head_agent = head_AC(input_dims, env.action_space.n, lr=learning_rate)
 
