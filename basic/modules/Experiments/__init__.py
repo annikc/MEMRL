@@ -370,13 +370,14 @@ class flat_dist_return(flat_expt):
 		super().__init__(agent,envrionment)
 		self.data['dist_rtn'] = []
 		self.print_flag = True
+
 	def single_step(self,trial):
 		# get representation for given state of env.
 		state_representation = self.agent.get_state_representation(self.state)
 		readable = self.state
 
 		# get action from agent
-		action, log_prob, expected_value, distance = self.agent.get_action(state_representation)
+		action, log_prob, expected_value, distance, ec_readable = self.agent.get_action(state_representation)
 		#get distance from EC
 
 		# take step in environment
@@ -389,7 +390,7 @@ class flat_dist_return(flat_expt):
 		self.agent.log_event(episode=trial, event=self.agent.counter,
 							 state=state_representation, action=action, reward=reward, next_state=next_state,
 							 log_prob=log_prob, expected_value=expected_value, target_value=target_value,
-							 done=done, readable_state=readable, distance=distance)
+							 done=done, readable_state=readable, distance=distance, ec_readable=ec_readable)
 		self.agent.counter += 1
 		self.state = next_state
 		return done

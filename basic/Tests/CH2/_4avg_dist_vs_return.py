@@ -11,6 +11,7 @@ from modules.Agents.EpisodicMemory import distEM as Memory
 from modules.Agents.RepresentationLearning.learned_representations import onehot, random, place_cell, sr
 from modules.Agents import distAgent as Agent
 from modules.Experiments import flat_dist_return as flat_expt
+import networkx as nx
 sys.path.append('../../../')
 import argparse
 
@@ -20,24 +21,24 @@ parser.add_argument('-v', type=int, default=1)
 parser.add_argument('-rep', default='onehot')
 parser.add_argument('-load', type=bool, default=True)
 parser.add_argument('-lr', default=0.0005)
-parser.add_argument('-cache', type=int, default=50)
+parser.add_argument('-cache', type=int, default=100)
 parser.add_argument('-dist', default='euclidean')
 args = parser.parse_args()
 
 # parameters set with command line arugments
-version         = 3    #args.v
-rep_type        = 'sr' #args.rep
+version         = args.v
+rep_type        = args.rep
 learning_rate   = args.lr
-cache_size      = 25 #args.cache
+cache_size      = args.cache
 distance_metric = args.dist
 
 
 # parameters set for this file
 relative_path_to_data = '../../Data/' # from within Tests/CH1
-write_to_file         = 'ec_distance_test.csv'
+write_to_file         = 'ec_avg_dist_rtn.csv'
 training_env_name     = f'gridworld:gridworld-v{version}'
 test_env_name         = training_env_name+'1'
-num_trials = 50
+num_trials = 1000
 num_events = 250
 
 cache_limits = {'gridworld:gridworld-v11':{100:400, 75:300, 50:200, 25:100},
@@ -63,17 +64,8 @@ agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 ex = flat_expt(agent, env)
 print(f"Experiment running {env.unwrapped.spec.id} \nRepresentation: {representation_name} \nCache Limit:{cache_size_for_env}")
 ex.run(num_trials,num_events,snapshot_logging=False)
-print(agent.avg_dist_rtn)
-'''
+
 ex.record_log(env_name=test_env_name, representation_type=representation_name,
               n_trials=num_trials, n_steps=num_events,
-              dir=relative_path_to_data, file=write_to_file, mock_log=True)
-'''
-plt.figure()
-dist_rtn = np.vstack(agent.avg_dist_rtn)
-data_dr  = np.vstack(ex.data['dist_rtn'])
+              dir=relative_path_to_data, file=write_to_file)
 
-plt.plot(dist_rtn[1:,0], label='distance')
-plt.plot(dist_rtn[1:,1],label='return')
-plt.legend(loc=0)
-plt.show()

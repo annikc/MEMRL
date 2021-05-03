@@ -220,8 +220,10 @@ class distance_report_EpisodicMemory(object):
 		if len(self.cache_list) == 0:
 			policy = softmax(np.zeros(self.n_actions))
 			distance = np.nan
+			readable_state = np.nan
 		else:
 			lin_act, distance = self.similarity_measure(key) # returns the most similar key, as well as the cosine similarity measure
+			readable_state = self.cache_list[lin_act][2]
 			memory       = np.nan_to_num(self.cache_list[lin_act][0])
 			deltas       = memory[:,0]
 			similarity = 1 ## using key sim
@@ -232,7 +234,7 @@ class distance_report_EpisodicMemory(object):
 			else:
 				policy = softmax( similarity*deltas, T=mem_temp)
 		if report_dist:
-			return policy, distance
+			return policy, distance, readable_state
 		else:
 			return policy
 
