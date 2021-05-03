@@ -11,7 +11,6 @@ from modules.Agents.EpisodicMemory import distEM as Memory
 from modules.Agents.RepresentationLearning.learned_representations import onehot, random, place_cell, sr
 from modules.Agents import distAgent as Agent
 from modules.Experiments import flat_dist_return as flat_expt
-import networkx as nx
 sys.path.append('../../../')
 import argparse
 
