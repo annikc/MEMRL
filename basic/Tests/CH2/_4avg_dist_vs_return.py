@@ -34,7 +34,7 @@ distance_metric = args.dist
 
 
 # parameters set for this file
-relative_path_to_data = '../../Data/' # from within Tests/CH1
+relative_path_to_data = './Data/' # from within Tests/CH1
 write_to_file         = 'ec_avg_dist_rtn.csv'
 training_env_name     = f'gridworld:gridworld-v{version}'
 test_env_name         = training_env_name+'1'
