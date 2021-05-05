@@ -8,7 +8,7 @@ import pandas as pd
 
 sys.path.append('../../modules/')
 from Analysis.analysis_utils import get_detailed_avg_std, get_id_dict, get_grids, plot_each
-from Utils import running_mean as rm
+from modules.Utils import running_mean as rm
 
 data_dir = '../../Data/'
 df = pd.read_csv(data_dir+'ec_throttled_latents_emptyhead.csv')

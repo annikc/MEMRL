@@ -6,7 +6,23 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 sys.path.append('../modules/')
-from Utils import running_mean as rm
+from modules.Utils import running_mean as rm
+
+### plotting settings
+labels_for_plot = {'analytic successor':'SR',
+                   'onehot':'onehot',
+                   'random':'random',
+                   'place_cell':'PC',
+                   'conv_latents':'latent'}
+
+convert_rep_to_color = {'analytic successor':'C0',
+                        'onehot':'C1',
+                        'random':'C2',
+                        'place_cell':'C4',
+                        'conv_latents':'C3'}
+
+
+
 
 def get_env_rep_id_dict(df, **kwargs):
     master_dict = {}

@@ -5,10 +5,10 @@ import pickle
 import torch
 import sys
 sys.path.append('../../modules')
-from basic.modules.Agents.Networks import flat_ActorCritic as head_AC
-from basic.modules.Agents.RepresentationLearning.learned_representations import onehot, random, place_cell, sr, saved_latents
-from basic.modules.Agents import Agent
-from basic.modules.Experiments import flat_expt
+from modules.Agents.Networks import flat_ActorCritic as head_AC
+from modules.Agents.RepresentationLearning.learned_representations import onehot, random, place_cell, sr, latents
+from modules.Agents import Agent
+from modules.Experiments import flat_expt
 sys.path.append('../../../')
 
 
@@ -26,7 +26,7 @@ env = gym.make(env_name)
 plt.close()
 
 
-rep_types = {'onehot':onehot, 'random':random, 'place_cell':place_cell, 'sr':sr, 'latent':saved_latents}
+rep_types = {'onehot':onehot, 'random':random, 'place_cell':place_cell, 'sr':sr, 'latent':latents}
 state_reps, representation_name, input_dims, _ = rep_types[representation_type](env)
 
 

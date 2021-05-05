@@ -11,11 +11,11 @@ import gym
 import matplotlib.pyplot as plt
 import sys
 sys.path.append('../../modules/')
-from basic.modules.Agents.Networks import flex_ActorCritic as Network
-from basic.modules.Agents.Networks import conv_PO_params, conv_FO_params
-from basic.modules.Agents import Agent
-from basic.modules.Agents.RepresentationLearning.learned_representations import convs, reward_convs
-from basic.modules.Experiments import conv_expt
+from modules.Agents.Networks import flex_ActorCritic as Network
+from modules.Agents.Networks import conv_PO_params, conv_FO_params
+from modules.Agents import Agent
+from modules.Agents.RepresentationLearning.learned_representations import convs, reward_convs
+from modules.Experiments import conv_expt
 import argparse
 
 # set up arguments to be passed in and their defauls

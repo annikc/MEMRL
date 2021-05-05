@@ -7,10 +7,10 @@ import torch
 import sys
 sys.path.append('../../modules')
 from modules.Agents.Networks import flat_ActorCritic as head_AC
-from modules.Agents.EpisodicMemory import distEM as Memory
+from modules.Agents.EpisodicMemory import track_forgoten_EM as Memory
 from modules.Agents.RepresentationLearning.learned_representations import onehot, random, place_cell, sr, latents
-from modules.Agents import distAgent as Agent
-from modules.Experiments import flat_dist_return as flat_expt
+from modules.Agents import Agent
+from modules.Experiments import flat_expt
 sys.path.append('../../../')
 import argparse
 
@@ -21,7 +21,7 @@ parser.add_argument('-rep', default='onehot')
 parser.add_argument('-load', type=bool, default=True)
 parser.add_argument('-lr', default=0.0005)
 parser.add_argument('-cache', type=int, default=100)
-parser.add_argument('-dist', default='euclidean')
+parser.add_argument('-dist', default='chebyshev')
 args = parser.parse_args()
 
 # parameters set with command line arugments
@@ -34,7 +34,7 @@ distance_metric = args.dist
 
 # parameters set for this file
 relative_path_to_data = './Data/' # from within Tests/CH1
-write_to_file         = 'ec_avg_dist_rtn.csv'
+write_to_file         = 'track_forgotten_states.csv'
 training_env_name     = f'gridworld:gridworld-v{version}'
 test_env_name         = training_env_name+'1'
 num_trials = 1000
@@ -73,6 +73,16 @@ ex = flat_expt(agent, env)
 print(f"Experiment running {env.unwrapped.spec.id} \nRepresentation: {representation_name} \nCache Limit:{cache_size_for_env}")
 ex.run(num_trials,num_events,snapshot_logging=False)
 
+# add in forgotten state information
+forgotten_states_map = np.zeros(env.shape)
+print(ex.agent.EC.forgotten_states.keys())
+for k in ex.agent.EC.forgotten_states.keys():
+    state_2d = env.oneD2twoD(k)
+    print(k, state_2d, ex.agent.EC.forgotten_states[k])
+    forgotten_states_map[state_2d] = ex.agent.EC.forgotten_states[k]
+
+ex.data['forgotten_states']=forgotten_states_map
+print(ex.data.keys(),'#############################')
 ex.record_log(env_name=test_env_name, representation_type=representation_name,
               n_trials=num_trials, n_steps=num_events,
               dir=relative_path_to_data, file=write_to_file)

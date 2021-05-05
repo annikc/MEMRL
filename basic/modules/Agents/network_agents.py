@@ -99,7 +99,7 @@ class Agent(object):
 
         pol_loss = 0
         val_loss = 0
-        for transition in self.transition_cache.transition_cache:
+        for i, transition in enumerate(self.transition_cache.transition_cache):
             G_t = transition.target_value
             V_t = transition.expected_value
             delta = G_t - V_t.item()
@@ -110,6 +110,11 @@ class Agent(object):
             G_t = torch.Tensor([G_t])
             v_loss = torch.nn.L1Loss()(V_t, G_t)
             val_loss += v_loss
+
+            #replace items in transition cache with detached values
+            self.transition_cache.transition_cache[i] = transition._replace(expected_value=V_t.detach().numpy(),log_prob=log_prob.detach().numpy())
+
+
         return pol_loss, val_loss
 
     def TD_loss(self):
@@ -158,6 +163,7 @@ class Agent(object):
     def log_event(self, episode, event, state, action, reward, next_state, log_prob, expected_value, target_value, done, readable_state):
         # episode = trial
         # event = one step in the environment
+
         transition = Transition(episode=episode,
                                 transition=event,
                                 state=state,

@@ -11,7 +11,7 @@ import pandas as pd
 sys.path.append('../../modules/')
 from Analysis.analysis_utils import get_avg_std, get_grids
 from Analysis.analysis_utils import get_env_rep_id_dict as get_id_dict
-from Utils import running_mean as rm
+from modules.Utils import running_mean as rm
 
 data_dir = '../../Data/results/'
 filename = 'conv_head_only_retrain' #'empty_head_only_retrain'

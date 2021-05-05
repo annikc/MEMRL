@@ -11,14 +11,14 @@ import gym
 import matplotlib.pyplot as plt
 import sys
 sys.path.append('../../modules/')
-from basic.modules.Agents.Networks import fc_ActorCritic as Network
-from basic.modules.Agents.EpisodicMemory import EpisodicMemory as Memory
-from basic.modules.Agents import Agent
-from basic.modules.Agents.RepresentationLearning.learned_representations import onehot, place_cell, rand_place_cell, sr
+from modules.Agents.Networks import fc_ActorCritic as Network
+from modules.Agents.EpisodicMemory import EpisodicMemory as Memory
+from modules.Agents import Agent
+from modules.Agents.RepresentationLearning.learned_representations import onehot, place_cell, rand_place_cell, sr
 rep_types = {'onehot':onehot, 'place_cell':place_cell, 'rand_place_cell':rand_place_cell, 'sr':sr}
 
-from basic.modules.Experiments import expt
-from basic.modules.Utils.gridworld_plotting import plot_pref_pol, plot_polmap
+from modules.Experiments import expt
+from modules.Utils.gridworld_plotting import plot_pref_pol, plot_polmap
 
 ## set parameters for run -- environment, representation type
 write_to_file = 'ec_training.csv'

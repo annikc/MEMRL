@@ -9,7 +9,7 @@ from modules.Agents.Networks import flat_ActorCritic as head_AC
 from modules.Agents.RepresentationLearning.learned_representations import convs, onehot, place_cell, latents
 from modules.Agents import Agent
 from modules.Experiments import expt
-#from modules.Agents.Networks.load_network_weights import convert_agent_to_weight_dict
+from modules.Agents.Networks.load_network_weights import convert_agent_to_weight_dict
 sys.path.append('../../../')
 
 save = True

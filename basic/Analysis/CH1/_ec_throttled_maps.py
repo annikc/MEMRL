@@ -14,8 +14,8 @@ sys.path.append('../../modules/')
 from modules.Agents.RepresentationLearning.learned_representations import load_saved_latents
 from modules.Agents.EpisodicMemory import EpisodicMemory as Memory
 from Analysis.analysis_utils import get_avg_std, get_id_dict, get_grids, plot_each
-from Utils import running_mean as rm
-from Utils import softmax
+from modules.Utils import running_mean as rm
+from modules.Utils import softmax
 from scipy.stats import entropy
 
 

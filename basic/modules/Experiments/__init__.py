@@ -429,7 +429,6 @@ class flat_dist_return(flat_expt):
 			self.t = time.time()
 
 
-
 class gridworldExperiment(expt):
 	def __init__(self, agent, environment, **kwargs):
 		super(gridworldExperiment, self).__init__(agent, environment)

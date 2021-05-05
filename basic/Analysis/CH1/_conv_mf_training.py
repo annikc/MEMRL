@@ -9,7 +9,7 @@ import pandas as pd
 
 sys.path.append('../../modules/')
 from Analysis.analysis_utils import get_avg_std, get_id_dict, get_grids
-from Utils import running_mean as rm
+from modules.Utils import running_mean as rm
 
 data_dir = '../../Data/results/'
 df = pd.read_csv('../../Data/conv_mf_training.csv')

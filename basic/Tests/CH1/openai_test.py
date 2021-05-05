@@ -2,16 +2,16 @@
 # using gridworld and actor critic network architecture
 import gym
 import torch
-from basic.modules.Agents.Networks import params as basic_agent_params
+from modules.Agents.Networks import fc_params as basic_agent_params
 
-import basic.modules.Agents.Networks as nets
-from basic.modules.Agents.EpisodicMemory import EpisodicMemory as Memory
-from basic.modules.Agents import Agent
-from basic.modules.Experiments import cont_state_Experiment as ex
-from basic.modules.Utils import running_mean as rm
+import modules.Agents.Networks as nets
+from modules.Agents.EpisodicMemory import EpisodicMemory as Memory
+from modules.Agents import Agent
+from modules.Experiments import cont_state_Experiment as ex
+from modules.Utils import running_mean as rm
 
 import matplotlib.pyplot as plt
-import basic.modules.Utils.gridworld_plotting as gp
+import modules.Utils.gridworld_plotting as gp
 
 # Make Environment to Test Agent in
 #env = gym.make('FrozenLake-v0', is_slippery=False)

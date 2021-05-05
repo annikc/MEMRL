@@ -6,7 +6,7 @@ import gym
 import pandas as pd
 
 sys.path.append('../../modules/')
-from Utils import running_mean as rm
+from modules.Utils import running_mean as rm
 from Analysis.analysis_utils import get_avg_std, get_id_dict
 
 data_dir = '../../Data/results/'
