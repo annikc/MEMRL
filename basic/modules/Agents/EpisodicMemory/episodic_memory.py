@@ -89,7 +89,6 @@ class EpisodicMemory(object):
 		mem_temp = kwargs.get('mem_temp', self.mem_temp)
 		#specify decay envelope for memory relevance calculation
 		envelope = kwargs.get('pval_decay_env', self.memory_envelope)
-
 		
 		if len(self.cache_list) == 0:
 			random_policy = softmax(np.zeros(self.n_actions))
@@ -323,7 +322,6 @@ class random_forget_EC(EpisodicMemory):
 			self.cache_list[activity][1] = timestamp
 			self.cache_list[activity][2] = readable
 
-
 class EC_track_forgotten_states(EpisodicMemory):
 	def __init__(self,entry_size,cache_limit,**kwargs):
 		super(EC_track_forgotten_states, self).__init__(entry_size,cache_limit,**kwargs)
@@ -380,6 +378,42 @@ class EC_track_forgotten_states(EpisodicMemory):
 			self.cache_list[activity][1] = timestamp
 			self.cache_list[activity][2] = readable
 
+class forget_least_recently_accessed_memory(EC_track_forgotten_states):
+	def __init__(self,entry_size,cache_limit,**kwargs):
+		super(EC_track_forgotten_states, self).__init__(entry_size,cache_limit,**kwargs)
+		self.forgotten_states={}
+
+	def recall_mem(self, key, timestep, **kwargs):
+		'''
+		pass in key: get most similar entry and return cosine sim score
+
+		confidence score = scaled by cosine sim
+
+		'''
+		mem_temp = kwargs.get('mem_temp', self.mem_temp)
+		#specify decay envelope for memory relevance calculation
+		envelope = kwargs.get('pval_decay_env', self.memory_envelope)
+
+
+		if len(self.cache_list) == 0:
+			random_policy = softmax(np.zeros(self.n_actions))
+			return random_policy
+		else:
+			lin_act, distance = self.similarity_measure(key) # returns the most similar key, as well as the cosine similarity measure
+			memory       = np.nan_to_num(self.cache_list[lin_act][0])
+			## update timestep in memory
+			self.cache_list[lin_act][1] = timestep
+			deltas       = memory[:,0]
+			similarity = 1 ## using key sim
+			if self.use_pvals:
+				times = abs(timestep - memory[:, 1])
+				pvals = self.make_pvals(times, envelope=envelope)
+				policy = softmax( similarity*np.multiply(deltas,pvals), T=mem_temp)
+			else:
+				policy = softmax( similarity*deltas, T=mem_temp)
+			return policy
+
+
 class RandomPolicy_EC(EpisodicMemory):
     def __init__(self, entry_size, cache_limit):
         super(RandomPolicy_EC, self).__init__(entry_size, cache_limit)
@@ -391,16 +425,6 @@ class RandomPolicy_EC(EpisodicMemory):
     def add_mem(self, item):
         # don't need to keep records -- will just slow computations down
         pass
-
-
-
-
-def plot_softmax(x):
-	f, axarr = plt.subplots(2, sharex=True)
-	axarr[0].bar(np.arange(len(x)), x)
-	y = softmax(x)
-	axarr[1].bar(np.arange(len(x)), y)
-	plt.show()
 
 def calc_envelope(halfmax):
 	'''
