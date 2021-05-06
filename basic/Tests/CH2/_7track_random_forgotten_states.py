@@ -1,4 +1,4 @@
-# Tests/CH2/_2ec_rep_test.py
+# Tests/CH2/_3ec_distance_test.py
 import numpy as np
 import matplotlib.pyplot as plt
 import gym
@@ -7,7 +7,7 @@ import torch
 import sys
 sys.path.append('../../modules')
 from modules.Agents.Networks import flat_ActorCritic as head_AC
-from modules.Agents.EpisodicMemory import track_forgoten_EM as Memory
+from modules.Agents.EpisodicMemory import random_forget_EC as Memory
 from modules.Agents.RepresentationLearning.learned_representations import onehot, random, place_cell, sr, latents
 from modules.Agents import Agent
 from modules.Experiments import flat_expt
@@ -27,6 +27,7 @@ args = parser.parse_args()
 # parameters set with command line arugments
 version         = args.v
 rep_type        = args.rep
+load_weights    = args.load # load learned weights from conv net or use new init head weights
 learning_rate   = args.lr
 cache_size      = args.cache
 distance_metric = args.dist
@@ -34,10 +35,10 @@ distance_metric = args.dist
 
 # parameters set for this file
 relative_path_to_data = './Data/' # from within Tests/CH1
-write_to_file         = 'track_forgotten_states.csv'
+write_to_file         = f'track_forgotten_states.csv'
 training_env_name     = f'gridworld:gridworld-v{version}'
 test_env_name         = training_env_name+'1'
-num_trials = 1000
+num_trials = 5000
 num_events = 250
 
 cache_limits = {'gridworld:gridworld-v11':{100:400, 75:300, 50:200, 25:100},
@@ -58,7 +59,7 @@ if rep_type == 'latents':
                 'gridworld:gridworld-v4':'b50926a2-0186-4bb9-81ec-77063cac6861',
                 'gridworld:gridworld-v5':'15b5e27b-444f-4fc8-bf25-5b7807df4c7f'}
     run_id = conv_ids[f'gridworld:gridworld-v{version}']
-    agent_path = relative_path_to_data+f'agents/saved_agents/{run_id}.pt'
+    agent_path = relative_path_to_data+f'agents/{run_id}.pt'
     state_reps, representation_name, input_dims, _ = latents(env, agent_path)
 else:
     state_reps, representation_name, input_dims, _ = rep_types[rep_type](env)
@@ -70,7 +71,7 @@ memory = Memory(entry_size=env.action_space.n, cache_limit=cache_size_for_env, d
 agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 
 ex = flat_expt(agent, env)
-print(f"Experiment running {env.unwrapped.spec.id} \nRepresentation: {representation_name} \nCache Limit:{cache_size_for_env}")
+print(f"Experiment running {env.unwrapped.spec.id} \nRepresentation: {representation_name} \nCache Limit:{cache_size_for_env} \nDistance: {distance_metric}")
 ex.run(num_trials,num_events,snapshot_logging=False)
 
 # add in forgotten state information
@@ -83,8 +84,8 @@ for k in ex.agent.EC.forgotten_states.keys():
     forgotten_states_map[state_2d] = ex.agent.EC.forgotten_states[k]
 
 ex.data['forgotten_states']=forgotten_states_map
-print(ex.data.keys(),'#############################')
+
+
 ex.record_log(env_name=test_env_name, representation_type=representation_name,
               n_trials=num_trials, n_steps=num_events,
-              dir=relative_path_to_data, file=write_to_file)
-
+              dir=relative_path_to_data, file=write_to_file, extra=['random forget'])

@@ -270,6 +270,7 @@ class distance_report_EpisodicMemory(object):
 class random_forget_EC(EpisodicMemory):
 	def __init__(self, entry_size, cache_limit, **kwargs):
 		super(random_forget_EC, self).__init__(entry_size,cache_limit,**kwargs)
+		self.forgotten_states={}
 
 	def add_mem(self, item):
 		activity 	= item['activity']
@@ -302,6 +303,14 @@ class random_forget_EC(EpisodicMemory):
 
 				rand_index = np.random.choice(len(cache_keys))
 				old_activity = cache_keys[rand_index]                   # get key in dictionary corresponding to random index
+
+				## new for this class -- record the state index of the key to be discarded
+				forgotten_state = self.cache_list[old_activity][2] #readable_state
+				if forgotten_state in self.forgotten_states.keys():
+					self.forgotten_states[forgotten_state] +=1
+				else:
+					self.forgotten_states[forgotten_state] = 1
+
 				del self.cache_list[old_activity]                       # delete item from dictionary
 
 				# add new mem container
