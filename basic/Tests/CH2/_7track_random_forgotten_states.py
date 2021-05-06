@@ -38,7 +38,7 @@ relative_path_to_data = './Data/' # from within Tests/CH1
 write_to_file         = f'track_forgotten_states.csv'
 training_env_name     = f'gridworld:gridworld-v{version}'
 test_env_name         = training_env_name+'1'
-num_trials = 5000
+num_trials = 1000
 num_events = 250
 
 cache_limits = {'gridworld:gridworld-v11':{100:400, 75:300, 50:200, 25:100},
