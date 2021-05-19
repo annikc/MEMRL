@@ -2,10 +2,14 @@ import pandas as pd
 import sys
 sys.path.append('../../modules/')
 from Analysis.analysis_utils import get_grids, avg_performance_over_envs, plot_each, analysis_specs
+from Analysis.analysis_utils import no_rm_avg_std
+import matplotlib.pyplot as plt
 
 # import csv data summary
 parent_path = '../../Data/'
 df = pd.read_csv(parent_path+'random_forget_ec.csv')
+ref_df = pd.read_csv(parent_path+'random_walk.csv')
+gb_ref = ref_df.groupby(['env_name'])['save_id']
 
 groups_to_split = ['env_name','representation','EC_cache_limit']
 gb = df.groupby(groups_to_split)["save_id"]
@@ -16,7 +20,8 @@ pcts_to_plot = [100,75,50,25]
 reps_to_plot = ['random', 'onehot','conv_latents','place_cell','analytic successor'] # df.representation.unique()
 grids        = get_grids(envs_to_plot)
 
-avg_performance_over_envs(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,legend='pcts',savename='random_forgetting',save=True,format='png')
+avg_performance_over_envs(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,legend='pcts',savename='random_forgetting_rw_ref',save=True,ref_gb=gb_ref)
+
 
 ''':
 env = envs_to_plot[0]

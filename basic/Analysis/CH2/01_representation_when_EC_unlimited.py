@@ -16,4 +16,4 @@ pcts_to_plot = [100]
 reps_to_plot = ['random', 'onehot','conv_latents','place_cell','analytic successor'] # df.representation.unique()
 grids        = get_grids(envs_to_plot)
 
-avg_performance_over_envs(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,save=True,savename='unbounded_mem')
+avg_performance_over_envs(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,save=False,savename='unbounded_mem',format='png')

@@ -112,7 +112,7 @@ def plot_each(list_of_ids,data_dir,cutoff=25000, smoothing=500):
     plt.ylim([-4,12])
     plt.show()
 
-def avg_performance_over_envs(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,save=False,savename='',plot_title='',legend=False):
+def avg_performance_over_envs(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,save=False,savename='',plot_title='',legend=False,ref_gb=None, **kwargs):
     if save:
         if savename=='':
             raise Exception('Must pass argument to savename to specify title to save plot')
@@ -143,24 +143,31 @@ def avg_performance_over_envs(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,sa
         ax[i,0].get_yaxis().set_visible(False)
         ax[i,0].invert_yaxis()
 
+        normalization_factor = avg_max_rwd[env]
+
         for r, rep in enumerate(reps_to_plot):
             for j, pct in enumerate(pcts_to_plot):
                 v_list = list(gb.get_group((env, rep, cache_limits[env][pct])))
                 print(env, rep, pct, len(v_list))
-                normalization_factor = avg_max_rwd[env]
                 avgs,stds = no_rm_avg_std(v_list,normalization_factor=normalization_factor,cutoff=5000)
                 avg_cos = np.mean(avgs)
                 sem_cos = np.mean(stds)#/np.sqrt(len(stds))
 
                 ax[i,1].bar(r*len(pcts_to_plot)+bar_width*j,avg_cos, yerr=sem_cos,width=bar_width, color=convert_rep_to_color[rep], alpha=pct/100)
 
-        ax[i,1].set_ylim([-0.2,1.2])
-        #ax[i,1].set_yticks(np.arange(0,1.5,0.25))
-        #ax[i,1].set_yticklabels([0,'',50,'',100,''])
-        ax[i,1].set_ylabel('% Optimal Performance')
+        ax[i,1].set_ylim([0,1.])
+        ax[i,1].set_yticks(np.arange(0,1.25,0.25))
+        ax[i,1].set_yticklabels([0,'',50,'',100,])
+        ax[i,1].set_ylabel('Performance \n(% Optimal)')
+
+        if ref_gb is not None:
+            v_list = list(ref_gb.get_group(env))
+            avg, std = no_rm_avg_std(v_list,normalization_factor=normalization_factor)
+            ax[i,1].axhline(avg,c='gray',linestyle=':',alpha=0.5)
 
     ax[i,1].set_xticks(np.arange(0,len(pcts_to_plot)*len(reps_to_plot),len(pcts_to_plot))+bar_width*0.5*j)
     ax[i,1].set_xticklabels([labels_for_plot[x] for x in reps_to_plot],rotation=0)
+    ax[i,1].set_xlabel('State Encoding')
 
     if legend=='reps':
         legend_patch_list = []
@@ -177,7 +184,7 @@ def avg_performance_over_envs(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,sa
             print('No title passed to arg plot_title')
         ax[0,1].set_title(plot_title)
     if save:
-        format = 'svg'
+        format = kwargs.get('format','svg')
         plt.savefig(f'../figures/CH2/{savename}.{format}', format=format)
     plt.show()
 
