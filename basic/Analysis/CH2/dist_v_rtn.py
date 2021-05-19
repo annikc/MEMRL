@@ -101,32 +101,50 @@ def scatter_hist(x, y, ax, ax_histx, ax_histy, color):
     ax_histy.set_title('D')
     ax_histy.hist(y, bins=bins, orientation='horizontal',color=color,alpha=0.2)
 
+convert_rep_to_color = {'analytic successor':'C0',
+                        'onehot':'C1',
+                        'random':'C2',
+                        'place_cell':'C4',
+                        'conv_latents':'C3'}
 
-rep = 'analytic successor'
+version = 3
+env_name = f'gridworld:gridworld-v{version}1'
 pct = 50
 
-run_id = list(gb.get_group((env_name, rep, cache_limits[env_name][pct])))[0]
-with open(f'../../Data/results/{run_id}_data.p', 'rb') as f:
-    data = pickle.load(f)
+plt.figure()
+for rep in ['conv_latents', 'analytic successor', 'onehot']:
 
-n_trials = len(data['total_reward'])
+    run_id = list(gb.get_group((env_name, rep, cache_limits[env_name][pct])))[0]
+    with open(f'../../Data/results/{run_id}_data.p', 'rb') as f:
+        data = pickle.load(f)
 
-for i in [1,2,3]:
-    dist_returns = data['dist_rtn'][i]
+    n_trials = len(data['total_reward'])
 
-    states_              = dist_returns[0]
-    reconstructed_states = dist_returns[1]
-    ec_distances         = dist_returns[2]
-    computed_returns     = dist_returns[3]
+    avg_d, avg_r = [],[]
+    for i in range(100,n_trials):
+        dist_returns = data['dist_rtn'][i]
 
-    if i == 1:
-        d = list(ec_distances)
-        r = list(computed_returns)
-    else:
-        d += list(ec_distances)
-        r += list(computed_returns)
+        states_              = dist_returns[0]
+        reconstructed_states = dist_returns[1]
+        ec_distances         = dist_returns[2]
+        computed_returns     = dist_returns[3]
+        '''
+        if i == 0:
+            d = list(ec_distances)
+            r = list(computed_returns)
+        else:
+            d += list(ec_distances)
+            r += list(computed_returns)
+        '''
+
+        avg_d.append(np.mean(ec_distances))
+        avg_r.append(np.mean(computed_returns))
 
 
+    plt.scatter(avg_d,avg_r,c=convert_rep_to_color[rep], alpha=0.5)
+
+plt.show()
+'''
 m,b = np.polyfit(d,r,1)
 pr_, pv_ = pearsonr(d,r)
 y = np.asarray(d)
@@ -134,7 +152,7 @@ x = np.asarray(r)
 fig, ax = plt.subplots(2,1)
 #plt.scatter(x,y)
 ax[0].hist(y, bins=6)
-ax[1].hist(x, bins=10)
+ax[1].hist(x, bins=10)'''
 plt.show()
 
 

@@ -2,7 +2,7 @@ import gym
 import numpy as np
 import matplotlib.pyplot as plt
 
-env = gym.make('gym_grid:gridworld-v1')
+env = gym.make('gridworld:gridworld-v1')
 
 # check functions of gridworld gym env
 env.reset()

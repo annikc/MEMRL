@@ -9,7 +9,6 @@ import gym
 
 sys.path.append('../../modules/')
 from Analysis.analysis_utils import get_avg_std, get_grids
-from Utils import running_mean as rm
 
 # import csv data summary
 parent_path = '../../Data/'

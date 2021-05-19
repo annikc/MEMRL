@@ -8,12 +8,11 @@ import gym
 
 sys.path.append('../../modules/')
 from Analysis.analysis_utils import get_avg_std, get_grids
-from Utils import running_mean as rm
 
 # import csv data summary
 parent_path = '../../Data/'
 che_df = pd.read_csv(parent_path+'throttled_ec_allreps_chebyshev.csv')
-rf_df = pd.read_csv(parent_path+'random_forget_ec.csv')
+rf_df = pd.read_csv(parent_path+'forget_least_recently_accessed_mem.csv')
 
 gb_che = che_df.groupby(['env_name','representation','EC_cache_limit'])["save_id"]
 gb_rf  = rf_df.groupby(['env_name','representation','EC_cache_limit'])["save_id"]
@@ -36,7 +35,7 @@ convert_rep_to_color = {'analytic successor':'C0',
                         'place_cell':'C4',
                         'conv_latents':'C3'}
 
-envs_to_plot = ['gridworld:gridworld-v51']
+envs_to_plot = ['gridworld:gridworld-v41']
 pcts_to_plot = [100,75,50,25]
 reps_to_plot = ['random', 'onehot','conv_latents','place_cell','analytic successor'] # df.representation.unique()
 rep_labels = [labels_for_plot[x] for x in reps_to_plot]
@@ -73,11 +72,14 @@ def plot_throttled_performance():
             avg_cos, std_cos = np.mean(avg_), np.mean(std_)
             ax[0,1].bar(2*r+0.35*j,avg_cos, yerr=std_cos,width=0.35, color=convert_rep_to_color[rep], alpha=pct/100)
 
-            v_list = list(gb_rf.get_group((env, rep, cache_limits[env][pct])))
-            print(env, rep, pct, v_list)
-            avg_, std_ = get_avg_std(v_list,cutoff=5000, smoothing=100)
-            avg_cos, std_cos = np.mean(avg_), np.mean(std_)
-            ax[1,1].bar(2*r+0.35*j,avg_cos, yerr=std_cos,width=0.35, color=convert_rep_to_color[rep], alpha=pct/100)
+            if rep =='conv_latents':
+                pass
+            else:
+                v_list = list(gb_rf.get_group((env, rep, cache_limits[env][pct])))
+                print(env, rep, pct, v_list)
+                avg_, std_ = get_avg_std(v_list,cutoff=5000, smoothing=100)
+                avg_cos, std_cos = np.mean(avg_), np.mean(std_)
+                ax[1,1].bar(2*r+0.35*j,avg_cos, yerr=std_cos,width=0.35, color=convert_rep_to_color[rep], alpha=pct/100)
 
     ax[0,1].set_ylim([0,12])
     ax[1,1].set_ylim([0,12])
@@ -90,7 +92,7 @@ def plot_throttled_performance():
     ax[0,1].set_ylabel('Average Reward per Trial')
     ax[1,1].set_ylabel('Average Reward per Trial')
     ax[0,1].set_title('Forget Oldest Entry')
-    ax[1,1].set_title('Forget Random Entry')
+    ax[1,1].set_title('Forget Least Recently Accessed Entry')
     #ax[1].axhline(y=avg_max_rwd[env[-2:]], color='r', linestyle='--')
     p100 = mpatches.Patch(color='gray',alpha=1, label='100')
     p75 = mpatches.Patch(color='gray',alpha=0.75, label='75')

@@ -38,7 +38,7 @@ relative_path_to_data = './Data/' # from within Tests/CH1
 write_to_file         = f'forget_least_recently_accessed_mem.csv'
 training_env_name     = f'gridworld:gridworld-v{version}'
 test_env_name         = training_env_name+'1'
-num_trials = 1000
+num_trials = 5000
 num_events = 250
 
 cache_limits = {'gridworld:gridworld-v11':{100:400, 75:300, 50:200, 25:100},
@@ -59,7 +59,7 @@ if rep_type == 'latents':
                 'gridworld:gridworld-v4':'b50926a2-0186-4bb9-81ec-77063cac6861',
                 'gridworld:gridworld-v5':'15b5e27b-444f-4fc8-bf25-5b7807df4c7f'}
     run_id = conv_ids[f'gridworld:gridworld-v{version}']
-    agent_path = relative_path_to_data+f'agents/{run_id}.pt'
+    agent_path = relative_path_to_data+f'agents/saved_agents/{run_id}.pt'
     state_reps, representation_name, input_dims, _ = latents(env, agent_path)
 else:
     state_reps, representation_name, input_dims, _ = rep_types[rep_type](env)

@@ -24,11 +24,11 @@ parser.add_argument('-rep', default='conv')
 
 args = parser.parse_args()
 
-# parameters set with command line arugments
+# parameters set with command line arguments
 version     = args.v
 latent_type = args.rep
 
-relative_path_to_data = '../../Data/' # from within Tests/CH1
+relative_path_to_data = './Data/' # from within Tests/CH1
 write_to_file         = 'random_walk.csv'
 training_env_name     = f'gridworld:gridworld-v{version}'
 test_env_name         = training_env_name+'1'
