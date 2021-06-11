@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.lines import Line2D
 from modules.Utils import running_mean as rm
+import networkx as nx
 
 ### plotting settings
 LINCLAB_COLS = {"blue"  : "#50a2d5", # Linclab blue
@@ -116,6 +117,35 @@ def data_sample(list_of_ids, normalization_factor=10, cutoff=5000):
 
     return sample_avgs
 
+def make_env_graph(env):
+    action_cols = ['orange','red','green','blue']
+    G = nx.DiGraph() # why directed/undirected graph?
+
+    for action in range(env.action_space.n):
+        # down, up, right, left
+        for state2d in env.useable:
+            state1d = env.twoD2oneD(state2d)
+            next_state = np.where(env.P[action,state1d,:]==1)[0]
+            if len(next_state) ==0:
+                pass
+            else:
+                for sprime in next_state:
+                    edge_weight = env.P[action,state1d,sprime]
+                    G.add_edge(state1d, sprime,color=action_cols[action],weight=edge_weight)
+
+    return G
+
+def compute_graph_distance_matrix(G, env):
+    x = nx.shortest_path(G)
+    useable_1d = [env.twoD2oneD(x) for x in env.useable]
+    shortest_dist_array = np.zeros((env.nstates,env.nstates))
+    shortest_dist_array[:]=np.nan
+
+    for start in useable_1d:
+        for target in list(x[start].keys()):
+            shortest_dist_array[start][target]= len(x[start][target])-1
+
+    return shortest_dist_array
 
 
 def get_grids(env_names):
@@ -179,9 +209,9 @@ def avg_performance_over_envs(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,sa
                 print(env, rep, pct, len(v_list))
                 sample_avgs = data_sample(v_list,normalization_factor=normalization_factor,cutoff=5000)
                 avg_, std_ = np.mean(sample_avgs), np.std(sample_avgs)
-                ax[i,1].bar(r*len(pcts_to_plot)+bar_width*j,avg_,yerr=std_,width=bar_width, color=convert_rep_to_color[rep], alpha=pct/100,capsize=2)
-                #xpoints = (bar_width/10)*np.random.randn(len(sample_avgs))+(r*len(pcts_to_plot)+bar_width*j)
-                #ax[i,1].scatter(xpoints,sample_avgs, facecolor='gray',alpha=0.2,edgecolor=None,s=12,zorder=10)
+                ax[i,1].bar(r*len(pcts_to_plot)+bar_width*j,avg_,yerr=std_,width=bar_width, color=convert_rep_to_color[rep], alpha=50/100,capsize=2)
+                xpoints = (bar_width/10)*np.random.randn(len(sample_avgs))+(r*len(pcts_to_plot)+bar_width*j)
+                ax[i,1].scatter(xpoints,sample_avgs, facecolor=convert_rep_to_color[rep],alpha=1,edgecolor=None,s=12,zorder=10)
                 if pct != 100:
                     t, p = welchs_pval(ref_sample,sample_avgs)
                     if p<0.001 and t<0:
@@ -189,9 +219,9 @@ def avg_performance_over_envs(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,sa
                         ax[i,1].plot([x1,x2],[1.0+0.05*j,1.0+0.05*j],color='k')
                         ax[i,1].text(x1+(x2-x1)/2,1.0+0.05*j,f'p={p:.4}',fontsize=5,ha='center')
 
-        ax[i,1].set_ylim([0,1.2])
-        ax[i,1].set_yticks(np.arange(0,1.25,0.25))
-        ax[i,1].set_yticklabels([0,'',50,'',100,])
+        ax[i,1].set_ylim([0.75,1.])
+        ax[i,1].set_yticks(np.arange(0.75,1.,0.05))
+        #ax[i,1].set_yticklabels([0,'',50,'',100,])
         ax[i,1].set_ylabel('Performance \n(% Optimal)')
 
         if compare_chance:
@@ -262,7 +292,14 @@ def avg_performance_over_envs_violins(gb,envs_to_plot,reps_to_plot,pcts_to_plot,
                 print(env, rep, pct, len(v_list))
                 sample_avgs = data_sample(v_list,normalization_factor=normalization_factor,cutoff=5000)
                 dats.append(sample_avgs)
+                if pct != 100:
+                    t, p = welchs_pval(ref_sample,sample_avgs)
+                    if p<0.001 and t<0:
+                        x1, x2 = 100, pct
+                        ax[i,1].plot([x1,x2],[1.0+0.03*j,1.0+0.03*j],color='k')
+                        ax[i,1].text(x1+(x2-x1)/2,1.0+0.03*j,f'p={p:.4}',fontsize=5,ha='center')
             body = ax[i,r+1].violinplot(positions=pcts_to_plot,dataset=dats,vert=True, widths=10)
+
             for violinkey in body.keys():
                 if violinkey == 'bodies':
                     for b in body['bodies']:
@@ -277,13 +314,20 @@ def avg_performance_over_envs_violins(gb,envs_to_plot,reps_to_plot,pcts_to_plot,
         if compare_chance:
             for i, env in enumerate(envs_to_plot):
                 ax[i,r+1].axhline(analysis_specs['chance_perf'][env][0],c='gray',linestyle=':',alpha=0.5)
-        ax[i,r+1].set_ylim([0,1.2])
+        ax[i,r+1].set_ylim([0.75,1.1])
+        ax[i,r+1].set_xlim([110,40])
+        ax[i,r+1].set_xticks(pcts_to_plot)
+        ax[i,r+1].set_yticks(np.arange(0.75,1.1,0.05))
+        ax[i,r+1].set_yticklabels(['',80,'',90,'',100,'',''])
+        ax[i,r+1].set_xlabel('Memory Capacity (%)')
+
+        '''ax[i,r+1].set_ylim([0,1.2])
         ax[i,r+1].set_xlim([110,15])
         ax[i,r+1].set_xticks(pcts_to_plot)
         ax[i,r+1].set_ylim([0.25,1.2])
         ax[i,r+1].set_yticks(np.arange(0,1.25,0.25))
         ax[i,r+1].set_yticklabels([0,'',50,'',100,])
-        ax[i,r+1].set_xlabel('Memory Capacity (%)')
+        ax[i,r+1].set_xlabel('Memory Capacity (%)')'''
 
 
     if legend=='reps':
@@ -304,6 +348,89 @@ def avg_performance_over_envs_violins(gb,envs_to_plot,reps_to_plot,pcts_to_plot,
         format = kwargs.get('format','svg')
         plt.savefig(f'../figures/CH2/{savename}.{format}', format=format)
     plt.show()
+
+def avg_performance_over_envs_violins_sidebyside(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,save=False,savename='',plot_title='',legend=False,compare_chance=False, **kwargs):
+    if save:
+        if savename=='':
+            raise Exception('Must pass argument to savename to specify title to save plot')
+
+    cache_limits = analysis_specs['cache_limits']
+    avg_max_rwd  = analysis_specs['avg_max_rwd']
+
+    convert_rep_to_color = kwargs.get('colors',plot_specs['rep_colors'])
+    labels_for_plot      = kwargs.get('labels',plot_specs['labels'])
+
+    fig, ax = plt.subplots(len(envs_to_plot),2,figsize=(6,3*len(envs_to_plot)), sharex='col', sharey='col',gridspec_kw={'width_ratios': [1,1]})
+    ## rows = different environments
+    ## column 0 = env grid
+    ## column 1 = performance comparison across representations; cache sizes
+    bar_width = 0.75
+    for i, env in enumerate(envs_to_plot):
+        if env[-2:] == '51':
+            rwd_colrow= (16,9)
+        else:
+            rwd_colrow=(14,14)
+
+        rect = plt.Rectangle(rwd_colrow, 1, 1, color='g', alpha=0.3)
+        ax[i,0].pcolor(grids[i],cmap='bone_r',edgecolors='k', linewidths=0.1)
+        ax[i,0].axis(xmin=0, xmax=20, ymin=0,ymax=20)
+        ax[i,0].set_aspect('equal')
+        ax[i,0].add_patch(rect)
+        ax[i,0].get_xaxis().set_visible(False)
+        ax[i,0].get_yaxis().set_visible(False)
+        ax[i,0].invert_yaxis()
+
+        normalization_factor = avg_max_rwd[env]
+
+        for r, rep in enumerate(reps_to_plot):
+            ref_sample = data_sample(list(gb.get_group((env, rep, cache_limits[env][100]))),normalization_factor=normalization_factor,cutoff=5000)
+            dats = []
+            for j, pct in enumerate(pcts_to_plot):
+                v_list = list(gb.get_group((env, rep, cache_limits[env][pct])))
+                print(env, rep, pct, len(v_list))
+                sample_avgs = data_sample(v_list,normalization_factor=normalization_factor,cutoff=5000)
+                dats.append(sample_avgs)
+            body = ax[i,1].violinplot(positions=[r],dataset=dats,vert=True, widths=0.6, showmeans=True)
+            #xpoints = (1/10)*np.random.randn(len(sample_avgs))+(r*len(pcts_to_plot)+j)
+            #ax[i,1].scatter(xpoints,sample_avgs, facecolor='gray',alpha=1,edgecolor=None,s=12,zorder=10)
+            for violinkey in body.keys():
+                if violinkey == 'bodies':
+                    for b in body['bodies']:
+                        b.set_color(convert_rep_to_color[rep])
+                        b.set_alpha(50/100)
+                else:
+                    body[violinkey].set_color(convert_rep_to_color[rep])
+
+        ax[i,1].set_ylabel('Performance \n(% Optimal)')
+
+
+    if compare_chance:
+        for i, env in enumerate(envs_to_plot):
+            ax[i,1].axhline(analysis_specs['chance_perf'][env][0],c='gray',linestyle=':',alpha=0.5)
+    ax[i,1].set_ylim([0,1.])
+    ax[i,1].set_ylim([0.75,1.])
+    ax[i,1].set_yticks(np.arange(0.75,1.,0.05))
+
+
+    if legend=='reps':
+        legend_patch_list = []
+        for rep in reps_to_plot:
+            legend_patch_list.append(mpatches.Patch(color=convert_rep_to_color[rep], label=labels_for_plot[rep]))
+        plt.legend(handles=legend_patch_list, bbox_to_anchor=(0.5, len(envs_to_plot)*1.1), loc='lower center', ncol=len(legend_patch_list),title='State Representation')
+    elif legend=='pcts':
+        legend_patch_list = []
+        for pct in pcts_to_plot:
+            legend_patch_list.append(mpatches.Patch(color='gray',label=f'{pct}',alpha=pct/100))
+            plt.legend(handles=legend_patch_list, bbox_to_anchor=(0.5, len(envs_to_plot)*1.16), loc='lower center', ncol=len(legend_patch_list), title='Episodic Memory Capacity (%)')
+    else:
+        if plot_title=='':
+            print('No title passed to arg plot_title')
+        ax[0,1].set_title(plot_title)
+    if save:
+        format = kwargs.get('format','svg')
+        plt.savefig(f'../figures/CH2/{savename}.{format}', format=format)
+    plt.show()
+
 
 
 

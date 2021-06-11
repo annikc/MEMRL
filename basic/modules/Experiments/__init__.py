@@ -428,6 +428,31 @@ class flat_dist_return(flat_expt):
 			print(f"Episode: {trial}, Score: {self.reward_sum} (Running Avg:{self.running_rwdavg}) [{time.time() - self.t}s]")
 			self.t = time.time()
 
+class flat_ec_pol_track(flat_expt):
+	def __init__(self,agent,envrionment):
+		super().__init__(agent,envrionment)
+		self.data['ec_dicts'] = []
+		self.print_flag = True
+
+	def end_of_trial(self, trial,logsnap):
+		p, v = self.agent.finish_()
+
+		self.data['total_reward'].append(self.reward_sum) # removed for bootstrap expts
+		self.data['loss'][0].append(p)
+		self.data['loss'][1].append(v)
+
+		self.data['ec_dicts'].append(self.agent.EC.cache_list.copy())
+
+
+		if trial <= 10:
+			self.running_rwdavg = np.mean(self.data['total_reward'])
+		else:
+			self.running_rwdavg = np.mean(self.data['total_reward'][-self.print_freq:])
+
+		if trial % self.print_freq == 0:
+			print(f"Episode: {trial}, Score: {self.reward_sum} (Running Avg:{self.running_rwdavg}) [{time.time() - self.t}s]")
+			self.t = time.time()
+
 
 class gridworldExperiment(expt):
 	def __init__(self, agent, environment, **kwargs):
