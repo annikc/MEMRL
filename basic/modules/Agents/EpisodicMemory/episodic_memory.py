@@ -22,7 +22,7 @@ class EpisodicMemory(object):
 		self.memory_envelope = kwargs.get('mem_envelope', 50)   # speed of memory decay
 		self.use_pvals       = kwargs.get('pvals', False)
 
-		self.distance_metric = kwargs.get('distance', 'euclidean')
+		self.distance_metric = kwargs.get('distance', 'chebyshev')
 
 	def reset_cache(self):
 		self.cache_list.clear()

@@ -288,7 +288,7 @@ pcts_to_plot = [75,50,25]
 grids = get_grids(envs_to_plot)
 
 
-plot_sf_difference_lines(gb, envs_to_plot, reps_to_plot, pcts_to_plot,legend='reps',colors=convert_rep_to_color,save=True,savename='success_failure_SU_lines')
+#plot_sf_difference_lines(gb, envs_to_plot, reps_to_plot, pcts_to_plot,legend='reps',colors=convert_rep_to_color,save=True,savename='success_failure_SU_lines')
 plot_success_failure_bars(gb, envs_to_plot, reps_to_plot, pcts_to_plot,legend='reps',colors=convert_rep_to_color,save=True,savename='success_failure_SU_bars')
 
 

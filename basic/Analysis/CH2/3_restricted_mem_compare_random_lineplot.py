@@ -8,7 +8,7 @@ parent_path = '../../Data/'
 rf_df = pd.read_csv(parent_path+'random_forget_ec.csv')
 df = pd.read_csv(parent_path+'throttled_ec_allreps_chebyshev.csv')
 
-split_type = 'allreps'
+split_type = 'SU'
 
 if split_type == 'SU':
     df['representation'] = df['representation'].apply(structured_unstructured)
