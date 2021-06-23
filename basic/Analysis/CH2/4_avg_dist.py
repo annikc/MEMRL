@@ -73,6 +73,7 @@ def plot_success_failure_bars(gb,envs_to_plot,reps_to_plot,pcts_to_plot,save=Fal
         for j, rep in enumerate(reps_to_plot):
             for k, pct in enumerate(pcts_to_plot):
                 list_of_ids = list(gb.get_group((env, rep, cache_limits[env][pct])))
+                print(list_of_ids)
                 s, f = d_r_success_fail(list_of_ids)
                 print(env, rep,pct, len(s[1]), len(f[1]), len(s[1])+len(f[1]))
                 ax[i,1].bar(k+j*bar_width,np.mean(s[1]),yerr=np.std(s[1]),width=bar_width,color=convert_rep_to_color[rep])
@@ -106,6 +107,91 @@ def plot_success_failure_bars(gb,envs_to_plot,reps_to_plot,pcts_to_plot,save=Fal
         format = kwargs.get('format','svg')
         plt.savefig(f'../figures/CH2/{savename}.{format}', format=format)
     plt.show()
+
+def plot_success_failure_violins(gb,envs_to_plot,reps_to_plot,pcts_to_plot,save=False,savename='',plot_title='',legend=False,**kwargs):
+    if save:
+        if savename=='':
+            raise Exception('Must pass argument to savename to specify title to save plot')
+
+    convert_rep_to_color = kwargs.get('colors',plot_specs['rep_colors'])
+    bar_width = 0.3
+    fig, ax = plt.subplots(len(envs_to_plot), len(reps_to_plot)+1,figsize=(12,15),sharex='col',sharey='col', gridspec_kw={'height_ratios': np.ones(len(envs_to_plot))})
+    for i, env in enumerate(envs_to_plot):
+        if env[-2:] == '51':
+            rwd_colrow= (16,9)
+        else:
+            rwd_colrow=(14,14)
+
+        rect = plt.Rectangle(rwd_colrow, 1, 1, color='g', alpha=0.3)
+        ax[i,0].pcolor(grids[i],cmap='bone_r',edgecolors='k', linewidths=0.1)
+        ax[i,0].axis(xmin=0, xmax=20, ymin=0,ymax=20)
+        ax[i,0].set_aspect('equal')
+        ax[i,0].add_patch(rect)
+        ax[i,0].get_xaxis().set_visible(False)
+        ax[i,0].get_yaxis().set_visible(False)
+        ax[i,0].invert_yaxis()
+        violin_width=10
+        for j, rep in enumerate(reps_to_plot):
+            dats_s = []
+            dats_f = []
+            for k, pct in enumerate(pcts_to_plot):
+                list_of_ids = list(gb.get_group((env, rep, cache_limits[env][pct])))
+                print(list_of_ids)
+                s, f = d_r_success_fail(list_of_ids)
+                dats_s.append(s[1])
+                dats_f.append(f[1])
+                print(env, rep,pct, len(s[1]), len(f[1]), len(s[1])+len(f[1]))
+
+            s_body = ax[i,1].violinplot(positions=np.asarray(pcts_to_plot)+violin_width*(1/2-j),dataset=dats_s,vert=True, widths=violin_width,showmeans=False)
+            f_body = ax[i,2].violinplot(positions=np.asarray(pcts_to_plot)+violin_width*(1/2-j),dataset=dats_f,vert=True, widths=violin_width,showmeans=False)
+            for violinkey in s_body.keys():
+                if violinkey == 'bodies':
+                    for b in s_body['bodies']:
+                        b.set_color(convert_rep_to_color[rep])
+                        b.set_alpha(75/100)
+                else:
+                    s_body[violinkey].set_color(convert_rep_to_color[rep])
+            for violinkey in f_body.keys():
+                if violinkey == 'bodies':
+                    for b in f_body['bodies']:
+                        b.set_color(convert_rep_to_color[rep])
+                        b.set_alpha(25/100)
+                else:
+                    f_body[violinkey].set_color(convert_rep_to_color[rep])
+
+        ax[i,1].set_ylabel('Average Distance\n of Closest Memory')
+
+    for f in range(2):
+        ax[i,f+1].set_ylim([0,1])
+        ax[i,f+1].set_xticks([75,50,25])
+        ax[i,f+1].set_xlim([75+violin_width+2, 25-violin_width-2])
+        ax[i,f+1].set_xticklabels([75,50,25])
+        ax[i,f+1].set_xlabel('Memory Capacity (%)')
+
+    ax[0,1].set_title('Successful Trial',fontsize=12)
+    ax[0,2].set_title('Failed Trial',fontsize=12)
+
+    if legend=='reps':
+        legend_patch_list = []
+        for rep in reps_to_plot:
+            legend_patch_list.append(mpatches.Patch(color=convert_rep_to_color[rep], label=labels_for_plot[rep]))
+        plt.legend(handles=legend_patch_list, bbox_to_anchor=(0.5, len(envs_to_plot)*1.18), loc='lower right', ncol=len(legend_patch_list),title='State Encoding')
+    elif legend=='pcts':
+        legend_patch_list = []
+        for pct in pcts_to_plot:
+            legend_patch_list.append(mpatches.Patch(color='gray',label=f'{pct}',alpha=pct/100))
+            plt.legend(handles=legend_patch_list, bbox_to_anchor=(0.5, len(envs_to_plot)*1.18), loc='lower right', ncol=len(legend_patch_list), title='Episodic Memory Capacity (%)')
+    elif legend=='SF':
+        legend_patch_list = []
+        legend_patch_list.append(mpatches.Patch(color='gray',label=f'Successful Trial',alpha=75/100))
+        legend_patch_list.append(mpatches.Patch(color='gray',label=f'Failed Trial',alpha=25/100))
+        plt.legend(handles=legend_patch_list, bbox_to_anchor=(0.5, len(envs_to_plot)*1.18), loc='lower right', ncol=len(legend_patch_list))
+
+    if save:
+        format = kwargs.get('format','svg')
+        plt.savefig(f'../figures/CH2/{savename}.{format}', format=format)
+    plt.show()
+
 
 def plot_sf_difference_lines(gb,envs_to_plot,reps_to_plot,pcts_to_plot,save=False,savename='',plot_title='',legend=False,**kwargs):
     if save:
@@ -289,7 +375,7 @@ grids = get_grids(envs_to_plot)
 
 
 #plot_sf_difference_lines(gb, envs_to_plot, reps_to_plot, pcts_to_plot,legend='reps',colors=convert_rep_to_color,save=True,savename='success_failure_SU_lines')
-plot_success_failure_bars(gb, envs_to_plot, reps_to_plot, pcts_to_plot,legend='reps',colors=convert_rep_to_color,save=True,savename='success_failure_SU_bars')
+plot_success_failure_violins(gb, envs_to_plot, reps_to_plot, pcts_to_plot,legend='reps',colors=convert_rep_to_color,save=True,savename='success_failure_SU_violins_alt')
 
 
 
