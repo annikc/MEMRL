@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.ndimage import laplace
+import matplotlib as mpl
 
 import matplotlib.colors as colors
 import matplotlib.colorbar as colorbar
@@ -219,34 +220,7 @@ def get_mem_maps(data,trial_num=-1,full_mem=True):
 
 
 
-def get_xy_maps(data,trial_num=-1):
-    blank_mem = Memory(cache_limit=400, entry_size=4)
-    blank_mem.cache_list = data['ec_dicts'][trial_num]
-    xy_pol_grid = np.zeros((2,*env.shape))
-    polar_grid = np.zeros(env.shape)
-    polar_grid[:]=np.nan
-    dxdy = np.array([(0,1),(0,-1),(1,0),(-1,0)]) #D U R L
-    for key, value in state_reps.items():
-        twoD = env.oneD2twoD(key)
-        sr_rep = value
-        pol = blank_mem.recall_mem(sr_rep)
-        xy = np.dot(pol,dxdy)
-        xy_pol_grid[0,twoD] = xy[0]
-        xy_pol_grid[1,twoD] = xy[1]
-        rads = np.arctan(xy[1]/xy[0])
-        degs = rads*(180/np.pi)
-        if xy[0]>=0 and xy[1]>=0: #Q1
-            theta = degs
-        elif xy[0]<0: #Q2 and Q3
-            theta = degs+180
-        elif xy[0]>=0 and xy[1]<=0:
-            theta = degs+360
-        else:
-            theta = -1
 
-        polar_grid[twoD] = theta
-
-    return xy_pol_grid,polar_grid
 
 def plot_memory_maps(env_name,rep,pcts_to_plot,full_mem=True):
     env = gym.make(env_name)
@@ -311,25 +285,29 @@ def plot_memory_maps(env_name,rep,pcts_to_plot,full_mem=True):
     plt.savefig(f'../figures/CH2/example_memory_maps_{rep}_{env_name[-2:]}_alt_trial.{format}',format=format)
     plt.show()
 
+def colorFader(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
+    c1=np.array(mpl.colors.to_rgb(c1))
+    c2=np.array(mpl.colors.to_rgb(c2))
+    return (1-mix)*c1 + mix*c2 #mpl.colors.to_hex()#
 
-def save_polar_data(env_name,pcts_to_plot,reps_to_plot):
-    for pct in pcts_to_plot:
-        for rep in reps_to_plot:
-            print(env_name, rep,pct)
-            run_id = list(gb.get_group((env_name,rep,cache_limits[env_name][pct])))[0]
-            print(run_id)
+north='#1f77b4' #blue "#50a2d5"
+east = "#4bb900" #"#76bb4b" #green
+south= '#ffe200' # yellow
+west = "#eb3920"# red
+n=90
+fade_1 = []
+fade_2 = []
+fade_3 = []
+fade_4 = []
+for i in range(n):
+    fade_1.append(colorFader(north,east,i/n))
+    fade_2.append(colorFader(east,south,i/n))
+    fade_3.append(colorFader(south,west,i/n))
+    fade_4.append(colorFader(west,north,i/n))
+#fade = ListedColormap(fade_1 + fade_2 + fade_3 + fade_4)
+#plt.imshow([np.arange(n*4)],cmap=fade,aspect='auto')
 
-            with open(f'../../Data/results/{run_id}_data.p', 'rb') as f:
-                data = pickle.load(f)
-
-            polar_pref = []
-            for i in range(800,1000):
-                print(i)
-                _, test_pol_map = get_xy_maps(data,i)
-                polar_pref.append(test_pol_map)
-
-            with open(f'../../Data/ec_dicts/lifetime_dicts/{run_id}_polarcoord.p', 'wb') as savedata:
-                pickle.dump(np.asarray(polar_pref), savedata)
+fade = colors.ListedColormap(np.vstack(fade_1 + fade_2 + fade_3 + fade_4))
 
 
 
@@ -353,8 +331,9 @@ def plot_avg_laplace(env_name, pcts_to_plot,reps_to_plot):
                 lpc.append(laplace(polar_array[i,:]))
             mean_polar = np.mean(polar_array,axis=0)
             mean_laplace = np.mean(np.asarray(lpc),axis=0)
-            ax[r*2+0,p].imshow(mean_polar,cmap='hsv')
-            a = ax[r*(2)+1,p].imshow(mean_laplace, cmap='bone',vmin=-1000,vmax=1000)
+            ax[r*2+0,p].imshow(mean_polar,cmap=fade)
+            print(rep, pct, mean_polar[15,2])
+            a = ax[r*(2)+1,p].imshow(mean_laplace, cmap='coolwarm',vmin=-1000,vmax=1000)
             ax[r,p].get_xaxis().set_visible(False)
             #ax[r,p].get_yaxis().set_visible(False)
             ax[r,p].set_yticklabels([])
