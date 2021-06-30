@@ -18,16 +18,14 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('-v', type=int, default=1)
 parser.add_argument('-rep', default='onehot')
-parser.add_argument('-load', type=bool, default=True)
 parser.add_argument('-lr', default=0.0005)
 parser.add_argument('-cache', type=int, default=100)
-parser.add_argument('-dist', default='cosine')
+parser.add_argument('-dist', default='chebyshev')
 args = parser.parse_args()
 
 # parameters set with command line arugments
 version         = args.v
 rep_type        = args.rep
-load_weights    = args.load # load learned weights from conv net or use new init head weights
 learning_rate   = args.lr
 cache_size      = args.cache
 distance_metric = args.dist
@@ -46,7 +44,7 @@ cache_limits = {'gridworld:gridworld-v11':{100:400, 75:300, 50:200, 25:100},
                 'gridworld:gridworld-v41':{100:384, 75:288, 50:192, 25:96},
                 'gridworld:gridworld-v51':{100:286, 75:214, 50:143, 25:71}}
 
-cache_size_for_env = cache_limits[test_env_name][cache_size]
+cache_size_for_env = int(cache_limits[test_env_name][100] *(cache_size/100))
 
 # make new env to run test in
 env = gym.make(test_env_name)
