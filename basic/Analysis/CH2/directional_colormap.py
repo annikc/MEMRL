@@ -33,8 +33,7 @@ for i in range(n):
     fade_2.append(colorFader(east,south,i/n))
     fade_3.append(colorFader(south,west,i/n))
     fade_4.append(colorFader(west,north,i/n))
-#fade = ListedColormap(fade_1 + fade_2 + fade_3 + fade_4)
-#plt.imshow([np.arange(n*4)],cmap=fade,aspect='auto')
+
 
 fade = ListedColormap(np.vstack(fade_1 + fade_2 + fade_3 + fade_4))
 

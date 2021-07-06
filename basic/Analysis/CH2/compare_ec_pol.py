@@ -63,8 +63,6 @@ def make_arrows(action, probability):
                 (0.0, -0.25),  # U
                 (0.25, 0.0),  # R
                 (-0.25, 0.0),  # L
-                (0.1, -0.1),  # points right and up #J
-                (-0.1, 0.1),  # points left and down # P
                 ]
         dx, dy = dxdy[action]  #dxdy[(action-1)%len(dxdy)] ## use if action-space remapping
 
@@ -159,12 +157,12 @@ def plot_dist_v_entropy(kld_ent = 'ent'):
     plt.savefig(f'../figures/CH2/dist_v_{kld_ent}{env_name[-2:]}_{rep}.{format}',format=format)
     plt.show()
 
-def plot_maps(kld_ent = 'ent'):
+def plot_maps(env_name, rep, kld_ent = 'ent'):
     probe_state = (13,14)
     fig, ax = plt.subplots(1,4)
 
     E = []
-    for i, pct in enumerate([100,75]):
+    for i, pct in enumerate([100,75,50,25]):
         run_id = list(gb.get_group((env_name,rep,cache_limits[env_name][pct])))[0]
         print(run_id)
 
@@ -173,9 +171,9 @@ def plot_maps(kld_ent = 'ent'):
 
         K = []
         if pct ==100:
-            start=899
+            start=999
         else:
-            start=899
+            start=600
         for x in range(start,1000):
             print(x)
             kld_, ec_pols,entropy_ = get_KLD(data, env.twoD2oneD(probe_state), x)
@@ -186,7 +184,8 @@ def plot_maps(kld_ent = 'ent'):
             E.append(ec_pols)
         kld = np.mean(K, axis=0)
 
-        a = ax[i].imshow(kld,vmin=0,vmax=2,cmap=linc_coolwarm)
+        a = ax[i].imshow(kld,vmin=0,vmax=2.,cmap='viridis')
+        print(np.nanmax(kld))
         ax[i].add_patch(plt.Rectangle(np.add((14,14),(-0.5,-0.5)),1,1, fill=False,edgecolor='w'))
         ax[i].set_title(f'{pct}')
         ax[i].get_xaxis().set_visible(False)
@@ -194,8 +193,8 @@ def plot_maps(kld_ent = 'ent'):
     plt.suptitle(f'{rep}')
     plt.colorbar(a)
     format ='svg'
-    plt.savefig(f'../figures/CH2/singletrial_{kld_ent}{env_name[-2:]}_{rep}.{format}',format=format)
-    plt.show()
+    plt.savefig(f'../figures/CH2/viridis_longrun_{kld_ent}{env_name[-2:]}_{rep}.{format}',format=format)
+    #plt.show()
 
 def get_mem_maps(data,trial_num=-1,full_mem=True):
     blank_mem = Memory(cache_limit=400, entry_size=4)
@@ -217,7 +216,6 @@ def get_mem_maps(data,trial_num=-1,full_mem=True):
             ec_pol_grid[twoD] = tuple(pol)
 
     return ec_pol_grid
-
 
 
 
@@ -309,8 +307,22 @@ for i in range(n):
 
 fade = colors.ListedColormap(np.vstack(fade_1 + fade_2 + fade_3 + fade_4))
 
+### diverging colormap
+low ='#6e00c1' #purple
+mid = '#dbdbdb' #gray
+high = '#ff8000' #orange
 
+n=500
+fade_1 = []
+fade_2 = []
+for i in range(n):
+    fade_1.append(colorFader(low,mid,i/n))
+    fade_2.append(colorFader(mid,high,i/n))
+#fade = ListedColormap(fade_1 + fade_2 + fade_3 + fade_4)
+#plt.imshow([np.arange(n*4)],cmap=fade,aspect='auto')
+fade_cm = colors.ListedColormap(np.vstack(fade_1 + fade_2))
 
+green = "#4bb900"
 
 
 env_name = 'gridworld:gridworld-v41'
@@ -333,7 +345,7 @@ def plot_avg_laplace(env_name, pcts_to_plot,reps_to_plot):
             mean_laplace = np.mean(np.asarray(lpc),axis=0)
             ax[r*2+0,p].imshow(mean_polar,cmap=fade)
             print(rep, pct, mean_polar[15,2])
-            a = ax[r*(2)+1,p].imshow(mean_laplace, cmap='coolwarm',vmin=-1000,vmax=1000)
+            a = ax[r*(2)+1,p].imshow(mean_laplace, cmap=fade_cm,vmin=-1000,vmax=1000)
             ax[r,p].get_xaxis().set_visible(False)
             #ax[r,p].get_yaxis().set_visible(False)
             ax[r,p].set_yticklabels([])
@@ -346,9 +358,10 @@ def plot_avg_laplace(env_name, pcts_to_plot,reps_to_plot):
 
     plt.show()
 
-plot_avg_laplace(env_name,pcts_to_plot=[100,75,50,25],reps_to_plot=['analytic successor','onehot'])
+#plot_avg_laplace(env_name,pcts_to_plot=[100,75,50,25],reps_to_plot=['analytic successor','onehot'])
 
-
+for rep in ['analytic successor', 'onehot']:
+    plot_maps(env_name, rep)
 
 
 

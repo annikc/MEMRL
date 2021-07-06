@@ -109,6 +109,7 @@ def welchs_pval(ref_sample, query_sample):
 def structured_unstructured(df_element):
     map = {'analytic successor':'structured',
            'place_cell':'structured',
+           'state-centred pc f0.05':'structured',
            'onehot':'unstructured',
            'random':'unstructured',
            'conv_latents':''}
@@ -421,7 +422,7 @@ def avg_performance_over_envs_violins_sidebyside(gb,envs_to_plot,reps_to_plot,pc
             ref_sample = data_sample(list(gb.get_group((env, rep, cache_limits[env][100]))),normalization_factor=normalization_factor,cutoff=5000)
             dats = []
             for j, pct in enumerate(pcts_to_plot):
-                v_list = list(gb.get_group((env, rep, cache_limits[env][pct])))
+                v_list = list(gb.get_group((env, rep, int(cache_limits[env][100]*(pct/100)))))
                 print(env, rep, pct, len(v_list))
                 sample_avgs = data_sample(v_list,normalization_factor=normalization_factor,cutoff=5000)
                 dats.append(sample_avgs)
@@ -505,7 +506,7 @@ def avg_perf_over_envs_lines(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,sav
             linevalues_avgs = []
             linevalues_stds = []
             for j, pct in enumerate(pcts_to_plot):
-                v_list = list(gb.get_group((env, rep, cache_limits[env][pct])))
+                v_list = list(gb.get_group((env, rep, int(cache_limits[env][100]*(pct/100)))))
                 print(env, rep, pct, len(v_list))
                 avgs,stds = data_avg_std(v_list,normalization_factor=normalization_factor,cutoff=5000)
                 linevalues_avgs.append(avgs)
@@ -513,7 +514,7 @@ def avg_perf_over_envs_lines(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,sav
                 if pct == 100 and rep=='structured':
                     ax[i,1].axhline(avgs,c='gray',linestyle=':',alpha=0.5)
 
-            ax[i,1].errorbar(pcts_to_plot, linevalues_avgs, yerr=linevalues_stds,color=convert_rep_to_color[rep],marker='o',capsize=2)
+            ax[i,1].errorbar(pcts_to_plot, linevalues_avgs, yerr=linevalues_stds,color=convert_rep_to_color[rep],marker='o',capsize=6)
                 #ax[i,1].bar(r*len(pcts_to_plot)+bar_width*j,avg_cos, yerr=sem_cos,width=bar_width, color=convert_rep_to_color[rep], alpha=pct/100)
 
         ax[i,1].set_ylim([0,1.2])
@@ -522,18 +523,20 @@ def avg_perf_over_envs_lines(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,sav
         ax[i,1].set_ylabel('Performance \n(% Optimal)')
 
         if compare_chance:
+            #ax[i,1].axhline(1,c='gray',linestyle='--',alpha=0.5)
             ax[i,1].axhline(analysis_specs['chance_perf'][env][0],c='gray',linestyle=':',alpha=0.5)
 
     ax[i,1].set_xlabel('Memory Capacity (%)')
     ax[i,1].set_xticks(pcts_to_plot)
     ax[i,1].set_xticklabels(pcts_to_plot)
-    ax[i,1].set_xlim([105,20])
+    buffer=5
+    ax[i,1].set_xlim([max(pcts_to_plot)+buffer,min(pcts_to_plot)-buffer])
 
     if legend=='reps':
         legend_patch_list = []
         for rep in reps_to_plot:
             legend_patch_list.append(mpatches.Patch(color=convert_rep_to_color[rep], label=labels_for_plot[rep]))
-        plt.legend(handles=legend_patch_list, bbox_to_anchor=(0.5, len(envs_to_plot)*1.16), loc='lower center', ncol=len(legend_patch_list),title='State Encoding')
+        plt.legend(handles=legend_patch_list, bbox_to_anchor=(0.5, len(envs_to_plot)*1.16), loc='lower center', ncol=len(legend_patch_list),title='State Representation')
     elif legend=='pcts':
         legend_patch_list = []
         for pct in pcts_to_plot:
