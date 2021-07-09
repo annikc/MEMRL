@@ -109,7 +109,7 @@ def welchs_pval(ref_sample, query_sample):
 def structured_unstructured(df_element):
     map = {'analytic successor':'structured',
            'place_cell':'structured',
-           'state-centred pc f0.05':'structured',
+           'state-centred pc f0.05':'',
            'onehot':'unstructured',
            'random':'unstructured',
            'conv_latents':''}
@@ -703,7 +703,7 @@ def compare_perf_over_envs_lines_separated(gb_probe,gb_ref,envs_to_plot,reps_to_
         legend_patch_list = []
         for rep in reps_to_plot:
             legend_patch_list.append(mpatches.Patch(color=convert_rep_to_color[rep], label=labels_for_plot[rep]))
-        plt.legend(handles=legend_patch_list, bbox_to_anchor=(0.5, len(envs_to_plot)*1.18), loc='lower center', ncol=len(legend_patch_list),title='State Encoding')
+        plt.legend(handles=legend_patch_list, bbox_to_anchor=(0.5, len(envs_to_plot)*1.18), loc='lower center', ncol=len(legend_patch_list),title='State Representation')
     elif legend=='pcts':
         legend_patch_list = []
         for pct in pcts_to_plot:

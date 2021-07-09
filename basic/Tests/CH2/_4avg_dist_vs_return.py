@@ -21,7 +21,7 @@ parser.add_argument('-rep', default='onehot')
 parser.add_argument('-load', type=bool, default=True)
 parser.add_argument('-lr', default=0.0005)
 parser.add_argument('-cache', type=int, default=100)
-parser.add_argument('-dist', default='euclidean')
+parser.add_argument('-dist', default='chebyshev')
 args = parser.parse_args()
 
 # parameters set with command line arugments
