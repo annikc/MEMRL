@@ -28,7 +28,7 @@ distance_metric = args.dist
 
 print(args)
 write_to_file = 'bootstrapped_mf_ec.csv'
-directory = '../../Data/' # ../../Data if you are in Tests/CH2
+directory = './Data/' # ../../Data if you are in Tests/CH2
 
 env_name = f'gridworld:gridworld-v{version}1'
 cache_limits = {'gridworld:gridworld-v11':{100:400, 75:300, 50:200, 25:100},
@@ -63,10 +63,11 @@ run = expt(agent, env)
 run.run(NUM_TRIALS=num_trials, NUM_EVENTS=num_events)
 run.record_log(env_name, representation_name,num_trials,num_events,dir=directory, file=write_to_file)
 
-
+'''
 smoothing=10
 plt.figure()
 plt.plot(rm(run.data['total_reward'],smoothing), c='k', alpha=0.5)
 if 'bootstrap_reward' in run.data.keys():
     plt.plot(rm(run.data['bootstrap_reward'],smoothing), c='r')
 plt.show()
+'''
