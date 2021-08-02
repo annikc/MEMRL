@@ -38,7 +38,7 @@ cache_limits = {'gridworld:gridworld-v11':{100:400, 75:300, 50:200, 25:100},
 cache_size_for_env = int(cache_limits[env_name][100] *(cache_size/100))
 
 
-num_trials = 1000
+num_trials = 5000
 num_events = 250
 
 
