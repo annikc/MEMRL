@@ -35,7 +35,7 @@ relative_path_to_data = '../../Data/' # from within Tests/CH1
 write_to_file         = 'ec_track_pols.csv'
 training_env_name     = f'gridworld:gridworld-v{version}'
 test_env_name         = training_env_name+'1'
-num_trials = 500
+num_trials = 1000
 num_events = 250
 
 cache_limits = {'gridworld:gridworld-v11':{100:400, 75:300, 50:200, 25:100},

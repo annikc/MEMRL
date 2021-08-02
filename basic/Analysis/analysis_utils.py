@@ -3,6 +3,7 @@ import scipy.stats as sp
 import pickle
 import gym
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import matplotlib.patches as mpatches
 from matplotlib.lines import Line2D
 from modules.Utils import running_mean as rm
@@ -84,6 +85,11 @@ redcmp_r.set_bad(color='w')
 
 linc_coolwarm = ListedColormap(np.concatenate((blu_vals,red_r_vals)))
 linc_coolwarm_r = ListedColormap(np.concatenate((red_vals, blu_r_vals)))
+
+def colorFader(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
+    c1=np.array(mpl.colors.to_rgb(c1))
+    c2=np.array(mpl.colors.to_rgb(c2))
+    return (1-mix)*c1 + mix*c2 #mpl.colors.to_hex()#
 
 def welchs_pval(ref_sample, query_sample):
     mean_ref = np.mean(ref_sample)

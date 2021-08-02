@@ -558,6 +558,156 @@ class gridworldExperiment(expt):
 				self.end_of_trial(trial)
 
 
+class Bootstrap(gridworldExperiment):
+	def __init__(self, agent, environment):
+		super(Bootstrap,self).__init__(agent, environment)
+		self.policy_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
+		self.value_grid  = np.empty(self.env.shape)
+
+	def track_trajectories(self,set):
+		trajs = np.vstack(self.agent.transition_cache.transition_cache)
+		sts, acts, rwds = trajs[:,10], trajs[:,3], trajs[:,4]
+		data_package = [(x,y,z) for x, y,z in zip(sts,acts,rwds)]
+		self.data['trajectories'][set].append(data_package)
+
+	def end_of_trial(self, trial, set):
+		if set == 0: # EC
+			data_key = 'total_reward'
+			p, v = self.agent.finish_()
+
+			self.data['loss'][0].append(p)
+			self.data['loss'][1].append(v)
+
+		elif set == 1: # MF
+			data_key = 'bootstrap_reward'
+			# compute loss for MF guided trajectories, but don't use it to update weights
+			p, v = self.agent.calc_loss()
+			# use trajectories from MF guided trials in EC cache - try option without storing to EC
+			self.agent.EC_storage()                   # usually handled in self.agent.finish_()
+			self.agent.transition_cache.clear_cache() # usually handled in self.agent.finish_()
+
+			self.data['mf_loss'][0].append(p)
+			self.data['mf_loss'][1].append(v)
+
+		else:
+			raise Exception('Invalid Set Argument')
+
+		# record cumulative reward to correct data structure
+		self.data[data_key].append(self.reward_sum)
+
+		if trial <= 10:
+			self.running_rwdavg = np.mean(self.data[data_key])
+		else:
+			self.running_rwdavg = np.mean(self.data[data_key][-10:-1])
+
+		if trial % self.print_freq == 0:
+			print(f"Episode: {trial}, {['EC','MF'][set]} Score: {self.reward_sum} (Running Avg:{self.running_rwdavg}) [{time.time() - self.t}s]")
+			self.t = time.time()
+
+	def run(self, NUM_TRIALS, NUM_EVENTS, **kwargs):
+		self.print_freq = kwargs.get('printfreq', 100)
+		self.reset_data_logs()
+		self.data['bootstrap_reward'] = []
+		self.data['mf_loss'] = [[],[]]
+		self.data['trajectories'] = [[],[]]
+		self.data['cache_size'] = []
+		self.t = time.time()
+
+		for trial in range(NUM_TRIALS):
+			for set in [0,1]:  ## set 0: episodic control, use this for weight updates; set 1: MF control, no updates
+				self.state = self.env.reset()
+				self.reward_sum = 0
+
+				# set action picker
+				if set == 0:
+					self.agent.get_action = self.agent.EC_action
+				else:
+					self.agent.get_action = self.agent.MF_action
+
+				# get a trajectory in the environment up to NUM_EVENTS steps
+				for event in range(NUM_EVENTS):
+					done = self.single_step(trial)
+					if done:
+						break
+
+				self.end_of_trial(trial, set)
+
+				# keep track only for printing at the end of a trial cycle (EC/MF set)
+				if set == 0:
+					ecrwd = self.reward_sum
+				elif set ==1:
+					mfrwd = self.reward_sum
+
+			#print(f'{trial}: EC {ecrwd:.3f}  /  MF {mfrwd:.3f}')
+			#self.take_snapshot()
+
+	def record_log(self, env_name, representation_type, n_trials, n_steps, **kwargs): ## TODO -- set up logging
+		parent_folder = kwargs.get('dir', './Data/')
+		log_name      = kwargs.get('file', 'test_bootstrap.csv')
+		load_from     = kwargs.get('load_from', ' ')
+		mock_log      = kwargs.get('mock_log', False)
+
+		save_id = uuid.uuid4()
+		timestamp = time.asctime(time.localtime())
+
+		field_names = [
+		'timestamp', #datetime experiment recorded
+		'save_id',  # uuid
+		'load_from',  # str
+		'num_trials',  # int
+		'num_events',  # int
+		'env_name',  # str
+		'representation', # str
+		'MF_input_dims',  # arch
+		'MF_lr',  # list
+		'MF_temp',  # list
+		'MF_gamma',  # float
+		'EC_cache_limit',  # float
+		'EC_temp',  # torch optim. class
+		'EC_mem_decay',  # # string
+		'EC_use_pvals',  # bool
+		'EC_similarity_meas', # string
+		'extra_info'
+		]
+		run_data = [timestamp, save_id, load_from, n_trials, n_steps, env_name, representation_type]
+		network_keys = ['input_dims', 'lr', 'temperature']
+		ec_keys = ['cache_limit', 'mem_temp', 'memory_envelope', 'use_pvals']
+		agent_data = [self.agent.MFC.__dict__[k] for k in network_keys] + [self.agent.gamma]
+		if self.agent.EC != None:
+			ec_data = [self.agent.EC.__dict__[k] for k in ec_keys]
+			ec_data.append(self.agent.EC.__dict__['distance_metric'])
+		else:
+			ec_data = ["None" for k in ec_keys] + ["None"]
+
+		extra_info = kwargs.get('extra', [])
+
+		log_jam = run_data + agent_data + ec_data + extra_info
+
+		# write to logger
+		if not os.path.exists(parent_folder+log_name):
+			with open(parent_folder + log_name, 'a+', newline='') as file:
+				writer = csv.writer(file)
+				writer.writerow(field_names)
+
+		with open(parent_folder + log_name, 'a+', newline='') as file:
+			writer = csv.writer(file)
+			if mock_log:
+				writer.writerow(log_jam+["mock log"])
+			else:
+				writer.writerow(log_jam)
+
+		if not mock_log: ## can turn on flag to write to csv without saving files
+			# save data
+			with open(f'{parent_folder}results/{save_id}_data.p', 'wb') as savedata:
+				pickle.dump(self.data, savedata)
+			# save agent weights
+			torch.save(self.agent.MFC.state_dict(), f=f'{parent_folder}agents/{save_id}.pt')
+			# save episodic dictionary
+			if self.agent.EC != None:
+				with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
+					pickle.dump(self.agent.EC.cache_list, saveec)
+		print(f'Logged with ID {save_id}')
+
 #TODO write bootstrap as more general class
 class Bootstrap_viewMF(gridworldExperiment):
 	def __init__(self, agent, environment):

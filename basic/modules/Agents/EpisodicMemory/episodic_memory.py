@@ -378,6 +378,7 @@ class EC_track_forgotten_states(EpisodicMemory):
 			self.cache_list[activity][1] = timestamp
 			self.cache_list[activity][2] = readable
 
+
 class forget_least_recently_accessed_memory(EC_track_forgotten_states):
 	def __init__(self,entry_size,cache_limit,**kwargs):
 		super(EC_track_forgotten_states, self).__init__(entry_size,cache_limit,**kwargs)

@@ -299,9 +299,9 @@ def plot_dist_to_neighbours():
             dist_in_rep_space = np.delete(RS[sim_ind],sim_ind)
             print(type(dist_in_rep_space))
             rgba = [cmap(x) for x in dist_in_rep_space/np.nanmax(dist_in_rep_space)]
-            ax[j+1].scatter(dist_in_state_space,dist_in_rep_space,color=rgba,linewidths=0.5 )
+            ax[j+1].scatter(dist_in_state_space,dist_in_rep_space,color='#b40426',alpha=0.2,linewidths=0.5 )
             ax[j+1].set_xlabel("D(s,s')")
-            ax[j+1].set_ylim([0,1.1])
+            ax[j+1].set_ylim([0.4,1.1])
             if j != 0:
                 ax[j+1].set_yticklabels([])
             else:
@@ -312,6 +312,6 @@ def plot_dist_to_neighbours():
         plt.savefig('../figures/CH2/distance.svg')
         plt.show()
 
-plot_vectors(linc_coolwarm,save=True)
+#plot_vectors(linc_coolwarm,save=True)
 plot_dist_to_neighbours()
-plot_squares(what_to_plot='single_state_sim',current_cmap=linc_coolwarm_r)
+#plot_squares(what_to_plot='single_state_sim',current_cmap=linc_coolwarm_r)

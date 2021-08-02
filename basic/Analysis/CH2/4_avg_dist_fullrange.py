@@ -420,7 +420,7 @@ def plot_success_failure_frequency(gb,envs_to_plot,reps_to_plot,pcts_to_plot,sav
                 print(env, rep,pct)
 
                 cache_size = int(cache_limits[env][100]*(pct/100))
-                list_of_ids = list(gb.get_group((env, rep, cache_size)))
+                list_of_ids = list(gb.get_group((env, rep, cache_size,'chebyshev')))
                 print(len(list_of_ids), cache_size)
                 s, f = success_fail_plus(list_of_ids)
 
@@ -447,6 +447,8 @@ def plot_success_failure_frequency(gb,envs_to_plot,reps_to_plot,pcts_to_plot,sav
             ax[i,3].plot(pcts_to_plot,dist_meas[1],marker='o',linestyle=':',color=convert_rep_to_color[rep],alpha=0.5)
 
         ax[i,1].set_ylabel('% of All Episodes')
+        ax[i,2].set_ylabel('% of All Events')
+        ax[i,3].set_ylabel('Average Distance')
 
     for p in range(2):
         ax[i,p+1].set_ylim([0,1.1])
@@ -455,13 +457,13 @@ def plot_success_failure_frequency(gb,envs_to_plot,reps_to_plot,pcts_to_plot,sav
         ax[i,p+1].set_xlim([100,0])
         ax[i,p+1].set_xlabel('Memory Capacity (%)')
 
-    ax[i,3].set_ylim([0,1.4])
+    ax[i,3].set_ylim([0.5,1.0])
     ax[i,3].set_xlim([100,0])
     ax[i,3].set_xlabel('Memory Capacity (%)')
 
     ax[0,1].set_title('Successful Episodes',fontsize=10)
     ax[0,2].set_title('Events with Exact Match in Memory',fontsize=10)
-    ax[0,3].set_title('Average Distance of Nearest \nNon-Match Memory to Probe State',fontsize=8)
+    ax[0,3].set_title('Nearest Non-Match Memory to Probe State',fontsize=8)
 
     if legend=='reps':
         legend_patch_list = []
@@ -504,7 +506,7 @@ def plot_success_failure_line():
             for k, pct in enumerate(pcts_to_plot):
                 cache_size = int(cache_limits[env][100]*(pct/100))
                 print(cache_size/cache_limits[env][100])
-                list_of_ids = list(gb.get_group((env, rep, cache_size)))
+                list_of_ids = list(gb.get_group((env, rep, cache_size,'chebyshev')))
 
                 s, f = d_r_success_fail(list_of_ids)
                 s_avg.append(np.mean(s[1]))
@@ -524,7 +526,7 @@ parent_path = '../../Data/'
 df = pd.read_csv(parent_path+'ec_avg_dist_rtn.csv')
 df['representation'] = df['representation'].apply(structured_unstructured)
 
-gb = df.groupby(['env_name','representation','EC_cache_limit'])["save_id"]
+gb = df.groupby(['env_name','representation','EC_cache_limit','EC_similarity_meas'])["save_id"]
 
 convert_rep_to_color = {'structured':LINCLAB_COLS['red'], 'unstructured':LINCLAB_COLS['blue']}
 labels_for_plot = {'structured':'structured','unstructured':'unstructured'}

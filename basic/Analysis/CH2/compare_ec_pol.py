@@ -173,7 +173,7 @@ def plot_maps(env_name, rep, kld_ent = 'ent'):
         if pct ==100:
             start=999
         else:
-            start=600
+            start=999
         for x in range(start,1000):
             print(x)
             kld_, ec_pols,entropy_ = get_KLD(data, env.twoD2oneD(probe_state), x)
@@ -194,7 +194,7 @@ def plot_maps(env_name, rep, kld_ent = 'ent'):
     plt.colorbar(a)
     format ='svg'
     plt.savefig(f'../figures/CH2/viridis_longrun_{kld_ent}{env_name[-2:]}_{rep}.{format}',format=format)
-    #plt.show()
+    plt.show()
 
 def get_mem_maps(data,trial_num=-1,full_mem=True):
     blank_mem = Memory(cache_limit=400, entry_size=4)
