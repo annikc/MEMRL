@@ -3,9 +3,8 @@ import gym
 import numpy as np
 from modules.Agents.RepresentationLearning.learned_representations import onehot, random, place_cell, sr, latents
 import modules.Agents.Networks as nets
-import modules.Agents.EpisodicMemory as Memory
 from modules.Agents import Agent
-from modules.Experiments import Bootstrap as expt
+from modules.Experiments import expt
 import matplotlib.pyplot as plt
 from modules.Utils import running_mean as rm
 import argparse
@@ -27,7 +26,7 @@ cache_size      = args.cache
 distance_metric = args.dist
 
 print(args)
-write_to_file = 'bootstrapped_mf_ec.csv'
+write_to_file = 'naive_mf.csv'
 directory = './Data/' # ../../Data if you are in Tests/CH2
 
 env_name = f'gridworld:gridworld-v{version}1'
@@ -38,7 +37,7 @@ cache_limits = {'gridworld:gridworld-v11':{100:400, 75:300, 50:200, 25:100},
 cache_size_for_env = int(cache_limits[env_name][100] *(cache_size/100))
 
 
-num_trials = 1000
+num_trials = 5000
 num_events = 250
 
 
@@ -54,7 +53,7 @@ state_reps, representation_name, input_dims, _ = rep_types[rep_type](env)
 
 # load weights to head_ac network from previously learned agent
 AC_head_agent = nets.flat_ActorCritic(input_dims, env.action_space.n, lr=learning_rate)
-memory = Memory.EpisodicMemory(cache_limit=cache_size_for_env, entry_size=env.action_space.n)
+memory = None #Memory.EpisodicMemory(cache_limit=cache_size_for_env, entry_size=env.action_space.n)
 
 agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 
