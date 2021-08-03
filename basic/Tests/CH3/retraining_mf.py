@@ -11,7 +11,7 @@ import argparse
 
 # set up arguments to be passed in and their defauls
 parser = argparse.ArgumentParser()
-parser.add_argument('-v', type=int, default=11)
+parser.add_argument('-v', type=int, default=1)
 parser.add_argument('-rep', default='onehot')
 parser.add_argument('-lr', default=0.0005)
 parser.add_argument('-cache', type=int, default=100)
@@ -26,8 +26,9 @@ cache_size      = args.cache
 distance_metric = args.dist
 
 print(args)
-write_to_file = 'naive_mf.csv'
+write_to_file = 'retrain_mf.csv'
 directory = '../../Data/' # ../../Data if you are in Tests/CH2
+load_from = '7ec9f075-f40c-40b6-b22e-90696bc69ba0' #41 SR
 env_name = f'gridworld:gridworld-v{version}'
 
 num_trials = 5000
@@ -45,6 +46,11 @@ state_reps, representation_name, input_dims, _ = rep_types[rep_type](env)
 # load weights to head_ac network from previously learned agent
 AC_head_agent = nets.flat_ActorCritic(input_dims, env.action_space.n, lr=learning_rate)
 
+
+if load_from != None:
+    AC_head_agent.load_state_dict(torch.load(f'../../Data/agents/{load_from}.pt'))
+    print(f"weights loaded from {load_from}")
+
 memory = None #Memory.EpisodicMemory(cache_limit=cache_size_for_env, entry_size=env.action_space.n)
 
 agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
@@ -52,7 +58,7 @@ agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 
 run = expt(agent, env)
 run.run(NUM_TRIALS=num_trials, NUM_EVENTS=num_events)
-run.record_log(env_name, representation_name,num_trials,num_events,dir=directory, file=write_to_file)
+run.record_log(env_name, representation_name,num_trials,num_events,dir=directory, file=write_to_file, load_from=load_from)
 
 '''
 smoothing=10
