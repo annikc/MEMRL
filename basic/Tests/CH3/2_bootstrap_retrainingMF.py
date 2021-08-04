@@ -31,7 +31,7 @@ distance_metric = args.dist
 
 reps_for_reads = {'onehot':'onehot', 'sr':'analytic successor', 'place_cell':'place_cell','random':'random'}
 env_name = f'gridworld:gridworld-v{version}'
-directory = '../../Data/' # ../../Data if you are in Tests/CH2
+directory = './Data/' # ../../Data if you are in Tests/CH2
 
 df = pd.read_csv(directory+'naive_mf.csv')
 gb = df.groupby(['env_name','representation'])["save_id"]
@@ -41,7 +41,7 @@ load_from = id_list[np.random.choice(len(id_list))]
 print(f"Loading: {env_name[-12:]} {rep_type} {load_from}" )
 
 print(args)
-write_to_file = 'retrain_mf.csv'
+write_to_file = 'bootstrap_retrain_mf.csv'
 
 
 env_name = f'gridworld:gridworld-v{version}1'
