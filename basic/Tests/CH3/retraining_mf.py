@@ -1,5 +1,7 @@
 import torch
 import gym
+import pickle
+import pandas as pd
 import numpy as np
 from modules.Agents.RepresentationLearning.learned_representations import onehot, random, place_cell, sr, latents
 import modules.Agents.Networks as nets
@@ -25,13 +27,24 @@ learning_rate   = args.lr
 cache_size      = args.cache
 distance_metric = args.dist
 
+reps_for_reads = {'onehot':'onehot', 'sr':'analytic successor', 'place_cell':'place_cell','random':'random'}
+env_name = f'gridworld:gridworld-v{version}'
+directory = '../../Data/' # ../../Data if you are in Tests/CH2
+
+df = pd.read_csv(directory+'naive_mf.csv')
+gb = df.groupby(['env_name','representation'])["save_id"]
+print(env_name,rep_type)
+id_list = list(gb.get_group((env_name, reps_for_reads[rep_type])))
+load_from = id_list[np.random.choice(len(id_list))]
+print(f"Loading: {env_name[-12:]} {rep_type} {load_from}" )
+
 print(args)
 write_to_file = 'retrain_mf.csv'
-directory = '../../Data/' # ../../Data if you are in Tests/CH2
-load_from = '7ec9f075-f40c-40b6-b22e-90696bc69ba0' #41 SR
-env_name = f'gridworld:gridworld-v{version}'
 
-num_trials = 5000
+
+env_name = f'gridworld:gridworld-v{version}1'
+
+num_trials = 10000
 num_events = 250
 
 # make gym environment
@@ -60,11 +73,3 @@ run = expt(agent, env)
 run.run(NUM_TRIALS=num_trials, NUM_EVENTS=num_events)
 run.record_log(env_name, representation_name,num_trials,num_events,dir=directory, file=write_to_file, load_from=load_from)
 
-'''
-smoothing=10
-plt.figure()
-plt.plot(rm(run.data['total_reward'],smoothing), c='k', alpha=0.5)
-if 'bootstrap_reward' in run.data.keys():
-    plt.plot(rm(run.data['bootstrap_reward'],smoothing), c='r')
-plt.show()
-'''
