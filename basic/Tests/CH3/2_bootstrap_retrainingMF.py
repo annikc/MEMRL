@@ -8,7 +8,7 @@ import modules.Agents.Networks as nets
 import modules.Agents.EpisodicMemory as Memory
 
 from modules.Agents import Agent
-from modules.Experiments import flat_expt as expt
+from modules.Experiments import Bootstrap as expt
 import matplotlib.pyplot as plt
 from modules.Utils import running_mean as rm
 import argparse
