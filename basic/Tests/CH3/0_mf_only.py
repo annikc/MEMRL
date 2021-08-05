@@ -30,7 +30,7 @@ write_to_file = 'naive_mf.csv'
 directory = '../../Data/' # ../../Data if you are in Tests/CH2
 env_name = f'gridworld:gridworld-v{version}'
 
-num_trials = 50
+num_trials = 5000
 num_events = 250
 
 # make gym environment
@@ -52,15 +52,7 @@ agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 
 run = expt(agent, env)
 run.run(NUM_TRIALS=num_trials, NUM_EVENTS=num_events)
-
-test_env = gym.make(env_name+'1')
-plt.close()
-print(test_env.rewards)
-test_run = expt(agent, test_env)
-test_run.data = run.data
-test_run.run(NUM_TRIALS=num_trials*2,NUM_EVENTS=num_events)
-
-test_run.record_log(env_name, representation_name,num_trials*3,num_events,dir=directory, file=write_to_file,mock_log=True)
+run.record_log(env_name, representation_name,num_trials,num_events,dir=directory, file=write_to_file)
 
 '''
 smoothing=10
