@@ -32,11 +32,11 @@ distance_metric = args.dist
 
 
 # parameters set for this file
-relative_path_to_data = './Data/' # from within Tests/CH1
-write_to_file         = f'throttled_ec_allreps_{distance_metric}.csv'
+relative_path_to_data = '../../Data/' # from within Tests/CH1
+write_to_file         = f'train_test_ec.csv'
 training_env_name     = f'gridworld:gridworld-v{version}'
 test_env_name         = training_env_name+'1'
-num_trials = 5000
+num_trials = 10
 num_events = 250
 
 cache_limits = {'gridworld:gridworld-v11':{100:400, 75:300, 50:200, 25:100},
@@ -78,4 +78,4 @@ test_run = flat_expt(agent, test_env)
 test_run.data = run.data
 test_run.run(NUM_TRIALS=num_trials*2,NUM_EVENTS=num_events)
 
-test_run.record_log(test_env_name, representation_name,num_trials*3,num_events,dir=relative_path_to_data, file=write_to_file)
+test_run.record_log(test_env_name, representation_name,num_trials*3,num_events,dir=relative_path_to_data, file=write_to_file,mock_log=True)

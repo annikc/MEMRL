@@ -14,7 +14,7 @@ from torch.autograd import Variable
 import torch.nn as nn # to handle layers
 import torch.optim as optim # for optimizer
 
-class shallow_AC_network(nn.Module):
+class perceptron_AC(nn.Module):
     def __init__(self, input_dims, output_dims, lr):
         super().__init__()
         self.input_dims = input_dims
@@ -41,7 +41,34 @@ class shallow_AC_network(nn.Module):
         return policy, value
 
 
+class shallow_AC_network(nn.Module):
+    def __init__(self, input_dims, hidden_dims, output_dims, lr):
+        super().__init__()
+        self.input_dims  = input_dims
+        self.hidden_dims = hidden_dims
+        self.output_dims = output_dims
 
+        self.hidden = nn.Linear(self.input_dims,self.hidden_dims)
+        self.pol = nn.Linear(self.hidden_dims, self.output_dims)
+        self.val = nn.Linear(self.hidden_dims, 1)
+
+        self.lr         = lr
+        self.optimizer  = optim.Adam(self.parameters(), lr=self.lr)
+
+        self.temperature = 1
+
+        # need loss function?
+
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.to(self.device)
+
+    def forward(self,state):
+        state = torch.Tensor(state)
+        x = F.relu(self.hidden(state))
+        value   = self.val(x)
+        policy = F.softmax(self.pol(x)/self.temperature,dim=-1)
+
+        return policy, value
 
 
 class fully_connected_AC_network(nn.Module):

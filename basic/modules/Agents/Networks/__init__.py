@@ -1,5 +1,6 @@
 import gym
-from .annik_ac import shallow_AC_network as flat_ActorCritic
+from .annik_ac import perceptron_AC as flat_ActorCritic
+from .annik_ac import shallow_AC_network as shallow_ActorCritic
 from .annik_ac import fully_connected_AC_network as fc_ActorCritic
 from .annik_ac import flex_ActorCritic
 
