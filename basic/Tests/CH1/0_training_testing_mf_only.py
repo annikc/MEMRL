@@ -27,7 +27,7 @@ distance_metric = args.dist
 
 print(args)
 write_to_file = 'naive_mf.csv'
-directory = '../../Data/' # ../../Data if you are in Tests/CH2
+directory = '.Data/' # ../../Data if you are in Tests/CH2
 env_name = f'gridworld:gridworld-v{version}'
 
 num_trials = 50
