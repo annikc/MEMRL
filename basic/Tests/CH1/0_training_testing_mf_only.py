@@ -30,7 +30,7 @@ write_to_file = 'train_test_shallowAC.csv'
 directory = './Data/' # ../../Data if you are in Tests/CH2
 env_name = f'gridworld:gridworld-v{version}'
 
-num_trials = 5
+num_trials = 5000
 num_events = 250
 
 # make gym environment

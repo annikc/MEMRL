@@ -360,6 +360,7 @@ class shallow_expt(expt):
 		'env_name',  # str
 		'representation', # str
 		'MF_input_dims',  # arch
+		'MF_hidden_dims', # arch
 		'MF_lr',  # list
 		'MF_temp',  # list
 		'MF_gamma',  # float
