@@ -4,12 +4,12 @@ import numpy as np
 from modules.Agents.RepresentationLearning.learned_representations import onehot, random, place_cell, sr, latents
 import modules.Agents.Networks as nets
 from modules.Agents import Agent
-from modules.Experiments import expt
+from modules.Experiments import shallow_expt as expt
 import matplotlib.pyplot as plt
 from modules.Utils import running_mean as rm
 import argparse
 
-# set up arguments to be passed in and their defauls
+# set up arguments to be passed in and their defaults
 parser = argparse.ArgumentParser()
 parser.add_argument('-v', type=int, default=1)
 parser.add_argument('-rep', default='onehot')
@@ -27,10 +27,10 @@ distance_metric = args.dist
 
 print(args)
 write_to_file = 'train_test_shallowAC.csv'
-directory = '../../Data/' # ../../Data if you are in Tests/CH2
+directory = './Data/' # ../../Data if you are in Tests/CH2
 env_name = f'gridworld:gridworld-v{version}'
 
-num_trials = 5000
+num_trials = 5
 num_events = 250
 
 # make gym environment
