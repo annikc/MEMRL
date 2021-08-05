@@ -10,7 +10,7 @@ cache_limits = analysis_specs['cache_limits']
 
 # import csv data summary
 parent_path = '../../Data/'
-df = pd.read_csv(parent_path+'naive_mf.csv')
+df = pd.read_csv(parent_path+'retrain_perceptron_mf.csv')
 
 df['representation'] = df['representation'].apply(structured_unstructured)
 groups_to_split = ['env_name','representation','num_trials']
@@ -27,8 +27,8 @@ rep = 'structured'
 fig, ax = plt.subplots(len(envs_to_plot),2,sharey=True)
 for e, env in enumerate(envs_to_plot):
     for r, rep in enumerate(['structured','unstructured']):
-        id_list = list(df_gb.get_group((env,rep,15000)))
-        print(rep, len(id_list))
+        id_list = list(df_gb.get_group((env+'1',rep,10000)))
+        print(env, rep, len(id_list))
         total_avg_reward = []
         for i, id_num in enumerate(id_list):
             with open(parent_path+ f'results/{id_num}_data.p', 'rb') as f:
