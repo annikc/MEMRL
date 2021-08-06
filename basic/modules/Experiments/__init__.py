@@ -134,11 +134,12 @@ class expt(object):
 
 		# temp
 		if logsnap:
-			states = [self.env.oneD2twoD(x) for x in list(self.agent.state_reps.keys())]
-			observations = list(self.agent.state_reps.values())
-			MF_pols, MF_vals = self.snapshot(states,observations)
-			self.data['V_snap'].append(MF_vals)
-			self.data['P_snap'].append(MF_pols)
+			if trial % self.print_freq==0:
+				states = [self.env.oneD2twoD(x) for x in list(self.agent.state_reps.keys())]
+				observations = list(self.agent.state_reps.values())
+				MF_pols, MF_vals = self.snapshot(states,observations)
+				self.data['V_snap'].append(MF_vals)
+				self.data['P_snap'].append(MF_pols)
 		# /temp
 
 		self.data['total_reward'].append(self.reward_sum) # removed for bootstrap expts
