@@ -20,7 +20,7 @@ groups_to_split = ['env_name','representation','num_trials']
 train_gb = df_train.groupby(groups_to_split)["save_id"]
 test_gb = df_test.groupby(groups_to_split)["save_id"]
 
-envs_to_plot = ['gridworld:gridworld-v1','gridworld:gridworld-v4','gridworld:gridworld-v3','gridworld:gridworld-v5']
+envs_to_plot = ['gridworld:gridworld-v1','gridworld:gridworld-v4']#,'gridworld:gridworld-v3','gridworld:gridworld-v5']
 grids = get_grids(envs_to_plot)
 
 fig, ax = plt.subplots(len(envs_to_plot),2,sharex=True, sharey=True)
@@ -39,9 +39,10 @@ for e, env in enumerate(envs_to_plot):
                 normalization = analysis_specs['avg_max_rwd'][env+'1']
                 transformed = (np.asarray(raw_score)+2.5)/(normalization +2.5)
                 train_avg_reward.append(transformed)
-        train_mean  = np.mean(train_avg_reward,axis=0)
-        train_maxes = train_mean+np.std(train_avg_reward,axis=0)/np.sqrt(len(train_avg_reward))
-        train_mins  = train_mean-np.std(train_avg_reward,axis=0)/np.sqrt(len(train_avg_reward))
+                ax[e,r].plot(rm(transformed,200))
+        #train_mean  = np.mean(train_avg_reward,axis=0)
+        #train_maxes = train_mean+np.std(train_avg_reward,axis=0)/np.sqrt(len(train_avg_reward))
+        #train_mins  = train_mean-np.std(train_avg_reward,axis=0)/np.sqrt(len(train_avg_reward))
 
         for i, id_num in enumerate(test_ids):
             with open(parent_path+ f'results/{id_num}_data.p', 'rb') as f:
@@ -50,19 +51,20 @@ for e, env in enumerate(envs_to_plot):
                 normalization = analysis_specs['avg_max_rwd'][env+'1']
                 transformed = (np.asarray(raw_score)+2.5)/(normalization +2.5)
                 test_avg_reward.append(transformed)
-        test_mean  = np.mean(test_avg_reward,axis=0)
-        test_maxes = test_mean+np.std(test_avg_reward,axis=0)/np.sqrt(len(test_avg_reward))
-        test_mins  = test_mean-np.std(test_avg_reward,axis=0)/np.sqrt(len(test_avg_reward))
+                ax[e,r].plot(np.arange(5000,5000+len(rm(transformed,200))),rm(transformed,200))
+        #test_mean  = np.mean(test_avg_reward,axis=0)
+        #test_maxes = test_mean+np.std(test_avg_reward,axis=0)/np.sqrt(len(test_avg_reward))
+        #test_mins  = test_mean-np.std(test_avg_reward,axis=0)/np.sqrt(len(test_avg_reward))
 
-        mean = rm(np.concatenate((train_mean,test_mean)),200)
-        print(len(mean))
-        maxes = rm(np.concatenate((train_maxes,test_maxes)),200)
-        mins  = rm(np.concatenate((train_mins,test_mins)),200)
+        #mean = rm(np.concatenate((train_mean,test_mean)),200)
+        #print(len(mean))
+        #maxes = rm(np.concatenate((train_maxes,test_maxes)),200)
+        #mins  = rm(np.concatenate((train_mins,test_mins)),200)
 
-        ax[e,r].axvline(x=5000, linestyle=":",color='gray')
-        ax[e,r].plot(np.arange(len(mean)),mean,LINCLAB_COLS['blue'])
-        ax[e,r].fill_between(np.arange(len(mean)),mins,maxes,color=LINCLAB_COLS['blue'], alpha=0.2)
+        ax[e,r].axvline(x=4801, linestyle=":",color='gray')
+        #ax[e,r].plot(np.arange(len(mean)),mean,LINCLAB_COLS['blue'])
+        #ax[e,r].fill_between(np.arange(len(mean)),mins,maxes,color=LINCLAB_COLS['blue'], alpha=0.2)
     ax[e,r].set_ylim(0,1.1)
-plt.savefig(f'../figures/CH1/MF_perceptron_traintest.svg')
+#plt.savefig(f'../figures/CH1/MF_perceptron_traintest.svg')
 plt.show()
 

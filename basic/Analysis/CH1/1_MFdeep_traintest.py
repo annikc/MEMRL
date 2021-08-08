@@ -25,7 +25,7 @@ grids = get_grids(envs_to_plot)
 env = envs_to_plot[0]
 pct = 100
 rep = 'structured'
-fig, ax = plt.subplots(len(envs_to_plot),3,sharex=True, sharey=True)
+fig, ax = plt.subplots(len(envs_to_plot),2,sharex=True, sharey=True)
 for e, env in enumerate(envs_to_plot):
     for r, rep in enumerate(reps_to_plot):
         print(rep)
@@ -45,10 +45,10 @@ for e, env in enumerate(envs_to_plot):
         mean  = np.mean(total_avg_reward,axis=0)
         maxes = mean+np.std(total_avg_reward,axis=0)/np.sqrt(len(total_avg_reward))
         mins  = mean-np.std(total_avg_reward,axis=0)/np.sqrt(len(total_avg_reward))
-        ax[e,r].axvline(x=5000, linestyle=":",color='gray')
+        ax[e,r].axvline(x=4801, linestyle=":",color='gray')
         ax[e,r].plot(np.arange(len(mean)),mean,LINCLAB_COLS['purple'])
         ax[e,r].fill_between(np.arange(len(mean)),mins,maxes,color=LINCLAB_COLS['purple'], alpha=0.2)
     ax[e,r].set_ylim(0,1.1)
-#plt.savefig(f'../figures/CH1/MFdeep_traintest.svg')
+plt.savefig(f'../figures/CH1/MFdeep_traintest.svg')
 plt.show()
 

@@ -274,6 +274,8 @@ class flex_ActorCritic(torch.nn.Module):
                 self.conv = x
             elif isinstance(layer, torch.nn.MaxPool2d):
                 x = layer(x)
+            if i == len(self.hidden)-2:
+                self.test_activity = x
 
         self.h_act = x
         # pass to the output layers

@@ -10,7 +10,6 @@ import pandas as pd
 
 sys.path.append('../../modules/')
 from Analysis.analysis_utils import get_avg_std, get_grids
-from Analysis.analysis_utils import get_env_rep_id_dict as get_id_dict
 from modules.Utils import running_mean as rm
 
 data_dir = '../../Data/results/'
@@ -27,7 +26,7 @@ for key, item in gb:
     print(key, list(item))
 
 print(list(gb.get_group(('gridworld:gridworld-v31', 'conv_latents', 0.001))))
-grids = get_grids([11,31,41,51])
+grids = get_grids(envs)
 labels_for_plot = {'conv_latents':'Partially Observable State', 'rwd_conv_latents':'Fully Observable State'} # for empty_head_only_retrain
 
 def plot_all(save=True, cutoff=25000):
@@ -64,13 +63,6 @@ def plot_all(save=True, cutoff=25000):
 
     plt.show()
 plot_all()
-
-
-
-
-
-
-master_dict = get_id_dict(df)
 
 
 

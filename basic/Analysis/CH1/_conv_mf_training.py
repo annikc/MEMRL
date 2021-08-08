@@ -8,7 +8,7 @@ import gym
 import pandas as pd
 
 sys.path.append('../../modules/')
-from Analysis.analysis_utils import get_avg_std, get_id_dict, get_grids
+from Analysis.analysis_utils import get_avg_std, get_grids
 from modules.Utils import running_mean as rm
 
 data_dir = '../../Data/results/'
@@ -20,10 +20,13 @@ print(reps)
 envs = np.delete(envs, np.where(envs == 'gridworld:gridworld-v2'))
 print('#####', envs)
 
+groups_to_split = ['env_name','representation']
+df_gb = df.groupby(groups_to_split)["save_id"]
 
-master_dict = get_id_dict(df)
 
-grids = get_grids([1,3,4,5])
+
+
+grids = get_grids(envs)
 
 labels_for_plot = {'conv':'Partially Observable State', 'reward_conv':'Fully Observable State'}
 def plot_all(save=True, cutoff=25000):
@@ -40,14 +43,14 @@ def plot_all(save=True, cutoff=25000):
 
     for ind, name in enumerate(envs):
         for rep_to_plot in reps:
-            v_list = master_dict[name][rep_to_plot]
+            v_list = list(df_gb.get_group((name,rep_to_plot)))
             for i in v_list:
                 print(i[0:8])
                 if i[0:8] in ['69aa8807','9ea97939']:
                     v_list.remove(i)
-            avg_, std_ = get_avg_std(v_list,cutoff=cutoff, smoothing=500)
+            avg_, std_ = get_avg_std(v_list,cutoff=cutoff, smoothing=200)
             axs[ind,1].plot(avg_, label=f'{labels_for_plot[rep_to_plot]}')
-            axs[ind,1].fill_between(np.arange(len(avg_)),avg_-std_, avg_+std_, alpha=0.3)
+            axs[ind,1].fill_between(np.arange(len(avg_)),avg_-std_/np.sqrt(len(v_list)), avg_+std_/np.sqrt(len(v_list)), alpha=0.3)
             axs[ind,1].set_ylim([-4,12])
         if ind == len(envs)-1:
             axs[ind,1].set_xlabel('Episodes')

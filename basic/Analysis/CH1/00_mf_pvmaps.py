@@ -23,7 +23,7 @@ pcts_to_plot = [100,75,50,25]
 reps_to_plot = ['unstructured','structured']
 grids = get_grids(envs_to_plot)
 
-env = envs_to_plot[2]
+env = envs_to_plot[0]
 env_obj = gym.make(env)
 plt.close()
 pct = 100
@@ -38,5 +38,7 @@ for i, id_num in enumerate(id_list):
         v_maps = dats['V_snap']
         print(len(p_maps), len(dats['total_reward']))
 
-
-plot_pref_pol(env_obj, p_maps[2999])
+plt.figure()
+#plt.plot(rm(dats['total_reward'],200))
+#plot_pref_pol(env_obj, p_maps[100])
+plot_valmap(env_obj, v_maps[49],v_range=[0,10])
