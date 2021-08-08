@@ -54,7 +54,7 @@ agent_id = np.random.choice(id_list)
 print(env_name, representation_type, agent_id)
 
 # saved weights
-saved_network = torch.load(relative_path_to_data+f'saved_agents/{agent_id}.pt')
+saved_network = torch.load(relative_path_to_data+f'agents/saved_agents/{agent_id}.pt')
 
 # load agent weights into new network
 network = shallow_ActorCritic(input_dims=600, hidden_dims=400,output_dims=4,lr=5e-4)
