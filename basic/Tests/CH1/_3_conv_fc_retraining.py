@@ -101,4 +101,4 @@ agent = Agent(network, state_representations=latent_state_reps)
 # expt - redefines logging function to keep track of network details
 ex = expt(agent, env)
 ex.run(num_trials,num_events)
-ex.record_log(env_name=env_name, representation_type=representation_name, n_trials=num_trials, n_steps=num_events, dir=relative_path_to_data, file=write_to_file)
+ex.record_log(env_name=env_name, representation_type=representation_name, n_trials=num_trials, n_steps=num_events, dir=relative_path_to_data, file=write_to_file, load_from=agent_id)
