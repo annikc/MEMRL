@@ -32,7 +32,7 @@ representation_type = args.rep
 
 ## set parameters for run
 write_to_file         = 'conv_mf_training_narrow.csv'
-relative_path_to_data = '../../Data/' # from within Tests/CH1
+relative_path_to_data = './Data/' # from within Tests/CH1
 env_name              = f'gridworld:gridworld-v{version}'
 num_trials            = 5000
 num_events            = 250
