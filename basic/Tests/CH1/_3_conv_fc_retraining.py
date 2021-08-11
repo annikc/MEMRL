@@ -35,7 +35,7 @@ representation_type = args.rep
 
 
 ## set parameters for run
-write_to_file         = 'conv_mf_retraining.csv'
+write_to_file         = 'conv_mf_retraining_narrow.csv'
 relative_path_to_data = './Data/' # from within Tests/CH1
 env_name              = f'gridworld:gridworld-v{version}'
 num_trials            = 25000
@@ -45,7 +45,7 @@ num_events            = 250
 rep_types = {'conv':convs, 'reward_conv':reward_convs}
 param_set = {'conv': conv_PO_params, 'reward_conv': conv_FO_params}
 
-df = pd.read_csv(relative_path_to_data+'conv_mf_training.csv')
+df = pd.read_csv(relative_path_to_data+'conv_mf_training_narrow.csv')
 groups_to_split = ['env_name','representation']
 df_gb = df.groupby(groups_to_split)["save_id"]
 
@@ -57,7 +57,7 @@ print(env_name, representation_type, agent_id)
 saved_network = torch.load(relative_path_to_data+f'agents/saved_agents/{agent_id}.pt')
 
 # load agent weights into new network
-network = shallow_ActorCritic(input_dims=600, hidden_dims=400,output_dims=4,lr=5e-4)
+network = shallow_ActorCritic(input_dims=400, hidden_dims=200,output_dims=4,lr=5e-4)
 new_state_dict = {}
 for key in saved_network.keys():
     if key[0:6] == 'output':
