@@ -131,7 +131,7 @@ class expt(object):
 
 	def end_of_trial(self, trial, logsnap=False):
 		p, v = self.agent.finish_()
-
+		'''
 		# temp
 		if logsnap:
 			if trial % self.print_freq==0:
@@ -154,6 +154,7 @@ class expt(object):
 		if trial % self.print_freq == 0:
 			print(f"Episode: {trial}, Score: {self.reward_sum} (Running Avg:{self.running_rwdavg}) [{time.time() - self.t}s]")
 			self.t = time.time()
+		'''
 
 	def single_step(self,trial):
 		# get representation for given state of env. TODO: should be in agent to get representation?
