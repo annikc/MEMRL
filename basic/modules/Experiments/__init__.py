@@ -141,11 +141,11 @@ class expt(object):
 				self.data['V_snap'].append(MF_vals)
 				self.data['P_snap'].append(MF_pols)
 		# /temp
-
+		'''
 		self.data['total_reward'].append(self.reward_sum) # removed for bootstrap expts
 		self.data['loss'][0].append(p)
 		self.data['loss'][1].append(v)
-		'''
+
 		if trial <= 10:
 			self.running_rwdavg = np.mean(self.data['total_reward'])
 		else:
