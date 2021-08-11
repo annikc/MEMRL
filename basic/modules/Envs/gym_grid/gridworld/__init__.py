@@ -79,3 +79,23 @@ register(
     id='gridworld-v61',
     entry_point='gridworld.environments:GridWorld4_hairpin_movedR',
 )
+# convolutional pre-training environments
+### variations on gridworld V1
+register(
+    id='gridworld-v01',
+    entry_point='gridworld.environments:GridWorld4_convtrainer',
+)
+register(
+    id='gridworld-v03',
+    entry_point='gridworld.environments:GridWorld4_rooms_convtrainer',
+)
+
+register(
+    id='gridworld-v04',
+    entry_point='gridworld.environments:GridWorld4_bar_convtrainer',
+)
+
+register(
+    id='gridworld-v05',
+    entry_point='gridworld.environments:GridWorld4_tunnel_convtrainer',
+)

@@ -17,6 +17,11 @@ from .worlds import GridWorld4_bar_movedR
 from .worlds import GridWorld4_tunnel_movedR
 from .worlds import GridWorld4_hairpin_movedR
 
+# conv trainer environments -- multiple reward locations
+from .worlds import GridWorld4_convtrainer
+from .worlds import GridWorld4_rooms_convtrainer
+from .worlds import GridWorld4_bar_convtrainer
+from .worlds import GridWorld4_tunnel_convtrainer
 
 from .worlds import MiniGrid
 from .worlds import LinearTrack

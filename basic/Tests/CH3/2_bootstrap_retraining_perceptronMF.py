@@ -8,7 +8,7 @@ import modules.Agents.Networks as nets
 import modules.Agents.EpisodicMemory as Memory
 
 from modules.Agents import Agent
-from modules.Experiments import Bootstrap as expt
+from modules.Experiments import Bootstrap_flat as expt
 import matplotlib.pyplot as plt
 from modules.Utils import running_mean as rm
 import argparse
@@ -31,9 +31,9 @@ distance_metric = args.dist
 
 reps_for_reads = {'onehot':'onehot', 'sr':'analytic successor', 'place_cell':'place_cell','random':'random'}
 env_name = f'gridworld:gridworld-v{version}'
-directory = './Data/' # ../../Data if you are in Tests/CH2
+directory = '../../Data/' # ../../Data if you are in Tests/CH2
 
-df = pd.read_csv(directory+'naive_mf.csv')
+df = pd.read_csv(directory+'train_perceptron_AC.csv')
 gb = df.groupby(['env_name','representation'])["save_id"]
 print(env_name,rep_type)
 id_list = list(gb.get_group((env_name, reps_for_reads[rep_type])))
@@ -41,7 +41,7 @@ load_from = id_list[np.random.choice(len(id_list))]
 print(f"Loading: {env_name[-12:]} {rep_type} {load_from}" )
 
 print(args)
-write_to_file = 'bootstrap_retrain_mf.csv'
+write_to_file = 'bootstrapped_perceptron_mf.csv'
 
 
 env_name = f'gridworld:gridworld-v{version}1'

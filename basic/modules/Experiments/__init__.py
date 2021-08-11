@@ -633,9 +633,9 @@ class gridworldExperiment(expt):
 				self.end_of_trial(trial)
 
 
-class Bootstrap(gridworldExperiment):
+class Bootstrap_flat(gridworldExperiment):
 	def __init__(self, agent, environment):
-		super(Bootstrap,self).__init__(agent, environment)
+		super().__init__(agent, environment)
 		self.policy_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
 		self.value_grid  = np.empty(self.env.shape)
 
@@ -782,6 +782,81 @@ class Bootstrap(gridworldExperiment):
 				with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
 					pickle.dump(self.agent.EC.cache_list, saveec)
 		print(f'Logged with ID {save_id}')
+
+class Bootstrap_shallow(Bootstrap_flat):
+	def __init__(self, agent, environment):
+		super().__init__(agent, environment)
+		self.policy_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
+		self.value_grid  = np.empty(self.env.shape)
+
+	def record_log(self, env_name, representation_type, n_trials, n_steps, **kwargs): ## TODO -- set up logging
+		parent_folder = kwargs.get('dir', './Data/')
+		log_name      = kwargs.get('file', 'test_bootstrap.csv')
+		load_from     = kwargs.get('load_from', ' ')
+		mock_log      = kwargs.get('mock_log', False)
+
+		save_id = uuid.uuid4()
+		timestamp = time.asctime(time.localtime())
+
+		field_names = [
+		'timestamp', #datetime experiment recorded
+		'save_id',  # uuid
+		'load_from',  # str
+		'num_trials',  # int
+		'num_events',  # int
+		'env_name',  # str
+		'representation', # str
+		'MF_input_dims',  # arch
+		'MF_hidden_dims', # arch
+		'MF_lr',  # list
+		'MF_temp',  # list
+		'MF_gamma',  # float
+		'EC_cache_limit',  # float
+		'EC_temp',  # torch optim. class
+		'EC_mem_decay',  # # string
+		'EC_use_pvals',  # bool
+		'EC_similarity_meas', # string
+		'extra_info'
+		]
+		run_data = [timestamp, save_id, load_from, n_trials, n_steps, env_name, representation_type]
+		network_keys = ['input_dims', 'hidden_dims', 'lr', 'temperature']
+		ec_keys = ['cache_limit', 'mem_temp', 'memory_envelope', 'use_pvals']
+		agent_data = [self.agent.MFC.__dict__[k] for k in network_keys] + [self.agent.gamma]
+		if self.agent.EC != None:
+			ec_data = [self.agent.EC.__dict__[k] for k in ec_keys]
+			ec_data.append(self.agent.EC.__dict__['distance_metric'])
+		else:
+			ec_data = ["None" for k in ec_keys] + ["None"]
+
+		extra_info = kwargs.get('extra', [])
+
+		log_jam = run_data + agent_data + ec_data + extra_info
+
+		# write to logger
+		if not os.path.exists(parent_folder+log_name):
+			with open(parent_folder + log_name, 'a+', newline='') as file:
+				writer = csv.writer(file)
+				writer.writerow(field_names)
+
+		with open(parent_folder + log_name, 'a+', newline='') as file:
+			writer = csv.writer(file)
+			if mock_log:
+				writer.writerow(log_jam+["mock log"])
+			else:
+				writer.writerow(log_jam)
+
+		if not mock_log: ## can turn on flag to write to csv without saving files
+			# save data
+			with open(f'{parent_folder}results/{save_id}_data.p', 'wb') as savedata:
+				pickle.dump(self.data, savedata)
+			# save agent weights
+			torch.save(self.agent.MFC.state_dict(), f=f'{parent_folder}agents/{save_id}.pt')
+			# save episodic dictionary
+			if self.agent.EC != None:
+				with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
+					pickle.dump(self.agent.EC.cache_list, saveec)
+		print(f'Logged with ID {save_id}')
+
 
 #TODO write bootstrap as more general class
 class Bootstrap_viewMF(gridworldExperiment):

@@ -242,6 +242,18 @@ class DualNetwork(Agent):
 
         return pol_loss, val_loss
 
+class Agent_conv_pretrain(Agent):
+    def __init__(self, network, memory, state_representations):
+        super().__init__(network, memory,state_representations)
+
+    def MF_action(self, state_observation):
+        policy, value = self.MFC(state_observation)
+
+        a = Categorical(probs=policy,logits=None)
+
+        action = torch.tensor(np.random.choice(len(policy))) #a.sample()
+        return action, a.log_prob(action), value.view(-1)
+
 class Agent_EC_stores_rewards(Agent):
     def __init__(self, network, memory):
         super(Agent_EC_stores_rewards, self).__init__(network, memory)
