@@ -8,40 +8,28 @@
 #####
 import numpy as np
 import gym
+import torch
 import matplotlib.pyplot as plt
-import sys
-sys.path.append('../../modules/')
+import pandas as pd
 from modules.Agents.Networks import flex_ActorCritic as Network
 from modules.Agents.Networks import conv_PO_params, conv_FO_params
 from modules.Agents import conv_randomwalk_agent as Agent
 from modules.Agents.RepresentationLearning.learned_representations import convs, reward_convs
 from modules.Experiments import conv_expt
-import argparse
-
-# set up arguments to be passed in and their defauls
-parser = argparse.ArgumentParser()
-parser.add_argument('-v', default='01')
-parser.add_argument('-rep', default='conv')
-
-args = parser.parse_args()
-
-# parameters set with command line arugments
-version             = args.v
-representation_type = args.rep
 
 
 ## set parameters for run
 write_to_file         = 'conv_mf_pretraining.csv'
-relative_path_to_data = './Data/' # from within Tests/CH1
-env_name              = f'gridworld:gridworld-v{version}'
-num_trials            = 5000
-num_events            = 250
+relative_path_to_data = '../../Data/' # from within Tests/CH1
+df = pd.read_csv(relative_path_to_data+write_to_file)
+df_gb = df.groupby(['env_name','representation'])['save_id']
 
 # valid representation types for this experiment
 rep_types = {'conv':convs, 'rwd_conv':reward_convs}
 param_set = {'conv': conv_PO_params, 'rwd_conv': conv_FO_params}
 
-# instantiate the environment for the experiment
+representation_type = 'rwd_conv'
+env_name = 'gridworld:gridworld-v01'
 env = gym.make(env_name)
 plt.close()
 
@@ -51,13 +39,21 @@ params = param_set[representation_type]
 network_parameters = params(env)
 
 # make a new network instance
-network = Network(network_parameters, softmax_temp=1.2)
-# reinitalize agent with new network
-agent = Agent(network, memory=None, state_representations=state_reps)
+network = Network(network_parameters)
 
-# expt - redefines logging function to keep track of network details
-ex = conv_expt(agent, env)
-ex.run(num_trials,num_events,printfreq=10)
-ex.record_log(env_name=env_name, representation_type=representation_name,
-                  n_trials=num_trials, n_steps=num_events,
-                  dir=relative_path_to_data, file=write_to_file)
+agent_id = list(df_gb.get_group((env_name,representation_type)))[0]
+
+state_dict = torch.load(relative_path_to_data+f'agents/{agent_id}.pt')
+network.load_state_dict(state_dict)
+
+val_array = np.zeros((20,20))
+for k, v in state_reps.items():
+    coord = env.oneD2twoD(k)
+    p, v = network(v)
+    v = v.item()
+    print(p.detach().numpy())
+    val_array[coord] = v
+
+a= plt.imshow(val_array, vmin=-1, vmax=0)
+plt.colorbar(a)
+plt.show()

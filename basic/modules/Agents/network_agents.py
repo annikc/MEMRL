@@ -251,7 +251,7 @@ class Agent_conv_pretrain(Agent):
 
         a = Categorical(probs=policy,logits=None)
 
-        action = torch.tensor(np.random.choice(len(policy))) #a.sample()
+        action = a.sample() #action = torch.tensor(np.random.choice(len(policy))) #
         return action, a.log_prob(action), value.view(-1)
 
 class Agent_EC_stores_rewards(Agent):
