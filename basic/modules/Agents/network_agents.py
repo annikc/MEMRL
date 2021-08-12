@@ -253,6 +253,28 @@ class Agent_conv_pretrain(Agent):
 
         action = a.sample() #action = torch.tensor(np.random.choice(len(policy))) #
         return action, a.log_prob(action), value.view(-1)
+    def MC_loss(self):
+        # compute monte carlo return
+        self.discount_rwds()
+
+        pol_loss = 0
+        val_loss = 0
+        for i, transition in enumerate(self.transition_cache.transition_cache):
+            G_t = transition.target_value
+            V_t = transition.expected_value
+            delta = G_t - V_t.item()
+
+            log_prob = transition.log_prob
+            #print("comput loss for step:", transition.readable_state, log_prob)
+            #pol_loss += -log_prob * delta
+            G_t = torch.Tensor([G_t])
+            v_loss = torch.nn.L1Loss()(V_t, G_t)
+            val_loss += v_loss
+
+            #replace items in transition cache with detached values
+            self.transition_cache.transition_cache[i] = transition._replace(expected_value=V_t.detach().numpy(),log_prob=log_prob.detach().numpy())
+
+        return pol_loss, val_loss
 
 class Agent_EC_stores_rewards(Agent):
     def __init__(self, network, memory):
