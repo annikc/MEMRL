@@ -20,8 +20,8 @@ import argparse
 
 # set up arguments to be passed in and their defauls
 parser = argparse.ArgumentParser()
-parser.add_argument('-v', default='01')
-parser.add_argument('-rep', default='conv')
+parser.add_argument('-v', default='05')
+parser.add_argument('-rep', default='rwd_conv')
 
 args = parser.parse_args()
 
@@ -31,10 +31,10 @@ representation_type = args.rep
 
 
 ## set parameters for run
-write_to_file         = 'conv_mf_pretraining.csv'
-relative_path_to_data = './Data/' # from within Tests/CH1
+write_to_file         = 'conv_mf_pretraining400.csv'
+relative_path_to_data = '../../Data/' # from within Tests/CH1
 env_name              = f'gridworld:gridworld-v{version}'
-num_trials            = 10000
+num_trials            = 15000
 num_events            = 250
 
 # valid representation types for this experiment
@@ -51,13 +51,13 @@ params = param_set[representation_type]
 network_parameters = params(env)
 
 # make a new network instance
-network = Network(network_parameters, softmax_temp=1.2)
+network = Network(network_parameters, softmax_temp=1.5)
 # reinitalize agent with new network
 agent = Agent(network, memory=None, state_representations=state_reps)
 
 # expt - redefines logging function to keep track of network details
 ex = conv_expt(agent, env)
-ex.run(num_trials,num_events,printfreq=10)
+ex.run(num_trials,num_events)
 ex.record_log(env_name=env_name, representation_type=representation_name,
                   n_trials=num_trials, n_steps=num_events,
                   dir=relative_path_to_data, file=write_to_file)
