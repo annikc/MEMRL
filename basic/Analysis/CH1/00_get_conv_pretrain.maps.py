@@ -14,105 +14,99 @@ import pandas as pd
 import pickle
 from modules.Agents.Networks import flex_ActorCritic as Network
 from modules.Agents.Networks import conv_PO_params, conv_FO_params
-from modules.Agents import conv_randomwalk_agent as Agent
 from modules.Agents.RepresentationLearning.learned_representations import convs, reward_convs
-from modules.Experiments import conv_expt
+from modules.Utils.gridworld_plotting import plot_polmap, plot_valmap, plot_pref_pol
 
 
-## set parameters for run
-write_to_file         = 'conv_mf_pretraining.csv'
-relative_path_to_data = '../../Data/' # from within Tests/CH1
-df = pd.read_csv(relative_path_to_data+write_to_file)
-df_gb = df.groupby(['env_name','representation','extra_info'])['save_id']
-
-# valid representation types for this experiment
-rep_types = {'conv':convs, 'rwd_conv':reward_convs}
-param_set = {'conv': conv_PO_params, 'rwd_conv': conv_FO_params}
-df_rep = {'conv': 'conv', 'rwd_conv': 'reward_conv'}
+## read in run IDs corresponding to rep types
+read_from_file  = 'conv_mf_pretraining400.csv'
+data_dir        = '../../Data/' # from within Tests/CH1
 
 
 
-representation_type = 'rwd_conv'
-env_name = 'gridworld:gridworld-v03'
+## load in network weights
+def load_network(env_name, rep_type):
+    # build the environment
+    env = gym.make(env_name)
+    plt.close()
+
+    # get parameters for network
+    param_set = {'conv': conv_PO_params, 'rwd_conv': conv_FO_params}
+    params = param_set[rep_type]
+    network_parameters = params(env)
+
+    # make a new network instance
+    network = Network(network_parameters)
+
+    # get id of saved weights
+    df = pd.read_csv(data_dir+read_from_file)
+    df_gb = df.groupby(['env_name','representation'])['save_id']
+
+    df_rep = {'conv': 'conv', 'rwd_conv': 'reward_conv'}
+    id_list = list(df_gb.get_group((env_name, df_rep[rep_type])))
+
+    agent_id = id_list[np.random.choice(len(id_list))]
+    state_dict = torch.load(data_dir+f'agents/{agent_id}.pt')
+    network.load_state_dict(state_dict)
+
+    print(env_name, rep_type, agent_id)
+    return network
+
+def get_net_activity(env_name, rep_type, net, show_input=False):
+    # build the environment
+    env = gym.make(env_name)
+    print('env rewards:', env.rewards)
+    plt.close()
+
+    rep_types = {'conv':convs, 'rwd_conv':reward_convs}
+
+    state_reps, representation_name, input_dims, _= rep_types[rep_type](env)
+
+    h0_reps = {}
+    h1_reps = {}
+    for key, value in state_reps.items():
+        if show_input:
+            if key == 0:
+                fig,ax = plt.subplots(1,value.shape[1])
+                for i in range(value.shape[1]):
+                    ax[i].imshow(value[0,i,:,:],cmap='bone_r')
+                plt.show()
+
+        p,v = net(value)
+        h0_reps[key] = net.test_activity.detach().numpy()
+        h1_reps[key] = net.h_act.detach().numpy()
+
+    return h0_reps, h1_reps
+
+def get_policy_value(env_name, rep_type, net):
+    # build the environment
+    env = gym.make(env_name)
+    print('env rewards:', env.rewards)
+    plt.close()
+
+    rep_types = {'conv':convs, 'rwd_conv':reward_convs}
+
+    state_reps, representation_name, input_dims, _= rep_types[rep_type](env)
+
+    vals = np.zeros((20,20))
+    vals[:] = np.nan
+    pols = np.empty((20,20,4))
+    for key, value in state_reps.items():
+        coord = env.oneD2twoD(key)
+        p,v = net(value)
+        vals[coord] = v
+        pols[coord,:] = tuple(p.detach().numpy()[0])
+    return vals, pols
+
+
+env_name = 'gridworld:gridworld-v04'
+rep_type = 'conv'
+net = load_network(env_name,rep_type)
+h0, h1 = get_net_activity(env_name,rep_type,net)
+val,pol = get_policy_value(env_name,rep_type,net)
+
 env = gym.make(env_name)
 plt.close()
+plot_valmap(env, val,v_range=[-2.5,12])
+plot_polmap(env,pol)
 
-# get representation type, associated parameters to specify the network dimensions
-state_reps, representation_name, input_dims, _ = rep_types[representation_type](env)
-params = param_set[representation_type]
-network_parameters = params(env)
-
-# make a new network instance
-network = Network(network_parameters)
-def plot_val_maps_for_agents():
-    fig, ax = plt.subplots(1,4)
-    for c, env_name in enumerate(['gridworld:gridworld-v01','gridworld:gridworld-v04','gridworld:gridworld-v03','gridworld:gridworld-v05']):
-        env = gym.make(env_name)
-        plt.close()
-
-        # get representation type, associated parameters to specify the network dimensions
-        state_reps, representation_name, input_dims, _ = rep_types[representation_type](env)
-        params = param_set[representation_type]
-        network_parameters = params(env)
-        id_list = list(df_gb.get_group((env_name,df_rep[representation_type], 'temperature')))
-        agent_id = id_list[np.random.choice(len(id_list))]
-        print(agent_id)
-        state_dict = torch.load(relative_path_to_data+f'agents/{agent_id}.pt')
-
-        network.load_state_dict(state_dict)
-
-        val_array = np.zeros((20,20))
-        val_array[:]=np.nan
-        for k, v in state_reps.items():
-            coord = env.oneD2twoD(k)
-            p, v = network(v)
-            v = v.item()
-            #print(p.detach().numpy())
-            val_array[coord] = v
-
-        a= ax[c].imshow(val_array)
-        ax[c].set_title('')
-        plt.colorbar(a, ax=ax[c])
-    plt.show()
-
-def save_h_activities():
-    for c, env_name in enumerate(['gridworld:gridworld-v01']):#,'gridworld:gridworld-v04','gridworld:gridworld-v03','gridworld:gridworld-v05']):
-        env = gym.make(env_name)
-        plt.close()
-
-        # get representation type, associated parameters to specify the network dimensions
-        state_reps, representation_name, input_dims, _ = rep_types[representation_type](env)
-        params = param_set[representation_type]
-        network_parameters = params(env)
-        id_list = list(df_gb.get_group((env_name,df_rep[representation_type], 'temperature')))
-        agent_id = id_list[np.random.choice(len(id_list))]
-        print(agent_id)
-        state_dict = torch.load(relative_path_to_data+f'agents/{agent_id}.pt')
-
-        network.load_state_dict(state_dict)
-
-        h0_dict = {}
-        h1_dict = {}
-        for k, v in state_reps.items():
-            coord = env.oneD2twoD(k)
-            print(coord)
-            p, v = network(v)
-            h0_dict[k] = network.test_activity.detach().numpy()
-            h1_dict[k] = network.h_act.detach().numpy()
-    return h0_dict, h1_dict
-h0_dict, h1_dict =  save_h_activities()
-plt.imshow(h1_dict[5], aspect='auto')
-plt.show()
-'''
-plot_val_maps_for_agents()
-
-id_list = list(df_gb.get_group((env_name,df_rep[representation_type], 'temperature')))
-agent_id = id_list[np.random.choice(len(id_list))]
-print(agent_id)
-state_dict = torch.load(relative_path_to_data+f'agents/{agent_id}.pt')
-with open(relative_path_to_data+f'results/{agent_id}_data.p','rb') as f:
-    dats = pickle.load(f)
-
-plt.plot(dats['total_reward'])
-plt.show()
-'''
