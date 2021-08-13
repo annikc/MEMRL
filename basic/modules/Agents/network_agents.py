@@ -251,7 +251,7 @@ class Agent_conv_pretrain(Agent):
 
         a = Categorical(probs=policy,logits=None)
 
-        action = action = torch.tensor(np.random.choice(len(policy))) #a.sample() #
+        action = a.sample() # action = torch.tensor(np.random.choice(len(policy))) #
         return action, a.log_prob(action), value.view(-1)
     def MC_loss(self):
         # compute monte carlo return
@@ -266,7 +266,7 @@ class Agent_conv_pretrain(Agent):
 
             log_prob = transition.log_prob
             #print("comput loss for step:", transition.readable_state, log_prob)
-            #pol_loss += -log_prob * delta
+            pol_loss += -log_prob * delta
             G_t = torch.Tensor([G_t])
             v_loss = torch.nn.L1Loss()(V_t, G_t)
             val_loss += v_loss
