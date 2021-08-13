@@ -131,7 +131,7 @@ class expt(object):
 
 	def end_of_trial(self, trial, logsnap=False):
 		p, v = self.agent.finish_()
-		'''
+
 		# temp
 		if logsnap:
 			if trial % self.print_freq==0:
@@ -141,7 +141,7 @@ class expt(object):
 				self.data['V_snap'].append(MF_vals)
 				self.data['P_snap'].append(MF_pols)
 		# /temp
-		'''
+
 		self.data['total_reward'].append(self.reward_sum) # removed for bootstrap expts
 		self.data['loss'][0].append(p)
 		self.data['loss'][1].append(v)

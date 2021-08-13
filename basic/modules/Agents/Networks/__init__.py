@@ -12,7 +12,7 @@ class conv_FO_params(object): # fully observable = input tensor includes channel
         self.input_dims = (3,*env.shape)
         self.action_dims = env.action_space.n
         self.hidden_types = ['conv', 'pool', 'conv', 'pool', 'linear', 'linear']
-        self.hidden_dims = [None, None, None, None, 400, 200] #first fc layer was 600
+        self.hidden_dims = [None, None, None, None, 400, 400] #first fc layer was 600
         self.lr = 5e-4
 
     def get_input_dims(self,env):
@@ -33,7 +33,7 @@ class conv_PO_params(object): # partially observable = input tensor contains env
         self.input_dims = (2,*env.shape)
         self.action_dims = env.action_space.n
         self.hidden_types = ['conv', 'pool', 'conv', 'pool', 'linear', 'linear']
-        self.hidden_dims = [None, None, None, None, 400, 200] # fc layers were 600, 400
+        self.hidden_dims = [None, None, None, None, 400, 400] # fc layers were 600, 400
         self.lr = 5e-4
 
     def get_input_dims(self,env):
