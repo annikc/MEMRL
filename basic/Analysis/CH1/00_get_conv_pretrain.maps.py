@@ -14,7 +14,7 @@ import pandas as pd
 import pickle
 from modules.Agents.Networks import flex_ActorCritic as Network
 from modules.Agents.Networks import conv_PO_params, conv_FO_params
-from modules.Agents.RepresentationLearning.learned_representations import convs, reward_convs
+from modules.Agents.RepresentationLearning.learned_representations import convs, reward_convs, sr
 from modules.Utils.gridworld_plotting import plot_polmap, plot_valmap, plot_pref_pol
 
 
@@ -22,13 +22,16 @@ from modules.Utils.gridworld_plotting import plot_polmap, plot_valmap, plot_pref
 read_from_file  = 'conv_mf_pretraining400.csv'
 data_dir        = '../../Data/' # from within Tests/CH1
 
-
+def save_obj(obj, name):
+    with open('../../modules/Agents/RepresentationLearning/Learned_Rep_pickles/'+ name + '.p', 'wb') as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
 ## load in network weights
 def load_network(env_name, rep_type):
     # build the environment
     env = gym.make(env_name)
     plt.close()
+    print(env_name, env.rewards)
 
     # get parameters for network
     param_set = {'conv': conv_PO_params, 'rwd_conv': conv_FO_params}
@@ -98,15 +101,23 @@ def get_policy_value(env_name, rep_type, net):
         pols[coord,:] = tuple(p.detach().numpy()[0])
     return vals, pols
 
+def save_latent_state_reps():
+    for version in ['1','3','4','5']:
+        for rep_type in ['conv','rwd_conv']:
+            env_base  = 'gridworld:gridworld-v'
+            pretrain  = env_base+'0'+version
+            train_env = env_base+version
+            test_env  = env_base+version+'1'
 
-env_name = 'gridworld:gridworld-v04'
-rep_type = 'conv'
-net = load_network(env_name,rep_type)
-h0, h1 = get_net_activity(env_name,rep_type,net)
-val,pol = get_policy_value(env_name,rep_type,net)
+            net = load_network(pretrain,rep_type)
+            fig,ax = plt.subplots(2,1,sharex=True)
 
-env = gym.make(env_name)
-plt.close()
-plot_valmap(env, val,v_range=[-2.5,12])
-plot_polmap(env,pol)
+            h0, h1 = get_net_activity(train_env,rep_type,net)
+            save_obj(h0, f'{rep_type}/h0_v{version}')
+            save_obj(h1, f'{rep_type}/h1_v{version}')
+
+            h0, h1 = get_net_activity(test_env,rep_type,net)
+            save_obj(h0, f'{rep_type}/h0_v{version}1')
+            save_obj(h1, f'{rep_type}/h1_v{version}1')
+
 

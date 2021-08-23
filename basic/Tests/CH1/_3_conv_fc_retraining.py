@@ -45,7 +45,7 @@ num_events            = 250
 rep_types = {'conv':convs, 'reward_conv':reward_convs}
 param_set = {'conv': conv_PO_params, 'reward_conv': conv_FO_params}
 
-df = pd.read_csv(relative_path_to_data+'conv_mf_training_narrow.csv')
+df = pd.read_csv(relative_path_to_data+'conv_mf_training.csv')
 groups_to_split = ['env_name','representation']
 df_gb = df.groupby(groups_to_split)["save_id"]
 

@@ -27,7 +27,7 @@ distance_metric = args.dist
 
 print(args)
 write_to_file = 'shallowAC_withPVmaps.csv'
-directory = './Data/' # ../../Data if you are in Tests/CH2
+directory = '../../Data/' # ../../Data if you are in Tests/CH2
 env_name = f'gridworld:gridworld-v{version}'
 
 num_trials = 5000
@@ -43,7 +43,7 @@ state_reps, representation_name, input_dims, _ = rep_types[rep_type](env)
 
 
 # load weights to head_ac network from previously learned agent
-AC_head_agent = nets.shallow_ActorCritic(input_dims, hidden_dims=200, output_dims=env.action_space.n, lr=learning_rate)
+AC_head_agent = nets.shallow_ActorCritic(input_dims, hidden_dims=400, output_dims=env.action_space.n, lr=learning_rate)
 
 memory = None #Memory.EpisodicMemory(cache_limit=cache_size_for_env, entry_size=env.action_space.n)
 

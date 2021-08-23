@@ -51,7 +51,7 @@ params = param_set[representation_type]
 network_parameters = params(env)
 
 # make a new network instance
-network = Network(network_parameters, softmax_temp=1.5)
+network = Network(network_parameters, softmax_temp=1)
 # reinitalize agent with new network
 agent = Agent(network, memory=None, state_representations=state_reps)
 

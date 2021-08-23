@@ -157,20 +157,21 @@ def plot_polmap(maze, policy_array, save=False, **kwargs):
     chance_threshold = kwargs.get('threshold', 0.18)  # np.round(1 / len(maze.actionlist), 6)
 
     cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
-    for i in range(maze.c):
-        for j in range(maze.r):
-            action = np.argmax(tuple(policy_array[i][j]))
-            prob = max(policy_array[i][j])
 
-            dx1, dy1, head_w, head_l = make_arrows(action, prob)
-            if prob > chance_threshold:
-                if (dx1, dy1) == (0, 0):
-                    pass
-                else:
-                    colorVal1 = scalarMap.to_rgba(prob)
-                    ax1.arrow(j + 0.5, i + 0.5, dx1, dy1, head_width=0.3, head_length=0.2, color=colorVal1)
-            else:
+    for coord in maze.useable:
+        probs = policy_array[coord[0],coord[1],:]
+        action = np.argmax(probs)
+        prob = max(policy_array[coord[0],coord[1],:])
+
+        dx1, dy1, head_w, head_l = make_arrows(action, prob)
+        if prob > chance_threshold:
+            if (dx1, dy1) == (0, 0):
                 pass
+            else:
+                colorVal1 = scalarMap.to_rgba(prob)
+                ax1.arrow(coord[1]+0.5, coord[0]+0.5, dx1, dy1, head_width=0.3, head_length=0.2, color=colorVal1)
+        else:
+            pass
     ax1.set_aspect('equal')
     ax1.set_title(title)
     ax1.invert_yaxis()
@@ -281,28 +282,29 @@ def plot_pref_pol(maze, policy_array, save=False, **kwargs):
 
     chance_threshold = kwargs.get('threshold', 0.18)  # np.round(1 / len(maze.actionlist), 6)
 
-    for i in range(maze.r):
-        for j in range(maze.c):
-            policy = tuple(policy_array[i, j])
+    for coord in maze.useable:
+        i = coord[0]
+        j = coord[1]
+        policy = tuple(policy_array[i, j])
 
-            dx, dy = 0.0, 0.0
-            for ind, k in enumerate(policy):
-                action = ind
-                prob = k
-                if prob < 0.01:
-                    pass
-                else:
-                    dx1, dy1, head_w, head_l = make_arrows(action, prob)
-                    dx += dx1*prob
-                    dy += dy1*prob
-            if dx ==0.0 and dy == 0.0:
+        dx, dy = 0.0, 0.0
+        for ind, k in enumerate(policy):
+            action = ind
+            prob = k
+            if prob < 0.01:
                 pass
             else:
-                colorVal1 = scalarMap.to_rgba(entropy(policy))
-                if entropy(policy) > 1.2:
-                    pass
-                else:
-                    ax1.arrow(j + 0.5, i + 0.5, dx, dy, head_width=0.3, head_length=0.5, color=colorVal1)
+                dx1, dy1, head_w, head_l = make_arrows(action, prob)
+                dx += dx1*prob
+                dy += dy1*prob
+        if dx ==0.0 and dy == 0.0:
+            pass
+        else:
+            colorVal1 = scalarMap.to_rgba(entropy(policy))
+            if entropy(policy) > 1.2:
+                pass
+            else:
+                ax1.arrow(j + 0.5, i + 0.5, dx, dy, head_width=0.3, head_length=0.5, color=colorVal1)
 
 
     ax1.set_aspect('equal')

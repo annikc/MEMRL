@@ -118,7 +118,7 @@ def structured_unstructured(df_element):
            'state-centred pc f0.05':'',
            'onehot':'unstructured',
            'random':'',
-           'conv_latents':''}
+           'conv_latents':'',}
     new_element = map[df_element]
     return new_element
 

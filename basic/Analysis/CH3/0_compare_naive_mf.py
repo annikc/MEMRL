@@ -10,8 +10,8 @@ cache_limits = analysis_specs['cache_limits']
 
 # import csv data summary
 parent_path = '../../Data/'
-df = pd.read_csv(parent_path+'bootstrapped_mf_ec.csv')
-bl = pd.read_csv(parent_path+'retrain_mf.csv')
+df = pd.read_csv(parent_path+'bootstrapped_perceptron_mf.csv')
+bl = pd.read_csv(parent_path+'test_perceptron_AC.csv')
 
 df['representation'] = df['representation'].apply(structured_unstructured)
 bl['representation'] = bl['representation'].apply(structured_unstructured)

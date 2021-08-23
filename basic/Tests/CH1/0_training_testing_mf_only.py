@@ -58,9 +58,9 @@ plt.close()
 print(test_env.rewards)
 test_run = expt(agent, test_env)
 test_run.data = run.data
-test_run.run(NUM_TRIALS=num_trials*4,NUM_EVENTS=num_events)
+test_run.run(NUM_TRIALS=num_trials*5,NUM_EVENTS=num_events)
 
-test_run.record_log(env_name, representation_name,num_trials*5,num_events,dir=directory, file=write_to_file)
+test_run.record_log(env_name, representation_name,num_trials*6,num_events,dir=directory, file=write_to_file)
 
 '''
 smoothing=10
