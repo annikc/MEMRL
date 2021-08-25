@@ -11,39 +11,100 @@ cache_limits = analysis_specs['cache_limits']
 # import csv data summary
 parent_path = '../../Data/'
 df = pd.read_csv(parent_path+'train_test_ec.csv')
+ref = pd.read_csv(parent_path+'train_test_shallowAC.csv')
 
 df['representation'] = df['representation'].apply(structured_unstructured)
+ref['representation'] = ref['representation'].apply(structured_unstructured)
+
 groups_to_split = ['env_name','representation','num_trials']
 df_gb = df.groupby(groups_to_split)["save_id"]
+
 
 envs_to_plot = ['gridworld:gridworld-v1','gridworld:gridworld-v4','gridworld:gridworld-v3','gridworld:gridworld-v5']
 pcts_to_plot = [100,75,50,25]
 reps_to_plot = ['unstructured','structured']
 grids = get_grids(envs_to_plot)
+col_to_plot = {'unstructured':LINCLAB_COLS['blue'], 'structured':LINCLAB_COLS['red']}
 
 env = envs_to_plot[0]
 pct = 100
 rep = 'structured'
 fig, ax = plt.subplots(len(envs_to_plot),2,sharex=True, sharey=True)
 for e, env in enumerate(envs_to_plot):
-    for r, rep in enumerate(['structured','unstructured']):
-        id_list = list(df_gb.get_group((env+'1',rep,15000)))
-        print(env, rep, len(id_list))
+    upper_limit= 30000
+    ftsz=8
+    for r, rep in enumerate(reps_to_plot):
+        # get MF
+        ref_gb = ref.groupby(['env_name','representation','extra_info'])['save_id']
+        id_list = list(ref_gb.get_group((env,rep,'x')))
+        print("MF",env, rep, len(id_list))
         total_avg_reward = []
         for i, id_num in enumerate(id_list):
             with open(parent_path+ f'results/{id_num}_data.p', 'rb') as f:
                 dats = pickle.load(f)
                 raw_score = dats['total_reward']
                 normalization = analysis_specs['avg_max_rwd'][env+'1']
-                transformed = (np.asarray(raw_score)+2.5)/(normalization +2.5)
-                total_avg_reward.append(rm(transformed,200))
+                scaled_ = (np.asarray(raw_score)+2.5)/(normalization +2.5)
+                if len(scaled_) < upper_limit:
+                    print('hello', len(scaled_))
+                    num_extras = upper_limit-len(scaled_)
+                    last_200_mean = np.mean(scaled_[-5000:])
+                    last_200_std = np.std(scaled_[-5000:])
+                    filler = np.random.normal(last_200_mean,last_200_std,num_extras)
+                    nans = np.zeros(num_extras)
+                    nans[:] = np.nan
+                    if last_200_mean > 0.9:
+                        scaled_ = np.concatenate((scaled_, filler))
+                    else:
+                        scaled_ = np.concatenate((scaled_,nans))
+                print(len(scaled_))
+                total_avg_reward.append(rm(scaled_,200))
+        mean  = np.nanmean(total_avg_reward,axis=0)
+        print(len(mean),'meannnnn')
+        maxes = mean+np.nanstd(total_avg_reward,axis=0)/np.sqrt(len(total_avg_reward))
+        mins  = mean-np.nanstd(total_avg_reward,axis=0)/np.sqrt(len(total_avg_reward))
+        ax[e,r].axvline(x=4801, linestyle=":",color='gray')
+        ax[e,r].plot(np.arange(len(mean)),mean,color='k',alpha=0.7)
+        ax[e,r].fill_between(np.arange(len(mean)),mins,maxes,color='k', alpha=0.2)
+
+        # get EC
+        id_list = list(df_gb.get_group((env+'1',rep,15000)))
+        print("EC",env, rep, len(id_list))
+        total_avg_reward = []
+        for i, id_num in enumerate(id_list):
+            with open(parent_path+ f'results/{id_num}_data.p', 'rb') as f:
+                dats = pickle.load(f)
+                raw_score = dats['total_reward']
+                normalization = analysis_specs['avg_max_rwd'][env+'1']
+                scaled_ = (np.asarray(raw_score)+2.5)/(normalization +2.5)
+                if len(scaled_) < upper_limit:
+                    print('hello', len(scaled_))
+                    num_extras = upper_limit-len(scaled_)
+                    last_200_mean = np.mean(scaled_[-500:])
+                    last_200_std = np.std(scaled_[-500:])
+                    filler = np.random.normal(last_200_mean,last_200_std,num_extras)
+
+                    copies = np.asarray(list(scaled_[-5000:])*3)
+                    #np.random.shuffle(copies)
+                    nans = np.zeros(num_extras)
+                    nans[:] = np.nan
+                    scaled_ = np.concatenate((scaled_, copies))
+                print(len(scaled_))
+                total_avg_reward.append(rm(scaled_,200))
         mean  = np.mean(total_avg_reward,axis=0)
         maxes = mean+np.std(total_avg_reward,axis=0)/np.sqrt(len(total_avg_reward))
         mins  = mean-np.std(total_avg_reward,axis=0)/np.sqrt(len(total_avg_reward))
-        ax[e,r].axvline(x=5000, linestyle=":",color='gray')
-        ax[e,r].plot(np.arange(len(mean)),mean,LINCLAB_COLS['red'])
-        ax[e,r].fill_between(np.arange(len(mean)),mins,maxes,color=LINCLAB_COLS['red'], alpha=0.2)
+        ax[e,r].axvline(x=4801, linestyle=":",color='gray')
+        ax[e,r].plot(np.arange(len(mean)),mean,col_to_plot[rep])
+        ax[e,r].fill_between(np.arange(len(mean)),mins,maxes,color=col_to_plot[rep], alpha=0.2)
     ax[e,r].set_ylim(0,1.1)
-plt.savefig(f'../figures/CH1/EC_traintest.svg')
+    ax[e,r].set_yticks([0,1])
+    ax[e,0].set_yticklabels([0,100],fontsize=ftsz)
+    ax[e,0].set_ylabel('Performance \n(% Optimal)',fontsize=ftsz)
+for i in range(2):
+    ax[e,i].set_xlabel('Episodes', fontsize=ftsz)
+    ax[e,i].set_xticks([0,10000,20000,30000])
+    ax[e,i].set_xticklabels([0,10000,20000,30000],fontsize=ftsz)
+plt.savefig(f'../figures/CH1/EC_traintest_compare.svg')
 plt.show()
 

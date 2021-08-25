@@ -11,6 +11,7 @@ from modules.Agents.EpisodicMemory import EpisodicMemory as Memory
 from modules.Agents.RepresentationLearning.learned_representations import onehot, random, place_cell, sr, latents
 from modules.Agents import Agent
 from modules.Experiments import flat_expt
+import pandas as pd
 sys.path.append('../../../')
 import argparse
 
@@ -32,11 +33,11 @@ distance_metric = args.dist
 
 
 # parameters set for this file
-relative_path_to_data = '../../Data/' # from within Tests/CH1
+relative_path_to_data = './Data/' # from within Tests/CH1
 write_to_file         = f'train_test_ec.csv'
 training_env_name     = f'gridworld:gridworld-v{version}'
 test_env_name         = training_env_name+'1'
-num_trials = 10
+num_trials = 5000
 num_events = 250
 
 cache_limits = {'gridworld:gridworld-v11':{100:400, 75:300, 50:200, 25:100},
@@ -64,18 +65,26 @@ else:
 
 AC_head_agent = head_AC(input_dims, env.action_space.n, lr=learning_rate)
 
+df = pd.read_csv(relative_path_to_data+write_to_file)
+df_gb = df.groupby(['env_name','representation'])["save_id"]
+id = list(df_gb.get_group((test_env_name,representation_name)))[0]
+print(id)
+
 memory = Memory(entry_size=env.action_space.n, cache_limit=cache_size_for_env, distance=distance_metric)
+with open(relative_path_to_data+f'/ec_dicts/{id}_EC.p', 'rb') as f:
+    load_mem = pickle.load(f)
+memory.cache_list = load_mem
 
 agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 
-run = flat_expt(agent, env)
-run.run(NUM_TRIALS=num_trials, NUM_EVENTS=num_events)
+#run = flat_expt(agent, env)
+#run.run(NUM_TRIALS=num_trials, NUM_EVENTS=num_events)
 
 test_env = gym.make(test_env_name)
 plt.close()
 print(test_env.rewards)
 test_run = flat_expt(agent, test_env)
-test_run.data = run.data
-test_run.run(NUM_TRIALS=num_trials*2,NUM_EVENTS=num_events)
+#test_run.data = run.data
+test_run.run(NUM_TRIALS=num_trials*3,NUM_EVENTS=num_events)
 
-test_run.record_log(test_env_name, representation_name,num_trials*3,num_events,dir=relative_path_to_data, file=write_to_file,mock_log=True)
+test_run.record_log(test_env_name, representation_name,num_trials*3,num_events,dir=relative_path_to_data, file=write_to_file,load_from=id)
