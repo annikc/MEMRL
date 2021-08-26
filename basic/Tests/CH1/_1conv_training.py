@@ -31,8 +31,8 @@ representation_type = args.rep
 
 
 ## set parameters for run
-write_to_file         = 'conv_mf_training_narrow.csv'
-relative_path_to_data = './Data/' # from within Tests/CH1
+write_to_file         = 'conv_mf_training.csv'
+relative_path_to_data = '../../Data/' # from within Tests/CH1
 env_name              = f'gridworld:gridworld-v{version}'
 num_trials            = 5000
 num_events            = 250
@@ -49,6 +49,7 @@ plt.close()
 state_reps, representation_name, input_dims, _ = rep_types[representation_type](env)
 params = param_set[representation_type]
 network_parameters = params(env)
+print(network_parameters.__dict__)
 
 # make a new network instance
 network = Network(network_parameters)

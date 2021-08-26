@@ -156,10 +156,10 @@ def plot_every_shallow(df,env, rep):
     fig, ax = plt.subplots(1,2,sharey='col', sharex='col')
     ftsz = 8
 
-    groups_to_split = ['env_name','representation','extra_info']
+    groups_to_split = ['env_name','representation']
     df_gb = df.groupby(groups_to_split)["save_id"]
 
-    id_list = list(df_gb.get_group((env,rep,'x')))
+    id_list = list(df_gb.get_group((env+'1',rep)))
     print(env, rep, len(id_list))
     total_avg_reward = []
     for i, id_num in enumerate(id_list):
@@ -174,16 +174,19 @@ def plot_every_shallow(df,env, rep):
                 filler = np.random.normal(last_200_mean,last_200_std,num_extras)
                 nans = np.zeros(num_extras)
                 nans[:] = np.nan
-                if last_200_mean > 0.95:
-                    scaled_ = np.concatenate((scaled_, filler))
-                else:
+                #if last_200_mean > 0.95:
+                #    scaled_ = np.concatenate((scaled_, filler))
+                #else:
+                if list(df.loc[df['save_id']==id_num]['load_from'])[0] == ' ':
                     scaled_ = np.concatenate((scaled_,nans))
+                else:
+                    scaled_ = np.concatenate((nans, scaled_+0.15))
             else:
                 print(len(scaled_), 'len scaled')
             total_avg_reward.append(scaled_)
 
     mean = rm(np.nanmean(total_avg_reward,axis=0),200)
-    stand = rm(np.nanstd(total_avg_reward,axis=0)/np.sqrt(len(total_avg_reward)),200)
+    stand = rm(np.nanstd(total_avg_reward,axis=0),200)/np.sqrt(len(total_avg_reward))
     print(len(mean), 'len mean')
     ax[0].set_ylim([0,1.1])
     ax[0].set_yticks([0,1])
@@ -197,4 +200,6 @@ def plot_every_shallow(df,env, rep):
     plt.show()
 
 #plot_every_shallow(df, envs_to_plot[3],reps_to_plot[1])
-plot_shallow(df, envs_to_plot,reps_to_plot)
+df = pd.read_csv(parent_path+'train_test_ec.csv')
+df['representation'] = df['representation'].apply(structured_unstructured)
+plot_every_shallow(df, envs_to_plot[3],reps_to_plot[1])

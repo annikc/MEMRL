@@ -3,6 +3,7 @@
 # empty_head_only_retraining = latent states and a clean init of ac output layer ("flat ac")
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.spatial.distance import pdist, cdist,squareform
 import pickle
 
 import gym
@@ -11,7 +12,7 @@ import torch
 from modules.Agents.Networks import conv_PO_params, conv_FO_params
 from modules.Agents.Networks import flex_ActorCritic, shallow_ActorCritic
 from modules.Agents.RepresentationLearning.learned_representations import convs, reward_convs, onehot, sr
-from Analysis.analysis_utils import get_avg_std, get_grids, analysis_specs, LINCLAB_COLS
+from Analysis.analysis_utils import get_avg_std, get_grids, analysis_specs, LINCLAB_COLS, linc_coolwarm, linc_coolwarm_r, make_env_graph, compute_graph_distance_matrix
 from modules.Utils import running_mean as rm
 
 import numpy as np
@@ -40,6 +41,7 @@ def get_conv_agent_pol_valmaps(df, env_name,rep, train=True):
 
     agent_id = list(gb.get_group((env_name, rep)))[0]
     load_id  = list(df.loc[df['save_id']==agent_id]['load_from'])[0]
+    print(load_id,"loadID")
     # load agent
     if train:
         state_dict = torch.load(data_dir+f'agents/{load_id}.pt')
@@ -62,16 +64,20 @@ def get_conv_agent_pol_valmaps(df, env_name,rep, train=True):
     policy_map = np.empty(env.shape, dtype=[(x,'f8') for x in env.action_list])
     value_map = np.zeros(env.shape)
     value_map[:] = np.nan
+    latents = {}
     for key, img in state_reps.items():
         coord = env.oneD2twoD(key)
         p,v = net(img)
-
+        # top layer
+        latents[key] = net.h_act.detach().numpy()
+        # middle layer
+        #latents[key] = net.test_activity.detach().numpy()
         policy = tuple(p.detach().numpy()[0])
         value = v.item()
         policy_map[coord] = policy
         value_map[coord]  = value
 
-    return policy_map, value_map
+    return policy_map, value_map, latents
 
 def get_shallow_fc_agent_pol_valmaps_from_saved(env_name,rep,map_index):
     # df = shallow AC with PV maps
@@ -213,23 +219,107 @@ def plot_pref_pol(maze, policy_array, save=False, **kwargs):
         plt.show()
     plt.close()
 
+def get_graph_dist_from_state(envs_to_plot, sim_ind):
+    graph_distances = []
+    for i,test_env_name in enumerate(envs_to_plot):
+        env=gym.make(test_env_name)
+        plt.close()
+        G = make_env_graph(env)
+        gd = compute_graph_distance_matrix(G,env)
+        dist_in_state_space = gd[sim_ind]
+        graph_distances.append(dist_in_state_space)
+    return graph_distances
 
+fig, axes = plt.subplots(2,2, figsize=(10,10))
+ax = axes.flatten()
 env_name = envs[1][:-1]
-rep_name = 'rwd_conv_latents'
-if rep_name == 'conv_latents' or rep_name=='rwd_conv_latents':
-    pol, val = get_conv_agent_pol_valmaps(df, env_name+'1', rep_name)
-else:
-    pol,val = get_shallow_fc_agent_pol_valmaps_from_saved(env_name,rep_name,49)
+for ind, env_name in enumerate(envs):
+    rep_name = 'conv_latents'
+    if rep_name == 'conv_latents' or rep_name=='rwd_conv_latents':
+        pol, val, state_reps = get_conv_agent_pol_valmaps(df, env_name, rep_name)
+    else:
+        pol,val = get_shallow_fc_agent_pol_valmaps_from_saved(env_name,rep_name,49)
 
-
-a= plt.imshow(val,vmin=4, vmax=10)
-plt.colorbar(a)
-plt.savefig(f'../figures/CH1/pv_maps/VAL{env_name[-2:]}_{rep_name}.svg',format='svg')
+    a= ax[ind].imshow(val,vmin=4, vmax=10)
+    ax[ind].get_xaxis().set_visible(False)
+    ax[ind].get_yaxis().set_visible(False)
+    plt.savefig(f'../figures/CH1/v_maps.svg',format='svg')
 plt.show()
 
-env = gym.make(env_name)
-plt.close()
-plot_pref_pol(env,pol, save=True, directory='../figures/CH1/pv_maps/',title=f'{env_name[-2:]}_{rep_name}')
+for env_name in envs:
+    rep_name = 'conv_latents'
+    if rep_name == 'conv_latents' or rep_name=='rwd_conv_latents':
+        pol, val, state_reps = get_conv_agent_pol_valmaps(df, env_name, rep_name)
+    else:
+        pol,val = get_shallow_fc_agent_pol_valmaps_from_saved(env_name,rep_name,49)
 
+    env = gym.make(env_name[:-1])
+    plt.close()
+    plot_pref_pol(env,pol, save=True, directory='../figures/CH1/', title=env_name+'p')
+
+
+'''
+env =gym.make(env_name)
+plt.close()
+coord = (8,9)
+oneDc = env.twoD2oneD(coord)
+print(oneDc)
+#plt.imshow(state_reps[oneDc],aspect='auto', cmap=linc_coolwarm)
+#plt.savefig('../figures/CH1/latent_state_vec.svg', format='svg')
+plt.show()
+
+def plot_dist_to_neighbours(test_env_name, sim_ind,state_reps, geodesic_dist=True, single_pos=True):
+    # make new env to run test in
+    env = gym.make(test_env_name)
+    plt.close()
+
+    # make graph of env states
+    G = make_env_graph(env)
+    gd= compute_graph_distance_matrix(G,env)
+    dist_in_state_space = np.delete(gd[sim_ind],sim_ind) #distance from sim ind to all other states
+
+    cmap = linc_coolwarm_r #cm.get_cmap('coolwarm')
+
+    reps_as_matrix = np.zeros((400,600))
+    reps_as_matrix[:]  = np.nan
+
+    for ind, (k,v) in enumerate(state_reps.items()):
+        reps_as_matrix[k] = v
+        if k in env.obstacle:
+            reps_as_matrix[k,:] = np.nan
+
+
+    RS = squareform(pdist(reps_as_matrix,metric='chebyshev'))
+    for state2d in env.obstacle:
+        RS[state2d,:] = np.nan
+        RS[:,state2d] = np.nan
+
+    dist_in_rep_space = np.delete(RS[sim_ind],sim_ind)
+    print(type(dist_in_rep_space))
+    rgba = [cmap(x) for x in dist_in_rep_space/np.nanmax(dist_in_rep_space)]
+    if geodesic_dist:
+        plt.scatter(dist_in_state_space,dist_in_rep_space,color=LINCLAB_COLS['red'],alpha=0.4,linewidths=0.5 )
+        plt.xlabel("D(s,s')")
+        plt.ylabel("D(R(s), R(s'))")
+        plt.savefig('../figures/CH1/latent_distance.svg')
+    else:
+        if single_pos:
+            a = plt.imshow(RS[sim_ind].reshape(env.shape)/np.nanmax(RS[sim_ind]), cmap=cmap, vmin=0, vmax=1)
+            plt.colorbar(a)
+            plt.savefig('../figures/CH1/latent_sim.svg')
+        else:
+            sliced = RS.copy()
+            for state1d in reversed(env.obstacle):
+                sliced = np.delete(sliced,state1d,0)
+                sliced = np.delete(sliced,state1d,1)
+
+            a = plt.imshow(sliced/np.nanmax(sliced), vmin=0, vmax=1,  cmap=linc_coolwarm)
+            plt.colorbar(a)
+    plt.show()
+
+plot_dist_to_neighbours(env_name,169,state_reps,geodesic_dist=False, single_pos=True)
+
+
+'''
 
 

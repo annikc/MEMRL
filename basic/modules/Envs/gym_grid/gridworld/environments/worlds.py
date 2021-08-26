@@ -112,7 +112,7 @@ class GridWorld4_tunnel(GridWorld):
                     tunnel_blocks.append((i,j))
 
         self.obstacles_list = tunnel_blocks
-        self.rewards = {(5,5):10} #{(9,3):10}
+        self.rewards = {(9,3):10} #{(5,5):10}
         super().__init__(cols=20,rows=20,actionlist=self.action_list, rewards=self.rewards,rewarded_action=self.rewarded_action,obstacles=self.obstacles_list)
 class GridWorld4_tunnel_movedR(GridWorld):
     def __init__(self):
@@ -130,7 +130,7 @@ class GridWorld4_tunnel_movedR(GridWorld):
                     tunnel_blocks.append((i,j))
 
         self.obstacles_list = tunnel_blocks
-        self.rewards = {(14,14):10}#{(9,16):10}
+        self.rewards = {(9,16):10} #{(14,14):10}
         super().__init__(cols=20,rows=20,actionlist=self.action_list, rewards=self.rewards,rewarded_action=self.rewarded_action,obstacles=self.obstacles_list)
 class GridWorld4_tunnel_convtrainer(GridWorld):
     def __init__(self):

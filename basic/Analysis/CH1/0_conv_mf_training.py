@@ -29,8 +29,13 @@ envs = ['gridworld:gridworld-v1', 'gridworld:gridworld-v4', 'gridworld:gridworld
 grids = get_grids(envs)
 labels_for_plot = {'conv':'Partially Observable State', 'reward_conv':'Fully Observable State'}
 rep_to_col = {'conv':'blue', 'reward_conv':'red'}
-def plot_train_test(save=False):
+def plot_train_test(df, envs, reps, save=False):
     fig, ax = plt.subplots(len(envs),2, sharex='col')
+    ftsz=8
+    groups_to_split = ['env_name','representation']
+    training_df = pd.read_csv('../../Data/conv_mf_training.csv')
+    tr_gb = training_df.groupby(groups_to_split+['extra_info'])['save_id']
+    df_gb = df.groupby(groups_to_split)["save_id"]
     for e, env in enumerate(envs):
         if env[-1] == '5':
             rwd_colrow0 = (3,9)
@@ -39,7 +44,7 @@ def plot_train_test(save=False):
             rwd_colrow0 = (5,5)
             rwd_colrow1=(14,14)
 
-        rect0 = plt.Rectangle(rwd_colrow0, 1, 1, facecolor='b',edgecolor=None, alpha=0.3)
+        rect0 = plt.Rectangle(rwd_colrow0, 1, 1, facecolor='gray',edgecolor=None, alpha=0.5)
         rect1 = plt.Rectangle(rwd_colrow1, 1, 1, facecolor='g', edgecolor=None,alpha=0.3)
         ax[e,0].pcolor(grids[e],cmap='bone_r',edgecolors='k', linewidths=0.1)
         ax[e,0].axis(xmin=0, xmax=20, ymin=0,ymax=20)
@@ -55,13 +60,103 @@ def plot_train_test(save=False):
             id_list = list(df_gb.get_group((env,rep)))
             print(env,rep)
             for i, id_num in enumerate(id_list):
-                # get training data
                 train_dat_id = list(df.loc[df['save_id']==id_num]['load_from'])[0]
-                with open(data_dir+ f'{train_dat_id}_data.p', 'rb') as f:
+                # get training data
+                if train_dat_id[0:8] in ['69aa8807', '9ea97939']:
+                    print('hello moto')
+                    training_transformed = np.zeros(5000)
+                    training_transformed[:] = np.nan
+                else:
+                    with open(data_dir+ f'{train_dat_id}_data.p', 'rb') as f:
+                        dats = pickle.load(f)
+                        raw_score = dats['total_reward'][0:5000]
+                        normalization = analysis_specs['avg_max_rwd'][env+'1']
+                        training_transformed = (np.asarray(raw_score)+2.5)/(normalization +2.5)
+
+                # get testing data
+                with open(data_dir+ f'{id_num}_data.p', 'rb') as f:
+                    dats = pickle.load(f)
+                    raw_score = dats['total_reward']
+                    normalization = analysis_specs['avg_max_rwd'][env+'1']
+                    testing_transformed = (np.asarray(raw_score)+2.5)/(normalization +2.5)
+
+                train_test_data = np.concatenate((training_transformed,testing_transformed))
+                train_test_array.append(train_test_data)
+            # full training dat
+            id_list = list(tr_gb.get_group((env,rep,'x')))
+            print(env,rep)
+            filler = np.zeros(len(testing_transformed))
+            filler[:]=np.nan
+            for i, id_num in enumerate(id_list):
+                with open(data_dir+ f'{id_num}_data.p', 'rb') as f:
                     dats = pickle.load(f)
                     raw_score = dats['total_reward'][0:5000]
                     normalization = analysis_specs['avg_max_rwd'][env+'1']
                     training_transformed = (np.asarray(raw_score)+2.5)/(normalization +2.5)
+
+                train_test_data = np.concatenate((training_transformed,filler))
+                train_test_array.append(train_test_data)
+                print('done', id_num)
+
+            mean_perf = rm(np.nanmean(train_test_array,axis=0),200)
+            std_perf = rm(np.nanstd(train_test_array,axis=0),200)/np.sqrt(len(train_test_array))
+            mins = mean_perf-std_perf
+            maxes = mean_perf+std_perf
+
+            ax[e,1].plot(np.arange(len(mean_perf)),mean_perf, color=LINCLAB_COLS[rep_to_col[rep]], label=labels_for_plot[rep])
+            ax[e,1].fill_between(np.arange(len(mean_perf)),mins, maxes, color=LINCLAB_COLS[rep_to_col[rep]], alpha=0.2)
+            ax[e,1].set_ylim(0,1.1)
+            ax[e,1].set_yticks([0,1])
+            ax[e,1].set_yticklabels([0,100])
+            ax[e,1].axvline(x=4801, linestyle=":",color='gray')
+            ax[e,1].tick_params(axis='both', which='major', labelsize=8)
+        ax[e,1].set_ylabel('Performance \n(% Optimal)', fontsize=ftsz)
+
+    ax[e,1].set_xlabel('Episodes',fontsize=ftsz)
+
+    ax[0,1].legend(loc='upper center', bbox_to_anchor = (0.5,1.1))
+    plt.savefig('../figures/CH1/conv_net_retrain.svg')
+    plt.show()
+
+
+plot_train_test(df, envs, reps)
+
+def plot_train_only(df, envs, reps, save=False):
+    ftsz =8
+    groups_to_split = ['env_name','representation','extra_info']
+    df_gb = df.groupby(groups_to_split)["save_id"]
+    fig, ax = plt.subplots(len(envs),2, sharex='col')
+    for e, env in enumerate(envs):
+        if env[-1] == '5':
+            rwd_colrow0 = (3,9)
+            rwd_colrow1= (16,9)
+        else:
+            rwd_colrow0 = (5,5)
+            rwd_colrow1=(14,14)
+
+        rect0 = plt.Rectangle(rwd_colrow0, 1, 1, facecolor='gray',edgecolor=None, alpha=0.5)
+        rect1 = plt.Rectangle(rwd_colrow1, 1, 1, facecolor='g', edgecolor=None,alpha=0.3)
+        ax[e,0].pcolor(grids[e],cmap='bone_r',edgecolors='k', linewidths=0.1)
+        ax[e,0].axis(xmin=0, xmax=20, ymin=0,ymax=20)
+        ax[e,0].set_aspect('equal')
+        ax[e,0].add_patch(rect0)
+        ax[e,0].add_patch(rect1)
+        ax[e,0].get_xaxis().set_visible(False)
+        ax[e,0].get_yaxis().set_visible(False)
+        ax[e,0].invert_yaxis()
+
+        for r, rep in enumerate(reps):
+            train_test_array = []
+            id_list = list(df_gb.get_group((env,rep,'x')))
+            print(env,rep)
+            for i, id_num in enumerate(id_list):
+                # get training data
+                with open(data_dir+ f'{id_num}_data.p', 'rb') as f:
+                    dats = pickle.load(f)
+                    raw_score = dats['total_reward'][0:5000]
+                    normalization = analysis_specs['avg_max_rwd'][env+'1']
+                    training_transformed = (np.asarray(raw_score)+2.5)/(normalization +2.5)
+                '''
                 # get testing data
                 with open(data_dir+ f'{id_num}_data.p', 'rb') as f:
                     dats = pickle.load(f)
@@ -70,6 +165,8 @@ def plot_train_test(save=False):
                     testing_transformed = (np.asarray(raw_score)+2.5)/(normalization +2.5)
 
                 train_test_data = rm(np.concatenate((training_transformed,testing_transformed)),200)
+                '''
+                train_test_data = rm(training_transformed,200)
                 train_test_array.append(train_test_data)
                 print('done', id_num)
 
@@ -81,16 +178,23 @@ def plot_train_test(save=False):
             ax[e,1].plot(np.arange(len(mean_perf)),mean_perf, color=LINCLAB_COLS[rep_to_col[rep]], label=labels_for_plot[rep])
             ax[e,1].fill_between(np.arange(len(mean_perf)),mins, maxes, color=LINCLAB_COLS[rep_to_col[rep]], alpha=0.2)
             ax[e,1].set_ylim(0,1.1)
-            ax[e,1].axvline(x=4801, linestyle=":",color='gray')
-        ax[e,1].set_ylabel('Performance \n(% Optimal)')
+            ax[e,1].set_yticks([0,1])
+            ax[e,1].set_yticklabels([0,100],fontsize=ftsz)
 
-    ax[e,1].set_xlabel('Episodes')
+            #ax[e,1].axvline(x=4801, linestyle=":",color='gray')
+
+        ax[e,1].set_ylabel('Performance \n(% Optimal)', fontsize=ftsz)
+
+    ax[e,1].set_xlabel('Episodes',fontsize=ftsz)
+    ax[e,1].set_xticks([0,2500,5000])
+    ax[e,1].set_xticklabels([0,2500,5000],fontsize=ftsz)
     ax[0,1].legend(loc='upper center', bbox_to_anchor = (0.5,1.1))
-    plt.savefig('../figures/CH1/conv_net_retrain.svg')
+    if save:
+        plt.savefig('../figures/CH1/conv_net_train_only.svg')
     plt.show()
 
-
-plot_train_test()
+#df = pd.read_csv('../../Data/conv_mf_training.csv')
+#plot_train_only(df, envs, reps,save =True)
 
 def plot_all(save=True, cutoff=25000):
     fig, axs = plt.subplots(4, 2, sharex='col')
