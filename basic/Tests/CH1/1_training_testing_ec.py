@@ -88,6 +88,6 @@ plt.close()
 print(test_env.rewards)
 test_run = flat_expt(agent, test_env)
 #test_run.data = run.data
-test_run.run(NUM_TRIALS=num_trials*6,NUM_EVENTS=num_events)
+test_run.run(NUM_TRIALS=num_trials*5,NUM_EVENTS=num_events)
 
-test_run.record_log(test_env_name, representation_name,num_trials*6,num_events,dir=relative_path_to_data, file=write_to_file,load_from=id)
+test_run.record_log(test_env_name, representation_name,num_trials*5,num_events,dir=relative_path_to_data, file=write_to_file,load_from=id)
