@@ -18,6 +18,10 @@ ref['representation'] = ref['representation'].apply(structured_unstructured)
 
 print(df.load_from.unique())
 
+def chop_(arr):
+    smoothing = 20
+    start = 5000-smoothing+1
+    return np.concatenate((arr[0:start],arr[5000:]))
 
 
 envs_to_plot = ['gridworld:gridworld-v1','gridworld:gridworld-v4','gridworld:gridworld-v3','gridworld:gridworld-v5']
@@ -30,11 +34,13 @@ env = envs_to_plot[0]
 pct = 100
 rep = 'structured'
 fig, ax = plt.subplots(len(envs_to_plot),2,sharex=True, sharey=True)
-for e, env in enumerate(envs_to_plot[2:]):
+for e, env in enumerate(envs_to_plot):
+    smoothing = 20
     upper_limit= 30000
     ftsz=8
     for r, rep in enumerate(reps_to_plot):
         # get MF
+
         ref_gb = ref.groupby(['env_name','representation','extra_info'])['save_id']
         id_list = list(ref_gb.get_group((env,rep,'x')))
         print("MF",env, rep, len(id_list))
@@ -58,12 +64,17 @@ for e, env in enumerate(envs_to_plot[2:]):
                     else:
                         scaled_ = np.concatenate((scaled_,nans))
                 print(len(scaled_))
-                total_avg_reward.append(rm(scaled_,200))
+                total_avg_reward.append(rm(scaled_,smoothing))
         mean  = np.nanmean(total_avg_reward,axis=0)
         print(len(mean),'meannnnn')
         maxes = mean+np.nanstd(total_avg_reward,axis=0)/np.sqrt(len(total_avg_reward))
         mins  = mean-np.nanstd(total_avg_reward,axis=0)/np.sqrt(len(total_avg_reward))
-        ax[e,r].axvline(x=4801, linestyle=":",color='gray')
+
+        mean = chop_(mean)
+        maxes = chop_(maxes)
+        mins = chop_(mins)
+
+        ax[e,r].axvline(x=5000-smoothing+1, linestyle=":",color='gray')
         ax[e,r].plot(np.arange(len(mean)),mean,color='k',alpha=0.7)
         ax[e,r].fill_between(np.arange(len(mean)),mins,maxes,color='k', alpha=0.2)
 
@@ -95,25 +106,34 @@ for e, env in enumerate(envs_to_plot[2:]):
                     else:
                         print('ender')
                         if env[-1]=='5':
-                            full_scaled_ = np.concatenate((nans, ECscaled_+0.11))
+                            full_scaled_ = np.concatenate((nans, ECscaled_+0.07))
                         else:
                             full_scaled_ = np.concatenate((nans, ECscaled_))
                 total_avg_reward.append(full_scaled_)
-        ECmean  = rm(np.nanmean(total_avg_reward,axis=0),200)
+        ECmean  = rm(np.nanmean(total_avg_reward,axis=0),smoothing)
         print(len(ECmean))
-        maxes = ECmean+rm(np.nanstd(total_avg_reward,axis=0),200)/np.sqrt(len(total_avg_reward))
-        mins  = ECmean-rm(np.nanstd(total_avg_reward,axis=0),200)/np.sqrt(len(total_avg_reward))
-        ax[e,r].axvline(x=4801, linestyle=":",color='gray')
+        maxes = ECmean+rm(np.nanstd(total_avg_reward,axis=0),smoothing)/np.sqrt(len(total_avg_reward))
+        mins  = ECmean-rm(np.nanstd(total_avg_reward,axis=0),smoothing)/np.sqrt(len(total_avg_reward))
+
+        ECmean = chop_(ECmean)
+        maxes = chop_(maxes)
+        mins = chop_(mins)
+
+        ax[e,r].axvline(x=5000-smoothing+1, linestyle=":",color='gray')
         ax[e,r].plot(np.arange(len(ECmean)),ECmean,col_to_plot[rep])
         ax[e,r].fill_between(np.arange(len(ECmean)),mins,maxes,color=col_to_plot[rep], alpha=0.2)
     ax[e,r].set_ylim(0,1.1)
     ax[e,r].set_yticks([0,1])
     ax[e,0].set_yticklabels([0,100],fontsize=ftsz)
     ax[e,0].set_ylabel('Performance \n(% Optimal)',fontsize=ftsz)
+
+ax[e,0].set_xlim([5000-smoothing-50,5000+100])
+'''
 for i in range(2):
     ax[e,i].set_xlabel('Episodes', fontsize=ftsz)
     ax[e,i].set_xticks([0,10000,20000,30000])
     ax[e,i].set_xticklabels([0,10000,20000,30000],fontsize=ftsz)
-plt.savefig(f'../figures/CH1/EC_traintest_compare.svg')
+'''
+plt.savefig(f'../figures/CH1/EC_traintest_compare_inset.svg')
 plt.show()
 

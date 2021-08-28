@@ -20,7 +20,7 @@ print(reps)
 envs = np.delete(envs, np.where(envs == 'gridworld:gridworld-v2'))
 print('#####', envs)
 
-groups_to_split = ['env_name','representation']
+groups_to_split = ['env_name','representation','extra_info']
 df_gb = df.groupby(groups_to_split)["save_id"]
 
 
@@ -28,13 +28,13 @@ envs = ['gridworld:gridworld-v1', 'gridworld:gridworld-v4', 'gridworld:gridworld
 
 grids = get_grids(envs)
 labels_for_plot = {'conv':'Partially Observable State', 'reward_conv':'Fully Observable State'}
-rep_to_col = {'conv':'blue', 'reward_conv':'red'}
+rep_to_col = {'conv':'purple', 'reward_conv':'red'}
 def plot_train_test(df, envs, reps, save=False):
-    fig, ax = plt.subplots(len(envs),2, sharex='col')
+    fig, ax = plt.subplots(4,2, sharex='col')
     ftsz=8
-    groups_to_split = ['env_name','representation']
+    groups_to_split = ['env_name','representation','extra_info']
     training_df = pd.read_csv('../../Data/conv_mf_training.csv')
-    tr_gb = training_df.groupby(groups_to_split+['extra_info'])['save_id']
+    tr_gb = training_df.groupby(groups_to_split)['save_id']
     df_gb = df.groupby(groups_to_split)["save_id"]
     for e, env in enumerate(envs):
         if env[-1] == '5':
@@ -56,47 +56,40 @@ def plot_train_test(df, envs, reps, save=False):
         ax[e,0].invert_yaxis()
 
         for r, rep in enumerate(reps):
+            print(env,rep)
             train_test_array = []
-            id_list = list(df_gb.get_group((env,rep)))
-            print(env,rep)
-            for i, id_num in enumerate(id_list):
-                train_dat_id = list(df.loc[df['save_id']==id_num]['load_from'])[0]
-                # get training data
-                if train_dat_id[0:8] in ['69aa8807', '9ea97939']:
-                    print('hello moto')
-                    training_transformed = np.zeros(5000)
-                    training_transformed[:] = np.nan
-                else:
-                    with open(data_dir+ f'{train_dat_id}_data.p', 'rb') as f:
-                        dats = pickle.load(f)
-                        raw_score = dats['total_reward'][0:5000]
-                        normalization = analysis_specs['avg_max_rwd'][env+'1']
-                        training_transformed = (np.asarray(raw_score)+2.5)/(normalization +2.5)
+            id_array = []
+            # get training
+            test_dummy = np.zeros(25000)
+            test_dummy[:] = np.nan
+            train_dummy = np.zeros(5000)
+            train_dummy[:] = np.nan
 
-                # get testing data
-                with open(data_dir+ f'{id_num}_data.p', 'rb') as f:
-                    dats = pickle.load(f)
-                    raw_score = dats['total_reward']
-                    normalization = analysis_specs['avg_max_rwd'][env+'1']
-                    testing_transformed = (np.asarray(raw_score)+2.5)/(normalization +2.5)
-
-                train_test_data = np.concatenate((training_transformed,testing_transformed))
-                train_test_array.append(train_test_data)
-            # full training dat
-            id_list = list(tr_gb.get_group((env,rep,'x')))
-            print(env,rep)
-            filler = np.zeros(len(testing_transformed))
-            filler[:]=np.nan
-            for i, id_num in enumerate(id_list):
+            train_ids = list(tr_gb.get_group((env,rep,'x')))
+            for i, id_num in enumerate(train_ids):
                 with open(data_dir+ f'{id_num}_data.p', 'rb') as f:
                     dats = pickle.load(f)
                     raw_score = dats['total_reward'][0:5000]
                     normalization = analysis_specs['avg_max_rwd'][env+'1']
                     training_transformed = (np.asarray(raw_score)+2.5)/(normalization +2.5)
 
-                train_test_data = np.concatenate((training_transformed,filler))
-                train_test_array.append(train_test_data)
-                print('done', id_num)
+                run_info = np.concatenate((training_transformed,test_dummy))
+                id_array.append(id_num)
+                train_test_array.append(run_info)
+            print('training')
+            # get testing
+            test_ids = list(df_gb.get_group((env,rep,'x')))
+            for i, id_num in enumerate(test_ids):
+                with open(data_dir+ f'{id_num}_data.p', 'rb') as f:
+                    dats = pickle.load(f)
+                    raw_score = dats['total_reward']
+                    normalization = analysis_specs['avg_max_rwd'][env+'1']
+                    testing_transformed = (np.asarray(raw_score)+2.5)/(normalization +2.5)
+
+                run_info = np.concatenate((train_dummy,testing_transformed))
+                id_array.append(id_num)
+                train_test_array.append(run_info)
+            print('testing')
 
             mean_perf = rm(np.nanmean(train_test_array,axis=0),200)
             std_perf = rm(np.nanstd(train_test_array,axis=0),200)/np.sqrt(len(train_test_array))
@@ -119,7 +112,7 @@ def plot_train_test(df, envs, reps, save=False):
     plt.show()
 
 
-plot_train_test(df, envs, reps)
+#plot_train_test(df, envs, ['conv'])
 
 def plot_train_only(df, envs, reps, save=False):
     ftsz =8
@@ -193,10 +186,10 @@ def plot_train_only(df, envs, reps, save=False):
         plt.savefig('../figures/CH1/conv_net_train_only.svg')
     plt.show()
 
-#df = pd.read_csv('../../Data/conv_mf_training.csv')
-#plot_train_only(df, envs, reps,save =True)
+df = pd.read_csv('../../Data/conv_mf_training.csv')
+plot_train_only(df, envs[0:2], ['conv'],save =True)
 
-def plot_all(save=True, cutoff=25000):
+def plot_all(save=False, cutoff=25000):
     fig, axs = plt.subplots(4, 2, sharex='col')
     for i in range(len(grids)):
         rect = plt.Rectangle((5,5), 1, 1, color='g', alpha=0.3)
@@ -210,7 +203,7 @@ def plot_all(save=True, cutoff=25000):
 
     for ind, name in enumerate(envs):
         for rep_to_plot in reps:
-            v_list = list(df_gb.get_group((name,rep_to_plot)))
+            v_list = list(df_gb.get_group((name,rep_to_plot,'x')))
             for i in v_list:
                 print(i[0:8])
                 if i[0:8] in ['69aa8807','9ea97939']:

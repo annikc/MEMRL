@@ -37,8 +37,10 @@ relative_path_to_data = './Data/' # from within Tests/CH1
 write_to_file         = f'train_test_ec.csv'
 training_env_name     = f'gridworld:gridworld-v{version}'
 test_env_name         = training_env_name+'1'
+load_mem = False
 num_trials = 5000
 num_events = 250
+
 
 cache_limits = {'gridworld:gridworld-v11':{100:400, 75:300, 50:200, 25:100},
                 'gridworld:gridworld-v31':{100:365, 75:273, 50:182, 25:91},
@@ -71,9 +73,10 @@ id = list(df_gb.get_group((test_env_name,representation_name)))[0]
 print(id)
 
 memory = Memory(entry_size=env.action_space.n, cache_limit=cache_size_for_env, distance=distance_metric)
-with open(relative_path_to_data+f'/ec_dicts/{id}_EC.p', 'rb') as f:
-    load_mem = pickle.load(f)
-memory.cache_list = load_mem
+if load_mem:
+    with open(relative_path_to_data+f'/ec_dicts/{id}_EC.p', 'rb') as f:
+        loaded_memory_dict = pickle.load(f)
+    memory.cache_list = loaded_memory_dict
 
 agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 
@@ -85,6 +88,6 @@ plt.close()
 print(test_env.rewards)
 test_run = flat_expt(agent, test_env)
 #test_run.data = run.data
-test_run.run(NUM_TRIALS=num_trials*3,NUM_EVENTS=num_events)
+test_run.run(NUM_TRIALS=num_trials*6,NUM_EVENTS=num_events)
 
-test_run.record_log(test_env_name, representation_name,num_trials*3,num_events,dir=relative_path_to_data, file=write_to_file,load_from=id)
+test_run.record_log(test_env_name, representation_name,num_trials*6,num_events,dir=relative_path_to_data, file=write_to_file,load_from=id)

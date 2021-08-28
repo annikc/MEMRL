@@ -17,7 +17,7 @@ def discount_rwds(r, gamma = 0.99):
 	return disc_rwds
 
 def running_mean(x, N):
-    cumsum = np.cumsum(np.insert(x, 0, 0))
+    cumsum = np.nancumsum(np.insert(x, 0, 0))
     return (cumsum[N:] - cumsum[:-N]) / float(N)
 
 
