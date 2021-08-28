@@ -67,13 +67,13 @@ else:
 
 AC_head_agent = head_AC(input_dims, env.action_space.n, lr=learning_rate)
 
-df = pd.read_csv(relative_path_to_data+write_to_file)
-df_gb = df.groupby(['env_name','representation'])["save_id"]
-id = list(df_gb.get_group((test_env_name,representation_name)))[0]
-print(id)
-
 memory = Memory(entry_size=env.action_space.n, cache_limit=cache_size_for_env, distance=distance_metric)
+
 if load_mem:
+    df = pd.read_csv(relative_path_to_data+write_to_file)
+    df_gb = df.groupby(['env_name','representation'])["save_id"]
+    id = list(df_gb.get_group((test_env_name,representation_name)))[0]
+    print(id)
     with open(relative_path_to_data+f'/ec_dicts/{id}_EC.p', 'rb') as f:
         loaded_memory_dict = pickle.load(f)
     memory.cache_list = loaded_memory_dict
