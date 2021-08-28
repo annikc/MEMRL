@@ -77,7 +77,8 @@ if load_mem:
     with open(relative_path_to_data+f'/ec_dicts/{id}_EC.p', 'rb') as f:
         loaded_memory_dict = pickle.load(f)
     memory.cache_list = loaded_memory_dict
-
+else:
+    id =''
 agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 
 #run = flat_expt(agent, env)
