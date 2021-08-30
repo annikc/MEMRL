@@ -221,33 +221,34 @@ def plot_softmax(x, T=1):
     plt.show()
 
 def opt_pol_map(env):
-    optimal_policy = np.zeros((env.y, env.x, len(env.actionlist)))
+    optimal_policy = np.zeros((env.r, env.c, len(env.action_list)))
     for location in env.useable:
-        xdim, ydim = location
-        xrwd, yrwd = env.rwd_loc[0]
+        row, col = location
+        row_rwd, col_rwd = list(env.rewards.keys())[0]
+        # [DURL]
+        if row < row_rwd: # need to go Down
+            optimal_policy[row,col][0] = 1
+            if col < col_rwd: # need to go right
+                optimal_policy[row,col][2] = 1
+            elif col > col_rwd: # need to go left
+                optimal_policy[row,col][3] = 1
 
-        if xdim < xrwd:
-            optimal_policy[ydim, xdim][1] = 1
-            if ydim < yrwd:
-                optimal_policy[ydim, xdim][3] = 1
-            elif ydim > yrwd:
-                optimal_policy[ydim, xdim][0] = 1
+        elif row > row_rwd: # need to go Up
+            optimal_policy[row,col][1] = 1
+            if col < col_rwd: # need to go right
+                optimal_policy[row,col][2] = 1
+            elif col > col_rwd: # need to go left
+                optimal_policy[row,col][3] = 1
 
-        elif xdim > xrwd:
-            optimal_policy[ydim, xdim][2] = 1
-            if ydim < yrwd:
-                optimal_policy[ydim, xdim][3] = 1
-            elif ydim > yrwd:
-                optimal_policy[ydim, xdim][0] = 1
-        else:
-            if ydim < yrwd:
-                optimal_policy[ydim, xdim][3] = 1
-            elif ydim > yrwd:
-                optimal_policy[ydim, xdim][0] = 1
-            else:
-                optimal_policy[ydim, xdim][5] = 1
+        else: # correct row -- stay same row
+            if col < col_rwd: # need to go right
+                optimal_policy[row,col][2] = 1
+            elif col > col_rwd: # need to go left
+                optimal_policy[row,col][3] = 1
+            else: # stay in same pos
+                optimal_policy[row,col][:] = 1
 
-        optimal_policy[ydim, xdim] = softmax(optimal_policy[ydim, xdim], T=0.01)
+        optimal_policy[row,col] = softmax(optimal_policy[row,col], T=0.01)
 
     return optimal_policy
 

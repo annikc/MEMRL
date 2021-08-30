@@ -97,6 +97,7 @@ def get_shallow_fc_agent_pol_valmaps_from_saved(env_name,rep,map_index):
         dats = pickle.load(f)
         pol_maps = dats['P_snap']
         val_maps = dats['V_snap']
+        reward_curve = dats['total_reward']
 
     policy_map = pol_maps[map_index]
     value_map  = val_maps[map_index]
@@ -127,7 +128,7 @@ def get_shallow_fc_agent_pol_valmaps_from_saved(env_name,rep,map_index):
         value_map[coord]  = value
     
     '''
-    return policy_map, value_map
+    return policy_map, value_map, reward_curve
 
 def make_arrows(action, probability):
     '''
@@ -267,15 +268,17 @@ env_name = envs[1]
 env =gym.make(env_name)
 plt.close()
 rep_dict = {'sr':sr, 'onehot':onehot}
-rep_name = 'conv_latents'
+rep_name = 'onehot'
 if rep_name == 'conv_latents' or rep_name=='rwd_conv_latents':
     pol, val, state_reps = get_conv_agent_pol_valmaps(df, env_name, rep_name, type='h0')
 else:
-    #pol,val = get_shallow_fc_agent_pol_valmaps_from_saved(env_name,rep_name,49)
+    pol,val, rwd = get_shallow_fc_agent_pol_valmaps_from_saved(env_name[:-1],rep_name,49)
     state_reps, _ , __, __ = rep_dict[rep_name](env)
 
-print(type(state_reps[0]))
-
+fig,ax= plt.subplots(1,2)
+ax[0].plot(rm(rwd,200))
+ax[1].imshow(val)
+plt.show()
 
 for coord in [(5,5),(5,14),(14,5),(14,14)]:
     #coord = (5,5)
@@ -344,7 +347,7 @@ def plot_dist_to_neighbours(test_env_name, sim_ind,state_reps, geodesic_dist=Tru
     plt.close()
 print(env.useable)
 for gd in [0]:
-    for state in [env.twoD2oneD(x) for x in env.useable]:#[105,114,285,294]:
+    for state in [105,114,285,294]:
         plot_dist_to_neighbours(env_name,state,state_reps,geodesic_dist=gd, single_pos=True)
 
 

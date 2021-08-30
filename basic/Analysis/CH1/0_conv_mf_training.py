@@ -27,8 +27,8 @@ df_gb = df.groupby(groups_to_split)["save_id"]
 envs = ['gridworld:gridworld-v1', 'gridworld:gridworld-v4', 'gridworld:gridworld-v3', 'gridworld:gridworld-v5']
 
 grids = get_grids(envs)
-labels_for_plot = {'conv':'Partially Observable State', 'reward_conv':'Fully Observable State'}
-rep_to_col = {'conv':'purple', 'reward_conv':'red'}
+labels_for_plot = {'conv':'Partially Observable State', 'reward_conv':'Fully Observable State','onehot':'Unstructured', 'analytic successor': 'Structured'}
+rep_to_col = {'conv':'purple', 'reward_conv':'orange', 'onehot':'blue', 'analytic successor':'red'}
 def plot_train_test(df, envs, reps, save=False):
     fig, ax = plt.subplots(4,2, sharex='col')
     ftsz=8
@@ -141,8 +141,8 @@ def plot_train_only(df, envs, reps, save=False):
         for r, rep in enumerate(reps):
             train_test_array = []
             id_list = list(df_gb.get_group((env,rep,'x')))
-            print(env,rep)
-            for i, id_num in enumerate(id_list):
+            print(env,rep, len(id_list))
+            for i, id_num in enumerate(id_list[0:5]):
                 # get training data
                 with open(data_dir+ f'{id_num}_data.p', 'rb') as f:
                     dats = pickle.load(f)
@@ -159,7 +159,7 @@ def plot_train_only(df, envs, reps, save=False):
 
                 train_test_data = rm(np.concatenate((training_transformed,testing_transformed)),200)
                 '''
-                train_test_data = rm(training_transformed,200)
+                train_test_data = rm(training_transformed,100)
                 train_test_array.append(train_test_data)
                 print('done', id_num)
 
@@ -186,8 +186,10 @@ def plot_train_only(df, envs, reps, save=False):
         plt.savefig('../figures/CH1/conv_net_train_only.svg')
     plt.show()
 
-df = pd.read_csv('../../Data/conv_mf_training.csv')
-plot_train_only(df, envs[0:2], ['conv'],save =True)
+#df = pd.read_csv('../../Data/conv_mf_training.csv')
+#plot_train_only(df, envs[0:2], ['conv'],save =True)
+df = pd.read_csv('../../Data/train_test_shallowAC.csv')
+plot_train_only(df, envs[0:2], ['onehot', 'analytic successor'],save=True)
 
 def plot_all(save=False, cutoff=25000):
     fig, axs = plt.subplots(4, 2, sharex='col')
