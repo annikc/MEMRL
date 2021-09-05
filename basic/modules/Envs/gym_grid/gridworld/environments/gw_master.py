@@ -531,7 +531,7 @@ def plot_world(world, **kwargs):
     if state_labels:
         for (i,j) in world.useable:
             # i = row, j = col
-            ax.annotate(f'{world.twoD2oneD((i,j))}', (j+0.3,i+0.7))
+            ax.text(j+0.5,i+0.7, s=f'{world.twoD2oneD((i,j))}', ha='center')
 
 
     #ax.set_xticks([np.arange(c) + 0.5, np.arange(c)])

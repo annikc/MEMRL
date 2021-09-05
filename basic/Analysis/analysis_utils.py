@@ -28,10 +28,10 @@ analysis_specs = {
                     'gridworld:gridworld-v41':{100:384, 75:288, 50:192, 25:96},
                     'gridworld:gridworld-v51':{100:286, 75:214, 50:143, 25:71}
                     },
-    'avg_max_rwd':{'gridworld:gridworld-v11':9.87,
-                   'gridworld:gridworld-v31':9.85,
-                   'gridworld:gridworld-v41':9.84,
-                   'gridworld:gridworld-v51':9.86
+    'avg_max_rwd':{'gridworld:gridworld-v1':9.87,
+                   'gridworld:gridworld-v3':9.85,
+                   'gridworld:gridworld-v4':9.84,
+                   'gridworld:gridworld-v5':9.86
                    },
     'chance_perf':{'gridworld:gridworld-v11':[0.2216007853100826,0.005266129262900299], #chance performance calculated as average of 7 runs in each environment
                    'gridworld:gridworld-v31':[0.1987820242914986,0.002717778942716886],# data scaled to 0 1 interval using avg_max_rwd values for each environment
@@ -115,10 +115,10 @@ def welchs_pval(ref_sample, query_sample):
 def structured_unstructured(df_element):
     map = {'analytic successor':'structured',
            'place_cell':'structured',
-           'state-centred pc f0.05':'',
+           'state-centred pc f0.05':'structured',
            'onehot':'unstructured',
-           'random':'',
-           'conv_latents':'conv_latents',}
+           'random':'unstructured',
+           'conv_latents':'conv',}
     new_element = map[df_element]
     return new_element
 
@@ -240,7 +240,7 @@ def avg_performance_over_envs(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,sa
         ax[i,0].get_yaxis().set_visible(False)
         ax[i,0].invert_yaxis()
 
-        normalization_factor = avg_max_rwd[env]
+        normalization_factor = avg_max_rwd[env[0:22]]
 
         for r, rep in enumerate(reps_to_plot):
             ref_sample = data_sample(list(gb.get_group((env, rep, cache_limits[env][100]))),normalization_factor=normalization_factor,cutoff=5000)
@@ -249,7 +249,8 @@ def avg_performance_over_envs(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,sa
                 print(env, rep, pct, len(v_list))
                 sample_avgs = data_sample(v_list,normalization_factor=normalization_factor,cutoff=5000)
                 avg_, std_ = np.mean(sample_avgs), np.std(sample_avgs)
-                ax[i,1].bar(r*len(pcts_to_plot)+bar_width*j,avg_,yerr=std_,width=bar_width, color=convert_rep_to_color[rep], alpha=50/100,capsize=2)
+                ax[i,1].bar(r*len(pcts_to_plot)+bar_width*j,avg_,width=bar_width, color=convert_rep_to_color[rep], alpha=50/100,capsize=2)
+                print(env, rep, avg_,std_)
                 xpoints = (bar_width/10)*np.random.randn(len(sample_avgs))+(r*len(pcts_to_plot)+bar_width*j)
                 ax[i,1].scatter(xpoints,sample_avgs, facecolor=convert_rep_to_color[rep],alpha=1,edgecolor=None,s=12,zorder=10)
                 if pct != 100:
@@ -269,7 +270,7 @@ def avg_performance_over_envs(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,sa
 
     ax[i,1].set_xticks(np.arange(0,len(pcts_to_plot)*len(reps_to_plot),len(pcts_to_plot))+bar_width*0.5*j)
     ax[i,1].set_xticklabels([labels_for_plot[x] for x in reps_to_plot],rotation=0)
-    ax[i,1].set_xlabel('State Encoding')
+    ax[i,1].set_xlabel('State Representation')
 
     if legend=='reps':
         legend_patch_list = []
@@ -323,7 +324,7 @@ def avg_performance_over_envs_violins(gb,envs_to_plot,reps_to_plot,pcts_to_plot,
         ax[i,0].get_yaxis().set_visible(False)
         ax[i,0].invert_yaxis()
 
-        normalization_factor = avg_max_rwd[env]
+        normalization_factor = avg_max_rwd[env[0:22]]
 
         for r, rep in enumerate(reps_to_plot):
             ref_sample = data_sample(list(gb.get_group((env, rep, cache_limits[env][100]))),normalization_factor=normalization_factor,cutoff=5000)
@@ -422,7 +423,7 @@ def avg_performance_over_envs_violins_sidebyside(gb,envs_to_plot,reps_to_plot,pc
         ax[i,0].get_yaxis().set_visible(False)
         ax[i,0].invert_yaxis()
 
-        normalization_factor = avg_max_rwd[env]
+        normalization_factor = avg_max_rwd[env[0:22]]
 
         for r, rep in enumerate(reps_to_plot):
             ref_sample = data_sample(list(gb.get_group((env, rep, cache_limits[env][100]))),normalization_factor=normalization_factor,cutoff=5000)
@@ -506,7 +507,7 @@ def avg_perf_over_envs_lines(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,sav
         ax[i,0].get_yaxis().set_visible(False)
         ax[i,0].invert_yaxis()
 
-        normalization_factor = avg_max_rwd[env]
+        normalization_factor = avg_max_rwd[env[0:22]]
 
         for r, rep in enumerate(reps_to_plot):
             linevalues_avgs = []
@@ -589,7 +590,7 @@ def compare_perf_over_envs_lines(gb_probe,gb_ref,envs_to_plot,reps_to_plot,pcts_
         ax[i,0].get_yaxis().set_visible(False)
         ax[i,0].invert_yaxis()
 
-        normalization_factor = avg_max_rwd[env]
+        normalization_factor = avg_max_rwd[env[0:22]]
         for g, gb in enumerate(gbs):
             for r, rep in enumerate(reps_to_plot):
                 linevalues_avgs = []
@@ -671,7 +672,7 @@ def compare_perf_over_envs_lines_separated(gb_probe,gb_ref,envs_to_plot,reps_to_
         ax[i,0].get_yaxis().set_visible(False)
         ax[i,0].invert_yaxis()
 
-        normalization_factor = avg_max_rwd[env]
+        normalization_factor = avg_max_rwd[env[0:22]]
         for g, gb in enumerate(gbs):
             for r, rep in enumerate(reps_to_plot):
                 linevalues_avgs = []
@@ -756,7 +757,7 @@ def compare_perf_over_envs_violins_sidebyside(gb_probe,gb_ref,envs_to_plot,reps_
         ax[i,0].get_yaxis().set_visible(False)
         ax[i,0].invert_yaxis()
 
-        normalization_factor = avg_max_rwd[env]
+        normalization_factor = avg_max_rwd[env[0:22]]
         for g, gb in enumerate(gbs):
             for r, rep in enumerate(reps_to_plot):
                 dats =[]
@@ -847,7 +848,7 @@ def compare_avg_performance_against_random(probe_gb, rand_gb,env,reps_to_plot,pc
     ax[0,0].get_yaxis().set_visible(False)
     ax[0,0].invert_yaxis()
 
-    norm = avg_max_rwd[env]
+    norm = avg_max_rwd[env[0:22]]
     for r, rep in enumerate(reps_to_plot):
         if r ==0:
             pass
@@ -958,7 +959,7 @@ def avg_performance_over_envs_relative(gb,envs_to_plot,reps_to_plot,pcts_to_plot
         ax[i,0].get_yaxis().set_visible(False)
         ax[i,0].invert_yaxis()
 
-        normalization_factor = avg_max_rwd[env]
+        normalization_factor = avg_max_rwd[env[0:22]]
 
         for r, rep in enumerate(reps_to_plot):
             v_list = list(gb.get_group((env, rep, cache_limits[env][100])))
@@ -1035,7 +1036,7 @@ def compare_avg_performance_lineplot(probe_gb,rand_gb,env,reps_to_plot,pcts_to_p
     ax[0,0].get_yaxis().set_visible(False)
     ax[0,0].invert_yaxis()
 
-    norm = avg_max_rwd[env]
+    norm = avg_max_rwd[env[0:22]]
     data_dict ={}
 
     for r, rep in enumerate(reps_to_plot):

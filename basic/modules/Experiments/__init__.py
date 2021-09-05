@@ -23,6 +23,8 @@ class expt(object):
 		self.agent.counter = 0
 		self.pol_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
 		self.val_grid = np.empty(self.env.shape)
+		# temp
+
 
 	def update_ledger(self, parent_folder, file_name, info_list):
 		with open(parent_folder + file_name, 'a+', newline='') as file:
@@ -103,7 +105,8 @@ class expt(object):
 					'trial_length': [],
 					'EC_snap': [],
 					'P_snap': [],
-					'V_snap': []
+					'V_snap': [],
+					'occupancy':np.zeros(self.env.nstates)
 					}
 		return data_log
 
@@ -160,7 +163,7 @@ class expt(object):
 		# get representation for given state of env. TODO: should be in agent to get representation?
 		state_representation = self.agent.get_state_representation(self.state)
 		readable = self.state
-
+		self.data['occupancy'][self.state]+=1
 		# get action from agent
 		action, log_prob, expected_value = self.agent.get_action(state_representation)
 		# take step in environment

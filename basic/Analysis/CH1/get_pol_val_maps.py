@@ -11,7 +11,7 @@ import pandas as pd
 import torch
 from modules.Agents.Networks import conv_PO_params, conv_FO_params
 from modules.Agents.Networks import flex_ActorCritic, shallow_ActorCritic
-from modules.Agents.RepresentationLearning.learned_representations import convs, reward_convs, onehot, sr
+from modules.Agents.RepresentationLearning.learned_representations import convs, reward_convs, onehot, sr, place_cell, random
 from Analysis.analysis_utils import get_avg_std, get_grids, analysis_specs, LINCLAB_COLS, linc_coolwarm, linc_coolwarm_r, make_env_graph, compute_graph_distance_matrix
 from modules.Utils import running_mean as rm
 
@@ -267,18 +267,17 @@ def plot_learned_val_pol_all():
 env_name = envs[1]
 env =gym.make(env_name)
 plt.close()
-rep_dict = {'sr':sr, 'onehot':onehot}
-rep_name = 'onehot'
+rep_dict = {'analytic successor':sr, 'onehot':onehot, 'place_cell':place_cell, 'random':random}
+rep_name = 'place_cell'
 if rep_name == 'conv_latents' or rep_name=='rwd_conv_latents':
     pol, val, state_reps = get_conv_agent_pol_valmaps(df, env_name, rep_name, type='h0')
 else:
-    pol,val, rwd = get_shallow_fc_agent_pol_valmaps_from_saved(env_name[:-1],rep_name,49)
+    #pol,val, rwd = get_shallow_fc_agent_pol_valmaps_from_saved(env_name[:-1],rep_name,49)
     state_reps, _ , __, __ = rep_dict[rep_name](env)
-
-fig,ax= plt.subplots(1,2)
-ax[0].plot(rm(rwd,200))
-ax[1].imshow(val)
-plt.show()
+    #fig,ax= plt.subplots(1,2)
+    #ax[0].plot(rm(rwd,200))
+    #ax[1].imshow(val)
+    #plt.show()
 
 for coord in [(5,5),(5,14),(14,5),(14,14)]:
     #coord = (5,5)
@@ -346,11 +345,61 @@ def plot_dist_to_neighbours(test_env_name, sim_ind,state_reps, geodesic_dist=Tru
     #plt.show()
     plt.close()
 print(env.useable)
+'''
 for gd in [0]:
-    for state in [105,114,285,294]:
+    for state in [339,79]: #[105,114,285,294]:
         plot_dist_to_neighbours(env_name,state,state_reps,geodesic_dist=gd, single_pos=True)
 
+'''
 
 
+def plot_grid_of_shit(test_env_name,state_reps, sim_ind, metric):
+    # make new env to run test in
+    env = gym.make(test_env_name)
+    plt.close()
+
+    # make graph of env states
+    G = make_env_graph(env)
+    gd= compute_graph_distance_matrix(G,env)
+    dist_in_state_space = np.delete(gd[sim_ind],sim_ind) #distance from sim ind to all other states
+
+    cmap = linc_coolwarm_r #cmx.get_cmap('Spectral_r') #
+    try:
+        reps_as_matrix = np.zeros((400,state_reps[0].shape[1]))
+    except:
+        reps_as_matrix = np.zeros((400,state_reps[0].shape[0]))
+    reps_as_matrix[:]  = np.nan
+
+    for ind, (k,v) in enumerate(state_reps.items()):
+        reps_as_matrix[k] = v
+        if k in env.obstacle:
+            reps_as_matrix[k,:] = np.nan
 
 
+    RS = squareform(pdist(reps_as_matrix,metric=metric))
+    for state2d in env.obstacle:
+        RS[state2d,:] = np.nan
+        RS[:,state2d] = np.nan
+
+    dist_in_rep_space = np.delete(RS[sim_ind],sim_ind)
+
+    a = plt.imshow(RS[sim_ind].reshape(env.shape)/np.nanmax(RS[sim_ind]), cmap=cmap)
+    r,c = env.oneD2twoD(sim_ind)
+    plt.gca().add_patch(plt.Rectangle(np.add((c,r),(-0.5,-0.5)), .99, .99, edgecolor='k', fill=False, alpha=1))
+    plt.colorbar(a)
+    plt.gca().get_xaxis().set_visible(False)
+    plt.gca().get_yaxis().set_visible(False)
+    plt.savefig(f'../figures/CH1/representation_similarity/distance_metrics/{rep_name}{metric}.svg')
+    plt.show()
+
+#metric = 'euclidean'
+#plot_grid_of_shit('gridworld:gridworld-v4',state_reps, 169,metric)
+for rep_name in ['conv_latents','onehot','random','place_cell','analytic successor']:
+    if rep_name == 'conv_latents' or rep_name=='rwd_conv_latents':
+        pol, val, state_reps = get_conv_agent_pol_valmaps(df, env_name, rep_name, type='h0')
+    else:
+        #pol,val, rwd = get_shallow_fc_agent_pol_valmaps_from_saved(env_name[:-1],rep_name,49)
+        state_reps, _ , __, __ = rep_dict[rep_name](env)
+    
+    for e, metric in enumerate(['cityblock','euclidean','chebyshev']):
+        plot_grid_of_shit('gridworld:gridworld-v4',state_reps, 169,metric)

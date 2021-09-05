@@ -15,9 +15,9 @@ groups_to_split = ['env_name','representation','EC_cache_limit']
 gb = df.groupby(groups_to_split)["save_id"]
 
 if split_type == 'SU':
-    color_map = {'structured':LINCLAB_COLS['red'], 'unstructured':LINCLAB_COLS['blue']}
-    labels    = {'structured':'structured','unstructured':'unstructured'}
-    reps_to_plot = ['structured','unstructured']
+    color_map = {'structured':LINCLAB_COLS['red'], 'unstructured':LINCLAB_COLS['blue'], 'conv':LINCLAB_COLS['purple']}
+    labels    = {'structured':'structured','unstructured':'unstructured','conv':'latents'}
+    reps_to_plot = ['conv','structured','unstructured']
 
 elif split_type == 'allreps':
     color_map = plot_specs['rep_colors']
@@ -25,7 +25,7 @@ elif split_type == 'allreps':
     reps_to_plot = ['random','onehot','conv_latents','place_cell','analytic successor']
 
 envs_to_plot = ['gridworld:gridworld-v11','gridworld:gridworld-v41','gridworld:gridworld-v31','gridworld:gridworld-v51']
-pcts_to_plot = [90,80,70,60,50,40,30,20,10]
+pcts_to_plot = [100,90,80,70,60,50,40,30,20,10]
 grids = get_grids(envs_to_plot)
 #avg_performance_over_envs(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,colors=color_map,labels=labels,legend='pcts',savename=f'restricted_{split_type}_bars',save=True)
 avg_perf_over_envs_lines(gb,envs_to_plot,reps_to_plot,pcts_to_plot,grids,colors=color_map,labels=labels,legend='reps',save=True,savename=f'restricted_{split_type}_lines',compare_chance=True)

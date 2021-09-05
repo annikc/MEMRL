@@ -31,7 +31,7 @@ representation_type = args.rep
 
 
 ## set parameters for run
-write_to_file         = 'conv_mf_training.csv'
+write_to_file         = 'conv_mf_training_with_occ.csv'
 relative_path_to_data = '../../Data/' # from within Tests/CH1
 env_name              = f'gridworld:gridworld-v{version}'
 num_trials            = 5000
@@ -58,7 +58,7 @@ agent = Agent(network, state_representations=state_reps)
 
 # expt - redefines logging function to keep track of network details
 ex = conv_expt(agent, env)
-ex.run(num_trials,num_events,printfreq=10)
+ex.run(num_trials,num_events)
 ex.record_log(env_name=env_name, representation_type=representation_name,
                   n_trials=num_trials, n_steps=num_events,
                   dir=relative_path_to_data, file=write_to_file)

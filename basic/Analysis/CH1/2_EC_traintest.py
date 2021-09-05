@@ -49,10 +49,9 @@ for e, env in enumerate(envs_to_plot):
             with open(parent_path+ f'results/{id_num}_data.p', 'rb') as f:
                 dats = pickle.load(f)
                 raw_score = dats['total_reward']
-                normalization = analysis_specs['avg_max_rwd'][env+'1']
+                normalization = analysis_specs['avg_max_rwd'][env[0:22]]
                 scaled_ = (np.asarray(raw_score)+2.5)/(normalization +2.5)
                 if len(scaled_) < upper_limit:
-                    print('hello', len(scaled_))
                     num_extras = upper_limit-len(scaled_)
                     last_200_mean = np.mean(scaled_[-5000:])
                     last_200_std = np.std(scaled_[-5000:])
@@ -63,10 +62,8 @@ for e, env in enumerate(envs_to_plot):
                         scaled_ = np.concatenate((scaled_, filler))
                     else:
                         scaled_ = np.concatenate((scaled_,nans))
-                print(len(scaled_))
                 total_avg_reward.append(rm(scaled_,smoothing))
         mean  = np.nanmean(total_avg_reward,axis=0)
-        print(len(mean),'meannnnn')
         maxes = mean+np.nanstd(total_avg_reward,axis=0)/np.sqrt(len(total_avg_reward))
         mins  = mean-np.nanstd(total_avg_reward,axis=0)/np.sqrt(len(total_avg_reward))
 
@@ -79,8 +76,8 @@ for e, env in enumerate(envs_to_plot):
         ax[e,r].fill_between(np.arange(len(mean)),mins,maxes,color='k', alpha=0.2)
 
         # get EC
-        df_gb = df.groupby(['env_name','representation','num_trials'])["save_id"]
-        id_list = list(df_gb.get_group((env+'1',rep,15000)))
+        df_gb = df.groupby(['env_name','representation','num_trials','extra_info'])["save_id"]
+        id_list = list(df_gb.get_group((env+'1',rep,15000,'x')))
         print("EC",env, rep, len(id_list))
         total_avg_reward = []
         for i, id_num in enumerate(id_list):
@@ -88,30 +85,21 @@ for e, env in enumerate(envs_to_plot):
             with open(parent_path+ f'results/{id_num}_data.p', 'rb') as f:
                 dats = pickle.load(f)
                 raw_score = dats['total_reward']
-                normalization = analysis_specs['avg_max_rwd'][env+'1']
+                normalization = analysis_specs['avg_max_rwd'][env[0:22]]
                 ECscaled_ = (np.asarray(raw_score)+2.5)/(normalization +2.5)
                 if len(ECscaled_) < upper_limit:
-                    print('hello', len(ECscaled_))
                     num_extras = upper_limit-len(ECscaled_)
-                    #last_200_mean = np.mean(scaled_[-500:])
-                    #last_200_std = np.std(scaled_[-500:])
-                    #filler = np.random.normal(last_200_mean,last_200_std,num_extras)
-                    #copies = np.asarray(list(scaled_[-5000:])*3)
-                    #np.random.shuffle(copies)
                     nans = np.zeros(num_extras)
                     nans[:] = np.nan
                     if list(df.loc[df['save_id']==id_num]['load_from'])[0] == ' ':
-                        print('starter')
                         full_scaled_ = np.concatenate((ECscaled_, nans))
                     else:
-                        print('ender')
                         if env[-1]=='5':
                             full_scaled_ = np.concatenate((nans, ECscaled_+0.07))
                         else:
                             full_scaled_ = np.concatenate((nans, ECscaled_))
                 total_avg_reward.append(full_scaled_)
         ECmean  = rm(np.nanmean(total_avg_reward,axis=0),smoothing)
-        print(len(ECmean))
         maxes = ECmean+rm(np.nanstd(total_avg_reward,axis=0),smoothing)/np.sqrt(len(total_avg_reward))
         mins  = ECmean-rm(np.nanstd(total_avg_reward,axis=0),smoothing)/np.sqrt(len(total_avg_reward))
 
@@ -127,7 +115,7 @@ for e, env in enumerate(envs_to_plot):
     ax[e,0].set_yticklabels([0,100],fontsize=ftsz)
     ax[e,0].set_ylabel('Performance \n(% Optimal)',fontsize=ftsz)
 
-ax[e,0].set_xlim([5000-smoothing-50,5000+100])
+#ax[e,0].set_xlim([5000-smoothing-50,5000+100])
 '''
 for i in range(2):
     ax[e,i].set_xlabel('Episodes', fontsize=ftsz)
