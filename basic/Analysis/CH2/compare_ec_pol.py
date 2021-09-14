@@ -77,7 +77,7 @@ def get_KLD(data,probe_state,trial_num):
     KLD_array[:] = np.nan
     entropy_array = np.zeros(env.shape)
     entropy_array[:] = np.nan
-    ec_pol_grid = np.zeros(env.shape, dtype=[(x, 'f8') for x in env.action_list])
+    ec_pol_grid = np.zeros((*env.shape,4))#np.zeros(env.shape, dtype=[(x, 'f8') for x in env.action_list])
 
     blank_mem = Memory(cache_limit=400, entry_size=4)
     blank_mem.cache_list = data['ec_dicts'][trial_num]
@@ -87,7 +87,7 @@ def get_KLD(data,probe_state,trial_num):
         pol = blank_mem.recall_mem(sr_rep)
         twoD = env.oneD2twoD(k)
         KLD_array[twoD] = sum(rel_entr(list(probe_pol),list(pol)))
-        ec_pol_grid[twoD] = tuple(pol)
+        ec_pol_grid[twoD][:] = pol
         entropy_array[twoD] = entropy(pol,base=2)
 
     return KLD_array,ec_pol_grid,entropy_array
@@ -171,9 +171,9 @@ def plot_maps(env_name, rep, kld_ent = 'ent'):
 
         K = []
         if pct ==100:
-            start=999
+            start=699
         else:
-            start=999
+            start=699
         for x in range(start,1000):
             print(x)
             kld_, ec_pols,entropy_ = get_KLD(data, env.twoD2oneD(probe_state), x)
@@ -184,7 +184,7 @@ def plot_maps(env_name, rep, kld_ent = 'ent'):
             E.append(ec_pols)
         kld = np.mean(K, axis=0)
 
-        a = ax[i].imshow(kld,vmin=0,vmax=2.,cmap='viridis')
+        a = ax[i].imshow(kld,vmin=0,vmax=2.,cmap='Spectral_r')
         print(np.nanmax(kld))
         ax[i].add_patch(plt.Rectangle(np.add((14,14),(-0.5,-0.5)),1,1, fill=False,edgecolor='w'))
         ax[i].set_title(f'{pct}')
@@ -193,8 +193,35 @@ def plot_maps(env_name, rep, kld_ent = 'ent'):
     plt.suptitle(f'{rep}')
     plt.colorbar(a)
     format ='svg'
-    plt.savefig(f'../figures/CH2/viridis_longrun_{kld_ent}{env_name[-2:]}_{rep}.{format}',format=format)
+    plt.savefig(f'../figures/CH2/spectral_longrun_{kld_ent}{env_name[-2:]}_{rep}.{format}',format=format)
     plt.show()
+
+def test_avg_POLmaps(env_name, rep, kld_ent = 'ent'):
+    probe_state = (13,14)
+
+    E = []
+    for i, pct in enumerate([100,75,50,25]):
+        run_id = list(gb.get_group((env_name,rep,cache_limits[env_name][pct])))[0]
+        print(run_id)
+
+        with open(f'../../Data/results/{run_id}_data.p', 'rb') as f:
+            data = pickle.load(f)
+
+        K = []
+        count = 0
+        start=948
+        E = np.zeros((20,20,4))
+        for x in range(start,1000):
+            print(x)
+            kld_, ec_pols,entropy_ = get_KLD(data, env.twoD2oneD(probe_state), x)
+            E += ec_pols
+            count+= 1
+
+        avg = E/count
+        print((avg[0,0,:]))
+        plot_pref_pol(env,avg)
+
+
 
 def get_mem_maps(data,trial_num=-1,full_mem=True):
     blank_mem = Memory(cache_limit=400, entry_size=4)
@@ -360,9 +387,10 @@ def plot_avg_laplace(env_name, pcts_to_plot,reps_to_plot):
 
 #plot_avg_laplace(env_name,pcts_to_plot=[100,75,50,25],reps_to_plot=['analytic successor','onehot'])
 
-for rep in ['analytic successor', 'onehot']:
-    plot_maps(env_name, rep)
+#for rep in ['analytic successor', 'onehot']:
+    #plot_maps(env_name, rep)
 
+test_avg_POLmaps(env_name, rep)
 
 
 

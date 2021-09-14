@@ -389,17 +389,34 @@ def plot_grid_of_shit(test_env_name,state_reps, sim_ind, metric):
     plt.colorbar(a)
     plt.gca().get_xaxis().set_visible(False)
     plt.gca().get_yaxis().set_visible(False)
-    plt.savefig(f'../figures/CH1/representation_similarity/distance_metrics/{rep_name}{metric}.svg')
+    plt.savefig(f'../figures/CH1/representation_similarity/distance_metrics/{test_env_name[-2:]}{rep_name}{metric}.svg')
     plt.show()
 
+
+
+def show_place_cell(env):
+    index = 169
+    state_reps, _, __, ___ = place_cell(env)
+    plt.figure()
+    a = plt.imshow(state_reps[index].reshape(20,20))
+    for i in range(len(state_reps[index])):
+        coord = env.oneD2twoD(i)
+        plt.text(coord[1],coord[0]+0.1,f'{state_reps[index][i]:.2f}',color='w', ha='center', fontsize=6)
+    plt.colorbar(a)
+    plt.show()
+
+show_place_cell(gym.make('gridworld:gridworld-v1'))
 #metric = 'euclidean'
 #plot_grid_of_shit('gridworld:gridworld-v4',state_reps, 169,metric)
-for rep_name in ['conv_latents','onehot','random','place_cell','analytic successor']:
-    if rep_name == 'conv_latents' or rep_name=='rwd_conv_latents':
-        pol, val, state_reps = get_conv_agent_pol_valmaps(df, env_name, rep_name, type='h0')
-    else:
-        #pol,val, rwd = get_shallow_fc_agent_pol_valmaps_from_saved(env_name[:-1],rep_name,49)
-        state_reps, _ , __, __ = rep_dict[rep_name](env)
-    
-    for e, metric in enumerate(['cityblock','euclidean','chebyshev']):
-        plot_grid_of_shit('gridworld:gridworld-v4',state_reps, 169,metric)
+def show_all_sim_maps(reps_to_plot):
+    for rep_name in reps_to_plot: #['conv_latents','onehot','random','place_cell','analytic successor']:
+        if rep_name == 'conv_latents' or rep_name=='rwd_conv_latents':
+            pol, val, state_reps = get_conv_agent_pol_valmaps(df, env_name, rep_name, type='h0')
+        else:
+            #pol,val, rwd = get_shallow_fc_agent_pol_valmaps_from_saved(env_name[:-1],rep_name,49)
+            state_reps, _ , __, __ = rep_dict[rep_name](env)
+
+        for e, metric in enumerate(['cityblock','euclidean','chebyshev']):
+            plot_grid_of_shit('gridworld:gridworld-v4',state_reps, 105,metric)
+
+#show_all_sim_maps(reps_to_plot=['place_cell'])

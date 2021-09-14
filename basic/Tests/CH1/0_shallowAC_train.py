@@ -47,7 +47,8 @@ AC_head_agent = nets.shallow_ActorCritic(input_dims, hidden_dims=200, output_dim
 memory = None #Memory.EpisodicMemory(cache_limit=cache_size_for_env, entry_size=env.action_space.n)
 
 agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
-
+#from torchsummary import summary
+#print(summary(AC_head_agent, (2,20,20)))
 
 run = expt(agent, env)
 run.run(NUM_TRIALS=num_trials, NUM_EVENTS=num_events)

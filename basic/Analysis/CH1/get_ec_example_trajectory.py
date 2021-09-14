@@ -28,6 +28,54 @@ reps_to_plot = ['onehot','analytic successor']
 pcts_to_plot = [100,75,50,25]
 cache_limits = analysis_specs['cache_limits']
 
+rep = reps_to_plot[1]
+cachelim = cache_limits[env_name][100]
+id_list = list(gb.get_group((env_name,rep,cachelim)))
+def reconstruct_mem(env, ec_dicts,state_reps, index):
+    ec_dict = ec_dicts[index]
+    blank_mem = Memory(cache_limit=400, entry_size=4)
+    blank_mem.cache_list = ec_dict
+    ec_pols = np.zeros((20, 20), dtype=[(x,'f8') for x in env.action_list])
+    #ec_pols[:] = np.nan
+    ec_vals = np.zeros((20,20))
+    ec_vals[:] = np.nan
+    for ind in env.useable: #for dict_key in list(ec_dict.keys()):
+
+        index_1d = env.twoD2oneD(ind) #ec_dict[dict_key][-1]
+        index_2d = ind#env.oneD2twoD(index_1d)
+
+        dict_key = state_reps[index_1d]
+        nearest_act, d = blank_mem.similarity_measure(dict_key)
+        val = np.nanmean(ec_dict[nearest_act][0][:,0])
+        pol = blank_mem.recall_mem(dict_key)
+        ec_vals[index_2d] = val
+        ec_pols[index_2d] = tuple(pol)
+
+    return ec_vals, ec_pols
+
+
+
+
+
+
+with open(f'../../Data/results/{id_list[1]}_data.p','rb') as f:
+    print(id_list[0])
+    dats = pickle.load(f)
+    print(dats.keys())
+    ec_dict =dats['ec_dicts']
+
+state_reps, _, __, ___ = sr(env)
+
+val,pol  = reconstruct_mem(env, ec_dict, state_reps, 899)
+a = plt.imshow(val, vmin=4, vmax=10)
+plt.colorbar(a)
+#plt.savefig('../figures/CH1/exampleECvals.svg')
+
+plt.show()
+
+plot_pref_pol(env,pol)
+
+
 #save_processed_data(env_name,cache_limits,pcts_to_plot,reps_to_plot,save='xy')
 
 def sample_from_ec_pol(state_reps, ec_dict,**kwargs):
@@ -97,3 +145,4 @@ def plot_example_trajectories(env,reps_to_plot, pcts_to_plot):
         ax[r,0].set_ylabel(f"{run_labels[rep]}")
     plt.savefig('../figures/CH2/example_trajectories1.svg')
     plt.show()
+

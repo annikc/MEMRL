@@ -84,7 +84,8 @@ print(network)
 
 
 # instantiate the environment for the experiment
-env = gym.make(env_name+'1')
+test_env = env_name+'1'
+env = gym.make(test_env)
 plt.close()
 
 # get representation type, associated parameters to specify the network dimensions
@@ -103,7 +104,7 @@ cache_limits = {'gridworld:gridworld-v11':{100:400, 75:300, 50:200, 25:100},
                 'gridworld:gridworld-v31':{100:365, 75:273, 50:182, 25:91},
                 'gridworld:gridworld-v41':{100:384, 75:288, 50:192, 25:96},
                 'gridworld:gridworld-v51':{100:286, 75:214, 50:143, 25:71}}
-cache_size_for_env = int(cache_limits[env_name+'1'][100] *(cache_size/100))
+cache_size_for_env = int(cache_limits[test_env][100] *(cache_size/100))
 memory = Memory(entry_size=env.action_space.n, cache_limit=cache_size_for_env, distance=distance_metric)
 
 # reinitalize agent with new network
@@ -116,4 +117,4 @@ agent = Agent(network, memory, state_representations=latent_state_reps)
 # expt - redefines logging function to keep track of network details
 ex = expt(agent, env)
 ex.run(num_trials,num_events)
-ex.record_log(env_name=env_name, representation_type=representation_name, n_trials=num_trials, n_steps=num_events, dir=relative_path_to_data, file=write_to_file, load_from=agent_id)
+ex.record_log(env_name=test_env, representation_type=representation_name, n_trials=num_trials, n_steps=num_events, dir=relative_path_to_data, file=write_to_file, load_from=agent_id)

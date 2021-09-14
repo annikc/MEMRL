@@ -46,7 +46,7 @@ write_to_file = 'bootstrapped_retrain_shallow_AC.csv'
 
 env_name = f'gridworld:gridworld-v{version}1'
 
-num_trials = 5000
+num_trials = 15000
 num_events = 250
 
 # make gym environment

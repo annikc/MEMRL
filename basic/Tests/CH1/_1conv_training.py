@@ -53,6 +53,9 @@ print(network_parameters.__dict__)
 
 # make a new network instance
 network = Network(network_parameters)
+#from torchsummary import summary
+#print(summary(network, (2,20,20)))
+
 # reinitalize agent with new network
 agent = Agent(network, state_representations=state_reps)
 

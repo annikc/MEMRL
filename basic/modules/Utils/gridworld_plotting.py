@@ -281,7 +281,7 @@ def plot_pref_pol(maze, policy_array, save=False, **kwargs):
         rwd_r, rwd_c = rwd_loc
         ax1.add_patch(plt.Rectangle((rwd_c, rwd_r), width=0.99, height=1, linewidth=1, ec='white', fill=False))
 
-    chance_threshold = kwargs.get('threshold', 0.18)  # np.round(1 / len(maze.actionlist), 6)
+    chance_threshold = kwargs.get('threshold', 0.01)  # np.round(1 / len(maze.actionlist), 6)
 
     for coord in maze.useable:
         i = coord[0]
@@ -302,10 +302,11 @@ def plot_pref_pol(maze, policy_array, save=False, **kwargs):
             pass
         else:
             colorVal1 = scalarMap.to_rgba(entropy(policy))
-            if entropy(policy) > 1.2:
-                pass
-            else:
-                ax1.arrow(j + 0.5, i + 0.5, dx, dy, head_width=0.3, head_length=0.5, color=colorVal1)
+            #if entropy(policy) > 1.2:
+            #    pass
+            #else:print(max(policy))
+            print(max(policy))
+            ax1.arrow(j + 0.5, i + 0.5, dx, dy, head_width=0.3, head_length=0.49, color=colorVal1, alpha=max(policy))
 
 
     ax1.set_aspect('equal')
