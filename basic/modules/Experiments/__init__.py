@@ -106,7 +106,9 @@ class expt(object):
 					'EC_snap': [],
 					'P_snap': [],
 					'V_snap': [],
-					'occupancy':np.zeros(self.env.nstates)
+					'occupancy':np.zeros(self.env.nstates),
+					'EC_occupancy':np.zeros(self.env.nstates),
+					'MF_occupancy':np.zeros(self.env.nstates)
 					}
 		return data_log
 
