@@ -73,5 +73,5 @@ agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 
 run = expt(agent, env)
 run.run(NUM_TRIALS=num_trials, NUM_EVENTS=num_events)
-run.record_log(env_name, representation_name,num_trials,num_events,dir=directory, file=write_to_file, load_from=load_from)
+run.record_log(env_name, representation_name,num_trials,num_events,dir=directory, file=write_to_file, load_from=load_from, extra_info='occ_map')
 
