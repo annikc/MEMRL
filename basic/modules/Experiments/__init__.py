@@ -159,11 +159,14 @@ class expt(object):
 			self.t = time.time()
 
 
-	def single_step(self,trial):
+	def single_step(self,trial, set=0):
 		# get representation for given state of env. TODO: should be in agent to get representation?
 		state_representation = self.agent.get_state_representation(self.state)
 		readable = self.state
-		self.data['occupancy'][self.state]+=1
+		if set ==0:
+			self.data['EC_occupancy'][self.state]+=1
+		elif set ==1:
+			self.data['MF_occupancy'][self.state]+=1
 		# get action from agent
 		action, log_prob, expected_value = self.agent.get_action(state_representation)
 		# take step in environment
@@ -705,7 +708,7 @@ class Bootstrap_flat(gridworldExperiment):
 
 				# get a trajectory in the environment up to NUM_EVENTS steps
 				for event in range(NUM_EVENTS):
-					done = self.single_step(trial)
+					done = self.single_step(trial,set)
 					if done:
 						break
 

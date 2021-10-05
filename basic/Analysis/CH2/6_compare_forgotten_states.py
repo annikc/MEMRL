@@ -57,7 +57,8 @@ def get_avg_array(idlist):
             data = pickle.load(f)
 
         num_forgets = np.nansum(data['forgotten_states'])
-        objs.append(data['forgotten_states']/num_forgets)
+        scaled_forgets = data['forgotten_states']/num_forgets
+        objs.append(scaled_forgets)
 
     return np.nanmean(objs, axis=0)
 
@@ -83,6 +84,8 @@ def plot_forgetting_frequency(envs_to_plot, reps_to_plot, **kwargs):
             a = ax[e,3*r+i+1].imshow(((objs[0]-objs[1])+0.002)/0.004,cmap=fade_cm,vmin=0,vmax=1)
             fig.colorbar(a,ax=ax[e,3*r+i])
     plt.show()
+
+plot_forgetting_frequency(envs_to_plot[0:2],reps_to_plot,pct=25)
 
 def plot_forgetting_frequency_diff_only(envs_to_plot, reps_to_plot, **kwargs):
     pct = kwargs.get('pct',75)
@@ -117,7 +120,7 @@ def plot_forgetting_frequency_diff_only(envs_to_plot, reps_to_plot, **kwargs):
             ax[e,r].get_xaxis().set_visible(False)
             ax[e,r].get_yaxis().set_visible(False)
             ax[0,r].set_title(f'{rep}')
-    plt.savefig(f'../figures/CH2/forgetting_map_{pct}.svg')
+    #plt.savefig(f'../figures/CH2/forgetting_map_{pct}.svg')
     plt.show()
-plot_forgetting_frequency_diff_only(envs_to_plot,reps_to_plot,pct=25)
+#plot_forgetting_frequency_diff_only(envs_to_plot,reps_to_plot,pct=25)
 
