@@ -73,7 +73,5 @@ agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 
 run = expt(agent, env)
 run.run(NUM_TRIALS=num_trials, NUM_EVENTS=num_events,pv_snap=True)
-for i in run.data.keys():
-    print(i, len(run.data[i]))
-#run.record_log(env_name, representation_name,num_trials,num_events,dir=directory, file=write_to_file, load_from=load_from, extra='pv_map')
+run.record_log(env_name, representation_name,num_trials,num_events,dir=directory, file=write_to_file, load_from=load_from, extra='pv_map')
 
