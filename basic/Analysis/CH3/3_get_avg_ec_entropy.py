@@ -82,8 +82,11 @@ def get_KLD(data,probe_state,trial_num):
     blank_mem = Memory(cache_limit=400, entry_size=4)
     blank_mem.cache_list = data['ec_dicts'][trial_num]
     probe_pol = blank_mem.recall_mem(probe_rep)
-    for k in state_reps.keys():
-        sr_rep = state_reps[k]
+
+    #for k in state_reps.keys():
+    for sr_rep in blank_mem.cache_list.keys():
+        #sr_rep = state_reps[k]
+        k = blank_mem.cache_list[sr_rep][2]
         pol = blank_mem.recall_mem(sr_rep)
         twoD = env.oneD2twoD(k)
         KLD_array[twoD] = sum(rel_entr(list(probe_pol),list(pol)))
@@ -157,44 +160,46 @@ def plot_dist_v_entropy(kld_ent = 'ent'):
     plt.savefig(f'../figures/CH2/dist_v_{kld_ent}{env_name[-2:]}_{rep}.{format}',format=format)
     plt.show()
 
-def plot_maps(env_name, rep, kld_ent = 'ent'):
+def plot_avg_entropy(env_name, reps_to_plot, pcts_to_plot =[100,75,50,25], kld_ent = 'ent'):
     probe_state = (13,14)
-    fig, ax = plt.subplots(1,4)
-
     E = []
-    for i, pct in enumerate([100,75,50,25]):
-        run_id = list(gb.get_group((env_name,rep,cache_limits[env_name][pct])))[0]
-        print(run_id)
+    avg_entropy = {}
+    std_entropy = {}
+    for rep in reps_to_plot:
+        avg_entropy[rep] = []
+        std_entropy[rep] = []
+        for i, pct in enumerate(pcts_to_plot):
+            run_id = list(gb.get_group((env_name,rep,cache_limits[env_name][pct])))[0]
+            print(run_id)
 
-        with open(f'../../Data/results/{run_id}_data.p', 'rb') as f:
-            data = pickle.load(f)
+            with open(f'../../Data/results/{run_id}_data.p', 'rb') as f:
+                data = pickle.load(f)
 
-        K = []
-        if pct ==100:
-            start=699
-        else:
-            start=699
-        for x in range(start,1000):
-            print(x)
-            kld_, ec_pols,entropy_ = get_KLD(data, env.twoD2oneD(probe_state), x)
-            if kld_ent =='ent':
-                K.append(entropy_)
-            elif kld_ent == 'kld':
-                K.append(kld_)
-            E.append(ec_pols)
-        kld = np.mean(K, axis=0)
+            K = []
+            if pct ==100:
+                start=999
+            else:
+                start=899
+            for x in range(start,1000):
+                print(x)
+                kld_, ec_pols,entropy_ = get_KLD(data, env.twoD2oneD(probe_state), x)
+                avg_ent_for_trial = np.nanmean(entropy_)
+                K.append(avg_ent_for_trial)
 
-        a = ax[i].imshow(kld,vmin=0,vmax=2.,cmap='Spectral_r')
-        print(np.nanmax(kld))
-        ax[i].add_patch(plt.Rectangle(np.add((14,14),(-0.5,-0.5)),1,1, fill=False,edgecolor='w'))
-        ax[i].set_title(f'{pct}')
-        ax[i].get_xaxis().set_visible(False)
-        ax[i].get_yaxis().set_visible(False)
-    plt.suptitle(f'{rep}')
-    plt.colorbar(a)
-    format ='svg'
-    plt.savefig(f'../figures/CH2/spectral_longrun_{kld_ent}{env_name[-2:]}_{rep}.{format}',format=format)
+            each_ent = np.mean(K, axis=0)
+            std = np.nanstd(K)
+            mean_ent = np.nanmean(K)
+            print(mean_ent)
+            avg_entropy[rep].append(mean_ent)
+            std_entropy[rep].append(std)
+
+    for r, rep in enumerate(reps_to_plot):
+        barwidth=0.3
+        plt.bar(np.arange(len(pcts_to_plot))+(barwidth*r), avg_entropy[rep], yerr= std_entropy[rep], width=barwidth, color= color_map[rep], alpha=1)
+    plt.xticks(np.arange(len(pcts_to_plot))+(barwidth/2), labels=pcts_to_plot)
     plt.show()
+
+
 
 def test_avg_POLmaps(env_name, rep, kld_ent = 'ent'):
     probe_state = (13,14)
@@ -387,10 +392,9 @@ def plot_avg_laplace(env_name, pcts_to_plot,reps_to_plot):
 
 #plot_avg_laplace(env_name,pcts_to_plot=[100,75,50,25],reps_to_plot=['analytic successor','onehot'])
 
-#for rep in ['analytic successor', 'onehot']:
-    #plot_maps(env_name, rep)
+plot_avg_entropy(env_name, ['analytic successor', 'onehot'])
 
-test_avg_POLmaps(env_name, rep)
+#test_avg_POLmaps(env_name, rep)
 
 
 

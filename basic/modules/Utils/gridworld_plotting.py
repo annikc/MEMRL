@@ -305,8 +305,7 @@ def plot_pref_pol(maze, policy_array, save=False, **kwargs):
             #if entropy(policy) > 1.2:
             #    pass
             #else:print(max(policy))
-            print(max(policy))
-            ax1.arrow(j + 0.5, i + 0.5, dx, dy, head_width=0.3, head_length=0.49, color=colorVal1, alpha=max(policy))
+            ax1.arrow(j + 0.5, i + 0.5, dx, dy, head_width=0.3, head_length=0.49, color=colorVal1)
 
 
     ax1.set_aspect('equal')
