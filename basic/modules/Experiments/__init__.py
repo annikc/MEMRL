@@ -689,6 +689,7 @@ class Bootstrap_flat(gridworldExperiment):
 			self.t = time.time()
 
 	def run(self, NUM_TRIALS, NUM_EVENTS, **kwargs):
+		take_pv_snap = kwargs.get('pv_snap',False)
 		self.print_freq = kwargs.get('printfreq', 100)
 		self.reset_data_logs()
 		self.data['bootstrap_reward'] = []
@@ -723,7 +724,8 @@ class Bootstrap_flat(gridworldExperiment):
 					mfrwd = self.reward_sum
 
 			#print(f'{trial}: EC {ecrwd:.3f}  /  MF {mfrwd:.3f}')
-			#self.take_snapshot()
+			if take_pv_snap:
+				self.take_snapshot()
 
 	def record_log(self, env_name, representation_type, n_trials, n_steps, **kwargs): ## TODO -- set up logging
 		parent_folder = kwargs.get('dir', './Data/')
@@ -797,6 +799,31 @@ class Bootstrap_shallow(Bootstrap_flat):
 		super().__init__(agent, environment)
 		self.policy_grid = np.zeros(self.env.shape, dtype=[(x, 'f8') for x in self.env.action_list])
 		self.value_grid  = np.empty(self.env.shape)
+
+	def take_snapshot(self):
+		states2d = self.sample_states
+		reps = self.sample_reps
+
+		#get EC policies
+		EC_pols = self.policy_grid.copy()
+
+		#get MF policies, values
+		MF_pols = self.policy_grid.copy()
+		MF_vals = self.value_grid.copy()
+
+		for rep, s in zip(reps, states2d):
+			p, v = self.agent.MFC(rep)
+			MF_vals[s[0], s[1]] = v
+			MF_pols[s[0], s[1]] = tuple(p)
+
+			#if self.agent.EC != None:
+			#	ec_p = self.agent.EC.recall_mem(tuple(rep), timestep=self.agent.counter)
+			#	EC_pols[s[0],s[1]] = tuple(ec_p)
+
+		self.data['V_snap'].append(MF_vals)
+		self.data['P_snap'].append(MF_pols)
+		#if self.agent.EC != None:
+		#	self.data['EC_snap'].append(EC_pols)
 
 	def record_log(self, env_name, representation_type, n_trials, n_steps, **kwargs): ## TODO -- set up logging
 		parent_folder = kwargs.get('dir', './Data/')
