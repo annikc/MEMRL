@@ -104,20 +104,20 @@ def plot_valmap(maze, value_array, save=False, **kwargs):
     ax1 = fig.add_axes([0, 0, 0.85, 0.85])
     axc = fig.add_axes([0.75, 0, 0.05, 0.85])
     vmin, vmax = kwargs.get('v_range', [0, 1])
-    cmap = plt.cm.Spectral_r
+    cmap = kwargs.get('cmap',plt.cm.Spectral_r)
     cNorm = colors.Normalize(vmin=vmin, vmax=vmax)
     for i in maze.obstacles_list:
         vals[i] = np.nan
     cb1 = colorbar.ColorbarBase(axc, cmap=cmap, norm=cNorm)
-    ax1.pcolor(vals, cmap=cmap, vmin=vmin, vmax=vmax)
+    ax1.imshow(vals, cmap=cmap, vmin=vmin, vmax=vmax)
 
     # add patch for reward location/s (red)
     for rwd_loc in maze.rewards:
         rwd_y, rwd_x = rwd_loc
-        ax1.add_patch(plt.Rectangle((rwd_y, rwd_x), width=0.99, height=1, linewidth=1, ec='white', fill=False))
+        ax1.add_patch(plt.Rectangle((rwd_y-0.5, rwd_x-0.5), width=0.99, height=1, linewidth=1, ec='white', fill=False))
 
     ax1.set_aspect('equal')
-    ax1.invert_yaxis()
+    #ax1.invert_yaxis()
     ax1.set_title(title)
     ax1.get_xaxis().set_visible(False)
     ax1.get_yaxis().set_visible(False)

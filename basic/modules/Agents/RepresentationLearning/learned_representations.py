@@ -87,7 +87,8 @@ def sr(env, **kwargs):
             sr_reps[index] = np.zeros_like(sr_mat[index])
         else:
             sr_reps[index] = sr_mat[index] / max(sr_mat[index])
-
+    for index in env.obstacle:
+        sr_reps.pop(index)
     return sr_reps, name, dim, []
 
 

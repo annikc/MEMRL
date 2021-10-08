@@ -4,7 +4,6 @@ import pandas as pd
 from Analysis.analysis_utils import structured_unstructured, LINCLAB_COLS, plot_specs, analysis_specs
 from Analysis.analysis_utils import get_grids
 from modules.Utils import running_mean as rm
-from Analysis.analysis_utils import avg_performance_over_envs, avg_perf_over_envs_lines, avg_performance_over_envs_violins
 import pickle
 import matplotlib.pyplot as plt
 
@@ -25,6 +24,7 @@ gb_base = base_.groupby(groups_to_split+['num_trials'])["save_id"]
 gb = df.groupby(groups_to_split+['EC_cache_limit','num_trials'])["save_id"]
 
 colors = {100:LINCLAB_COLS['red'], 75: LINCLAB_COLS['orange'], 50:LINCLAB_COLS['green'], 25:LINCLAB_COLS['purple']}
+
 def plot_compare_conv_retraining(envs_to_plot, pcts_to_plot, rep):
     fig, ax = plt.subplots(len(envs_to_plot),3, figsize=(10,12))
     for e, env in enumerate(envs_to_plot):
@@ -53,6 +53,7 @@ def plot_compare_conv_retraining(envs_to_plot, pcts_to_plot, rep):
         for id_num in id_list[0:1]:
             with open(parent_path+f'results/{id_num}_data.p','rb') as f:
                 dats = pickle.load(f)
+
                 raw_score = dats['total_reward'][5000:15000]
                 normalization = analysis_specs['avg_max_rwd'][env[0:22]]
                 transformed = rm((np.asarray(raw_score)+2.5)/(normalization +2.5) , 200)
@@ -101,11 +102,80 @@ def plot_compare_conv_retraining(envs_to_plot, pcts_to_plot, rep):
     plt.show()
 
 def plot_all_retraining(env, pcts_to_plot, reps_to_plot):
-    fig, ax = plt.subplots(2,2, figsize=(10,12))
+    fig, ax = plt.subplots(2,2, figsize=(14,10), sharex=True, sharey=True)
     for r, rep in enumerate(reps_to_plot):
         ## get MF only -- baseline
         id_list = gb_base.get_group((env[0:22],rep,30000))
         mf_retrain = []
+        for id_num in id_list:
+            with open(parent_path+f'results/{id_num}_data.p','rb') as f:
+                dats = pickle.load(f)
+                #print(id_num, dats.keys(), [len(dats[x]) for x in dats.keys()])
+                raw_score = dats['total_reward'][5000:20000]
+                normalization = analysis_specs['avg_max_rwd'][env[0:22]]
+                transformed = rm((np.asarray(raw_score)+2.5)/(normalization +2.5) , 200)
+                mf_retrain.append(transformed)
+        means = np.nanmean(mf_retrain,axis=0)
+        maxes = means+(np.nanstd(mf_retrain,axis=0)/np.sqrt(len(mf_retrain)))
+        mins  = means-(np.nanstd(mf_retrain,axis=0)/np.sqrt(len(mf_retrain)))
+        ax[r,1].plot(means, 'k', alpha=0.7)
+        ax[r,1].fill_between(np.arange(len(means)),mins,maxes, color='k', alpha=0.2)
+
+        print('EC bootstrapped data')
+        for p, pct in enumerate(pcts_to_plot):
+            print(pct)
+            ec_performance = []
+            mf_bootstrap = []
+            try:
+                id_list = gb.get_group((env,rep,int(cache_limits[env][100]*(pct/100)),15000))
+                print(env,pct, len(id_list))
+                for i, id_num in enumerate(id_list[0:2]):
+                    with open(parent_path+f'results/{id_num}_data.p','rb') as f:
+                        dats = pickle.load(f)
+                        raw_score = dats['bootstrap_reward'][0:15000]
+                        normalization = analysis_specs['avg_max_rwd'][env[0:22]]
+                        transformed = rm((np.asarray(raw_score)+2.5)/(normalization +2.5) , 200)
+                        mf_bootstrap.append(transformed)
+
+                        raw_score = dats['total_reward'][0:15000]
+                        normalization = analysis_specs['avg_max_rwd'][env[0:22]]
+                        transformed = rm((np.asarray(raw_score)+2.5)/(normalization +2.5) , 200)
+                        ec_performance.append(transformed)
+
+                means = np.nanmean(ec_performance,axis=0)
+                maxes = means+(np.nanstd(ec_performance,axis=0)/np.sqrt(len(ec_performance)))
+                mins  = means-(np.nanstd(ec_performance,axis=0)/np.sqrt(len(ec_performance)))
+                ax[r,0].plot(means, label=f'{pct}', color=colors[pct])
+                ax[r,0].fill_between(np.arange(len(means)),mins,maxes, color=colors[pct], alpha=0.2)
+
+                means = np.nanmean(mf_bootstrap,axis=0)
+                maxes = means+(np.nanstd(mf_bootstrap,axis=0)/np.sqrt(len(mf_bootstrap)))
+                mins  = means-(np.nanstd(mf_bootstrap,axis=0)/np.sqrt(len(mf_bootstrap)))
+                ax[r,1].plot(means, label=f'{pct}', color=colors[pct])
+                ax[r,1].fill_between(np.arange(len(means)),mins,maxes, color=colors[pct], alpha=0.2)
+
+            except:
+                print(f'no data for EC{env}{rep}{int(cache_limits[env][100]*(pct/100))}')
+        ax[0,0].set_title('Episodic Control')
+        ax[0,1].set_title('Model-Free Control')
+        for r in range(len(reps_to_plot)):
+            ax[r,0].legend(loc=0)
+            ax[r,1].legend(loc=0)
+            ax[r,0].set_ylabel(f'Performance (% Optimal)')
+            ax[r,0].set_ylim(0,1.1)
+            ax[r,1].set_ylim(0,1.1)
+        ax[1,0].set_xlabel('Episodes')
+        ax[1,1].set_xlabel('Episodes')
+    plt.savefig(f'../figures/CH3/example_bootstrap.svg')
+    plt.show()
+
+def plot_each_env_retraining(envs_to_plot, pcts_to_plot, rep):
+    fig, ax = plt.subplots(len(envs_to_plot),2, figsize=(14,10), sharex=True, sharey=True)
+    for e, env in enumerate(envs_to_plot):
+        ## get MF only -- baseline
+        id_list = gb_base.get_group((env[0:22],rep,30000))
+        mf_retrain = []
+        print(f'numMF retraining on pol = {len(id_list)}')
         for id_num in id_list:
             with open(parent_path+f'results/{id_num}_data.p','rb') as f:
                 dats = pickle.load(f)
@@ -116,8 +186,8 @@ def plot_all_retraining(env, pcts_to_plot, reps_to_plot):
         means = np.nanmean(mf_retrain,axis=0)
         maxes = means+(np.nanstd(mf_retrain,axis=0)/np.sqrt(len(mf_retrain)))
         mins  = means-(np.nanstd(mf_retrain,axis=0)/np.sqrt(len(mf_retrain)))
-        ax[r,1].plot(means, 'k', alpha=0.7)
-        ax[r,1].fill_between(np.arange(len(means)),mins,maxes, color='k', alpha=0.2)
+        ax[e,1].plot(means, 'k', alpha=0.7)
+        ax[e,1].fill_between(np.arange(len(means)),mins,maxes, color='k', alpha=0.2)
 
         print('EC bootstrapped data')
         for p, pct in enumerate(pcts_to_plot):
@@ -141,25 +211,28 @@ def plot_all_retraining(env, pcts_to_plot, reps_to_plot):
                         ec_performance.append(transformed)
 
                 means = np.nanmean(ec_performance,axis=0)
-                ax[r,0].plot(means, label=f'{pct}', color=colors[pct])
+                maxes = means+(np.nanstd(ec_performance,axis=0)/np.sqrt(len(ec_performance)))
+                mins  = means-(np.nanstd(ec_performance,axis=0)/np.sqrt(len(ec_performance)))
+                ax[e,0].plot(means, label=f'{pct}', color=colors[pct])
+                ax[e,0].fill_between(np.arange(len(means)),mins,maxes, color=colors[pct], alpha=0.2)
 
                 means = np.nanmean(mf_bootstrap,axis=0)
                 maxes = means+(np.nanstd(mf_bootstrap,axis=0)/np.sqrt(len(mf_bootstrap)))
                 mins  = means-(np.nanstd(mf_bootstrap,axis=0)/np.sqrt(len(mf_bootstrap)))
-                ax[r,1].plot(means, label=f'{pct}', color=colors[pct])
-                ax[r,1].fill_between(np.arange(len(means)),mins,maxes, color=colors[pct], alpha=0.2)
+                ax[e,1].plot(means, label=f'{pct}', color=colors[pct])
+                ax[e,1].fill_between(np.arange(len(means)),mins,maxes, color=colors[pct], alpha=0.2)
 
             except:
                 print(f'no data for EC{env}{rep}{int(cache_limits[env][100]*(pct/100))}')
-        ax[0,0].set_title('EC perf')
-        ax[0,1].set_title('Bootstrap Perf')
-        for r in range(len(reps_to_plot)):
-            ax[r,0].legend(loc=0)
-            ax[r,1].legend(loc=0)
-            ax[r,0].set_ylabel(f'{reps_to_plot[r]}')
+        ax[0,0].set_title('Episodic Control')
+        ax[0,1].set_title('Model-Free Control')
+        for r in range(len(envs_to_plot)):
+            ax[r,0].set_ylabel(f'Performance (% Optimal)')
             ax[r,0].set_ylim(0,1.1)
             ax[r,1].set_ylim(0,1.1)
-    #plt.savefig(f'../figures/CH3/example_bootstrap.svg')
+        ax[r,0].set_xlabel('Episodes')
+        ax[r,1].set_xlabel('Episodes')
+    plt.savefig(f'../figures/CH3/example_bootstrap_{rep}_all_env.svg')
     plt.show()
 
 def plot_single_retraining(env, pcts_to_plot, rep,index):
@@ -233,5 +306,6 @@ pcts_to_plot = [100,75,50,25]
 grids = get_grids(envs_to_plot)
 cache_limits = analysis_specs['cache_limits']
 #plot_single_retraining(envs_to_plot[1],[25,50,75,100],'structured',index=1)
-plot_all_retraining(envs_to_plot[1],[25,50,75,100],['structured','unstructured'])
+plot_all_retraining(envs_to_plot[1],pcts_to_plot,['structured'])
+#plot_each_env_retraining(envs_to_plot,[25,50,75,100],'unstructured')
 

@@ -91,6 +91,58 @@ def colorFader(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0)
     c2=np.array(mpl.colors.to_rgb(c2))
     return (1-mix)*c1 + mix*c2 #mpl.colors.to_hex()#
 
+col_set1 ={'blue':'#1f77b4',
+          'green':"#4bb900",
+          'yellow':'#ffe200',
+          'red':"#eb3920"}
+
+col_set2 ={'blue':'#0087d4',
+          'green':'#87c44b',
+          'yellow':'#f2883f',
+          'red':'#ca2d97'}
+
+col_set3 ={'blue':LINCLAB_COLS['blue'],
+          'green':LINCLAB_COLS['green'],
+          'yellow':LINCLAB_COLS['yellow'],
+          'red':LINCLAB_COLS['red']}
+
+col_set5 ={'blue':'#6f3d9a',
+          'green':'#07a8af',
+          'yellow':'#fcea10',
+          'red':'#ea6337'}
+
+
+n=90
+fade_1 = []
+fade_2 = []
+fade_3 = []
+fade_4 = []
+col_set = col_set1
+for i in range(n):
+    fade_1.append(colorFader(col_set['yellow'],col_set['red'],i/n))
+    fade_2.append(colorFader(col_set['red'],col_set['blue'],i/n))
+    fade_3.append(colorFader(col_set['blue'],col_set['green'],i/n))
+    fade_4.append(colorFader(col_set['green'],col_set['yellow'],i/n))
+
+
+fade = ListedColormap(np.vstack(fade_1 + fade_2 + fade_3 + fade_4))
+
+def convert_pol_array_to_pref_dir(pol_map):
+    '''
+    :param pol_map: flattened policy array
+    :return: array in polar coordinates
+    '''
+    dxdy = np.array([(0,-1),(0,1),(1,0),(-1,0)])
+    polar_coord = np.zeros(pol_map.shape)
+    polar_coord[:] = np.nan
+    for ind, x in enumerate(pol_map):
+        p = np.asarray(list(x))
+        if sum(p) !=0:
+            pref_dir = np.dot(p,dxdy)
+            polar_coord[ind] = np.degrees(np.arctan2(pref_dir[1],pref_dir[0]))%360
+
+    return polar_coord.reshape(20,20)
+
 def welchs_pval(ref_sample, query_sample):
     mean_ref = np.mean(ref_sample)
     sd_ref   = np.std(ref_sample)

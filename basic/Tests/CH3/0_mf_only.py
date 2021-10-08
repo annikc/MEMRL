@@ -30,7 +30,7 @@ write_to_file = 'naive_mf.csv'
 directory = '../../Data/' # ../../Data if you are in Tests/CH2
 env_name = f'gridworld:gridworld-v{version}'
 
-num_trials = 5000
+num_trials = 15000
 num_events = 250
 
 # make gym environment

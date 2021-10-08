@@ -33,7 +33,7 @@ reps_for_reads = {'onehot':'onehot', 'sr':'analytic successor', 'place_cell':'pl
 env_name = f'gridworld:gridworld-v{version}'
 directory = '../../Data/' # ../../Data if you are in Tests/CH2
 
-df = pd.read_csv(directory+'naive_mf.csv')
+df = pd.read_csv(directory+'train_only_shallowAC.csv')
 gb = df.groupby(['env_name','representation'])["save_id"]
 print(env_name,rep_type)
 id_list = list(gb.get_group((env_name, reps_for_reads[rep_type])))
@@ -46,7 +46,7 @@ write_to_file = 'retrain_mf.csv'
 
 env_name = f'gridworld:gridworld-v{version}1'
 
-num_trials = 10000
+num_trials = 15000
 num_events = 250
 
 # make gym environment
@@ -59,7 +59,7 @@ state_reps, representation_name, input_dims, _ = rep_types[rep_type](env)
 
 
 # load weights to head_ac network from previously learned agent
-AC_head_agent = nets.flat_ActorCritic(input_dims, env.action_space.n, lr=learning_rate)
+AC_head_agent = nets.shallow_ActorCritic(input_dims, 200, env.action_space.n, lr=learning_rate)
 
 
 if load_from != None:
