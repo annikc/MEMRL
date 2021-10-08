@@ -1,3 +1,4 @@
+## uses functions from CH2/compare_ec_pol.py
 import gym
 import pickle
 import numpy as np
@@ -7,13 +8,12 @@ from scipy.ndimage import laplace
 import matplotlib as mpl
 
 import matplotlib.colors as colors
-import matplotlib.colorbar as colorbar
 import matplotlib.cm as cmx
 
 from modules.Utils.gridworld_plotting import plot_pref_pol, plot_polmap
 from modules.Agents.EpisodicMemory import EpisodicMemory as Memory
 from modules.Agents.RepresentationLearning.learned_representations import sr, onehot
-from Analysis.analysis_utils import analysis_specs,linc_coolwarm,make_env_graph,compute_graph_distance_matrix, LINCLAB_COLS
+from Analysis.analysis_utils import analysis_specs,linc_coolwarm,make_env_graph,compute_graph_distance_matrix, LINCLAB_COLS, plot_specs
 from scipy.special import rel_entr
 from scipy.stats import entropy
 
@@ -84,8 +84,8 @@ def get_KLD(data,probe_state,trial_num):
     probe_pol = blank_mem.recall_mem(probe_rep)
 
     #for k in state_reps.keys():
-    for sr_rep in blank_mem.cache_list.keys():
         #sr_rep = state_reps[k]
+    for sr_rep in blank_mem.cache_list.keys():
         k = blank_mem.cache_list[sr_rep][2]
         pol = blank_mem.recall_mem(sr_rep)
         twoD = env.oneD2twoD(k)
@@ -160,7 +160,10 @@ def plot_dist_v_entropy(kld_ent = 'ent'):
     plt.savefig(f'../figures/CH2/dist_v_{kld_ent}{env_name[-2:]}_{rep}.{format}',format=format)
     plt.show()
 
-def plot_avg_entropy(env_name, reps_to_plot, pcts_to_plot =[100,75,50,25], kld_ent = 'ent'):
+def plot_avg_entropy(env_name, reps_to_plot, pcts_to_plot =[100,75,50,25], kld_ent = 'ent',**kwargs):
+    plottype = kwargs.get('type','bar')
+    convert_rep_to_color = kwargs.get('colors',color_map)
+    reps_to_titles = {'onehot':'Unstructured', 'analytic successor':'Structured'}
     probe_state = (13,14)
     E = []
     avg_entropy = {}
@@ -179,24 +182,41 @@ def plot_avg_entropy(env_name, reps_to_plot, pcts_to_plot =[100,75,50,25], kld_e
             if pct ==100:
                 start=999
             else:
-                start=899
+                start=895
             for x in range(start,1000):
                 print(x)
                 kld_, ec_pols,entropy_ = get_KLD(data, env.twoD2oneD(probe_state), x)
-                avg_ent_for_trial = np.nanmean(entropy_)
-                K.append(avg_ent_for_trial)
+                K.append(entropy_.flatten())
 
-            each_ent = np.mean(K, axis=0)
-            std = np.nanstd(K)
-            mean_ent = np.nanmean(K)
-            print(mean_ent)
-            avg_entropy[rep].append(mean_ent)
-            std_entropy[rep].append(std)
+            mean_ent = np.nanmean(K, axis=0)
 
-    for r, rep in enumerate(reps_to_plot):
-        barwidth=0.3
-        plt.bar(np.arange(len(pcts_to_plot))+(barwidth*r), avg_entropy[rep], yerr= std_entropy[rep], width=barwidth, color= color_map[rep], alpha=1)
-    plt.xticks(np.arange(len(pcts_to_plot))+(barwidth/2), labels=pcts_to_plot)
+            #std = np.nanstd(K)
+            #mean_ent = np.nanmean(K)
+            #print(mean_ent)
+            avg_entropy[rep].append(np.nan_to_num(mean_ent))
+            #std_entropy[rep].append(std)
+    if plottype == 'bar':
+        for r, rep in enumerate(reps_to_plot):
+            barwidth=0.3
+            plt.bar(np.arange(len(pcts_to_plot))+(barwidth*r), avg_entropy[rep], yerr= std_entropy[rep], width=barwidth, color= color_map[rep], alpha=1)
+        plt.xticks(np.arange(len(pcts_to_plot))+(barwidth/2), labels=pcts_to_plot)
+    elif plottype == 'violin':
+        fig, ax = plt.subplots(2,1, sharex=True)
+        for r, rep in enumerate(reps_to_plot):
+            body = ax[r].violinplot(positions=np.asarray(pcts_to_plot), dataset=avg_entropy[rep], vert=True, widths=15)
+
+            for violinkey in body.keys():
+                if violinkey == 'bodies':
+                    for b in body['bodies']:
+                        b.set_color(convert_rep_to_color[rep])
+                        b.set_alpha(pct/100)
+                else:
+                    body[violinkey].set_color(convert_rep_to_color[rep])
+            ax[r].set_xticks(pcts_to_plot)
+            ax[r].set_xlim([110, 15])
+            ax[r].set_ylabel(f'{reps_to_titles[rep]}')
+            ax[r].set_yticks([0,.5,1,1.5,2])
+    plt.savefig('../figures/CH3/distribution_entropy.svg')
     plt.show()
 
 
@@ -392,52 +412,10 @@ def plot_avg_laplace(env_name, pcts_to_plot,reps_to_plot):
 
 #plot_avg_laplace(env_name,pcts_to_plot=[100,75,50,25],reps_to_plot=['analytic successor','onehot'])
 
-plot_avg_entropy(env_name, ['analytic successor', 'onehot'])
+plot_avg_entropy(env_name, ['analytic successor','onehot'],pcts_to_plot=[100,75,50,25],type='violin')
 
 #test_avg_POLmaps(env_name, rep)
 
 
-
-### Junkyard
-def plot_kld_neighbours():
-    # get id of sim
-    pct = 100
-    run_id = list(gb.get_group((env_name,rep,cache_limits[env_name][pct])))[0]
-    print(run_id)
-    with open(f'../../Data/results/{run_id}_data.p', 'rb') as f:
-        data = pickle.load(f)
-
-    trial_number = 999
-    ec_dict = data['ec_dicts'][trial_number]
-    blank_mem = Memory(cache_limit=400, entry_size=4)
-    blank_mem.cache_list = ec_dict
-    probs = np.array((4,20,20))
-
-    probe_state = (14,5)
-    state = env.twoD2oneD(probe_state)
-    west  = env.twoD2oneD((probe_state[0],   probe_state[1]-1))
-    north = env.twoD2oneD((probe_state[0]-1, probe_state[1]))
-    east  = env.twoD2oneD((probe_state[0],   probe_state[1]+1))
-    south = env.twoD2oneD((probe_state[0]+1, probe_state[1]))
-    print(state,west,north,east,south)
-    pi_0 = blank_mem.recall_mem(state_reps[state])
-    pi_w = blank_mem.recall_mem(state_reps[west])
-    pi_n = blank_mem.recall_mem(state_reps[north])
-    pi_e = blank_mem.recall_mem(state_reps[east])
-    pi_s = blank_mem.recall_mem(state_reps[south])
-
-    print(pi_0,pi_w)
-    ks = np.zeros((3,3))
-    ks[:] =np.nan
-
-    ks[0,1] = sum(rel_entr(pi_0,pi_n))
-    ks[1,0] = sum(rel_entr(pi_0,pi_w))
-    ks[1,1] = sum(rel_entr(pi_0,pi_0))
-    ks[1,2] = sum(rel_entr(pi_0,pi_e))
-    ks[2,1] = sum(rel_entr(pi_0,pi_s))
-
-    a = plt.imshow(ks)
-    plt.colorbar(a)
-    plt.show()
 
 
