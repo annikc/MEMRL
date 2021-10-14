@@ -8,7 +8,7 @@ import modules.Agents.Networks as nets
 import modules.Agents.EpisodicMemory as Memory
 
 from modules.Agents import Agent
-from modules.Experiments import flat_expt as expt
+from modules.Experiments import shallow_expt as expt
 import matplotlib.pyplot as plt
 from modules.Utils import running_mean as rm
 import argparse
@@ -31,7 +31,7 @@ distance_metric = args.dist
 
 reps_for_reads = {'onehot':'onehot', 'sr':'analytic successor', 'place_cell':'place_cell','random':'random'}
 env_name = f'gridworld:gridworld-v{version}'
-directory = './Data/' # ../../Data if you are in Tests/CH2
+directory = '../../Data/' # ../../Data if you are in Tests/CH2
 
 df = pd.read_csv(directory+'train_only_shallowAC.csv')
 gb = df.groupby(['env_name','representation'])["save_id"]
@@ -47,7 +47,7 @@ write_to_file = 'retrain_mf.csv'
 env_name = f'gridworld:gridworld-v{version}1'
 
 
-num_trials = 15000
+num_trials = 15
 num_events = 250
 
 # make gym environment
@@ -74,5 +74,6 @@ agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 
 run = expt(agent, env)
 run.run(NUM_TRIALS=num_trials, NUM_EVENTS=num_events)
-run.record_log(env_name, representation_name,num_trials,num_events,dir=directory, file=write_to_file, load_from=load_from)
+print([(x, len(run.data[x])) for x in run.data.keys()])
+run.record_log(env_name, representation_name,num_trials,num_events,dir=directory, file=write_to_file, load_from=load_from,mock_log=True)
 

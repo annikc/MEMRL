@@ -106,9 +106,9 @@ class expt(object):
 					'EC_snap': [],
 					'P_snap': [],
 					'V_snap': [],
-					'occupancy':np.zeros(self.env.nstates),
-					'EC_occupancy':np.zeros(self.env.nstates),
-					'MF_occupancy':np.zeros(self.env.nstates)
+					'occupancy':[], #np.zeros(self.env.nstates),
+					'EC_occupancy':[], # np.zeros(self.env.nstates),
+					'MF_occupancy':[] #np.zeros(self.env.nstates)
 					}
 		return data_log
 
@@ -161,14 +161,11 @@ class expt(object):
 			self.t = time.time()
 
 
-	def single_step(self,trial, set=0):
+	def single_step(self,trial):
 		# get representation for given state of env. TODO: should be in agent to get representation?
 		state_representation = self.agent.get_state_representation(self.state)
 		readable = self.state
-		if set ==0:
-			self.data['EC_occupancy'][self.state]+=1
-		elif set ==1:
-			self.data['MF_occupancy'][self.state]+=1
+
 		# get action from agent
 		action, log_prob, expected_value = self.agent.get_action(state_representation)
 		# take step in environment
@@ -184,6 +181,7 @@ class expt(object):
 							 done=done, readable_state=readable)
 		self.agent.counter += 1
 		self.state = next_state
+		self.state_occ[self.state]+=1
 		return done
 
 	def run(self, NUM_TRIALS, NUM_EVENTS, **kwargs):
@@ -195,6 +193,7 @@ class expt(object):
 		for trial in range(NUM_TRIALS):
 			self.state = self.env.reset()
 			self.reward_sum = 0
+			self.state_occ = np.zeros(self.env.nstates)
 
 			for event in range(NUM_EVENTS):
 				done = self.single_step(trial)
@@ -419,6 +418,40 @@ class shallow_expt(expt):
 				with open(f'{parent_folder}ec_dicts/{save_id}_EC.p', 'wb') as saveec:
 					pickle.dump(self.agent.EC.cache_list, saveec)
 		print(f'Logged with ID {save_id}')
+
+	def end_of_trial(self, trial, logsnap=False):
+		p, v = self.agent.finish_()
+
+		# temp
+		if logsnap:
+			if trial % self.print_freq==0:
+				states = [self.env.oneD2twoD(x) for x in list(self.agent.state_reps.keys())]
+				observations = list(self.agent.state_reps.values())
+				MF_pols, MF_vals = self.snapshot(states,observations)
+				self.data['V_snap'].append(MF_vals)
+				self.data['P_snap'].append(MF_pols)
+		# /temp
+
+		self.data['total_reward'].append(self.reward_sum) # removed for bootstrap expts
+		self.data['loss'][0].append(p)
+		self.data['loss'][1].append(v)
+
+		if self.agent.EC != None:
+			print('hello')
+			self.data['EC_occupancy'].append(self.state_occ)
+		else:
+			print(self.agent.EC)
+			self.data['MF_occupancy'].append(self.state_occ)
+
+		if trial <= 10:
+			self.running_rwdavg = np.mean(self.data['total_reward'])
+		else:
+			self.running_rwdavg = np.mean(self.data['total_reward'][-self.print_freq:])
+
+		if trial % self.print_freq == 0:
+			print(f"Episode: {trial}, Score: {self.reward_sum} (Running Avg:{self.running_rwdavg}) [{time.time() - self.t}s]")
+			self.t = time.time()
+
 
 
 
@@ -661,6 +694,7 @@ class Bootstrap_flat(gridworldExperiment):
 
 			self.data['loss'][0].append(p)
 			self.data['loss'][1].append(v)
+			self.data['EC_occupancy'].append(self.state_occ)
 
 		elif set == 1: # MF
 			data_key = 'bootstrap_reward'
@@ -672,6 +706,7 @@ class Bootstrap_flat(gridworldExperiment):
 
 			self.data['mf_loss'][0].append(p)
 			self.data['mf_loss'][1].append(v)
+			self.data['MF_occupancy'].append(self.state_occ)
 
 		else:
 			raise Exception('Invalid Set Argument')
