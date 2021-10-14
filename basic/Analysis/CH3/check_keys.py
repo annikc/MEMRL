@@ -28,7 +28,9 @@ colors = {100:LINCLAB_COLS['red'], 75: LINCLAB_COLS['orange'], 50:LINCLAB_COLS['
 env = 'gridworld:gridworld-v41'
 rep = 'structured'
 id_list = gb.get_group((env,rep))
+id_list = ['252cb42a-aad2-4fcc-bfa2-46d430835bf3']
 for id_num in id_list:
     with open(parent_path+f'results/{id_num}_data.p','rb') as f:
         dats = pickle.load(f)
         print(id_num, [(x, len(dats[x])) for x in dats.keys()])
+        print(dats['MF_occupancy'])

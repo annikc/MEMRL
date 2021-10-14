@@ -31,7 +31,7 @@ distance_metric = args.dist
 
 reps_for_reads = {'onehot':'onehot', 'sr':'analytic successor', 'place_cell':'place_cell','random':'random'}
 env_name = f'gridworld:gridworld-v{version}'
-directory = '../../Data/' # ../../Data if you are in Tests/CH2
+directory = './Data/' # ../../Data if you are in Tests/CH2
 
 df = pd.read_csv(directory+'train_only_shallowAC.csv')
 gb = df.groupby(['env_name','representation'])["save_id"]
@@ -67,7 +67,7 @@ if load_from != None:
     AC_head_agent.load_state_dict(torch.load(directory+f'agents/{load_from}.pt'))
     print(f"weights loaded from {load_from}")
 
-memory = Memory.EpisodicMemory(cache_limit=cache_size_for_env, entry_size=env.action_space.n)
+memory = None#Memory.EpisodicMemory(cache_limit=cache_size_for_env, entry_size=env.action_space.n)
 
 agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 
