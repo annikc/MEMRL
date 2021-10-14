@@ -64,7 +64,7 @@ AC_head_agent = nets.shallow_ActorCritic(input_dims, 200, env.action_space.n, lr
 
 
 if load_from != None:
-    AC_head_agent.load_state_dict(torch.load(directory+f'agents/{load_from}.pt'))
+    AC_head_agent.load_state_dict(torch.load(directory+f'agents/saved_agents/{load_from}.pt'))
     print(f"weights loaded from {load_from}")
 
 memory = None#Memory.EpisodicMemory(cache_limit=cache_size_for_env, entry_size=env.action_space.n)
