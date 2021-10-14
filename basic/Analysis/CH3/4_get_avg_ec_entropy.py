@@ -53,6 +53,3 @@ plot_all_entropy(env_name, ['analytic successor','onehot'],pcts_to_plot=[100,75,
 plot_avg_laplace(env_name,pcts_to_plot=[100,75,50,25],reps_to_plot=['analytic successor','onehot'])
 test_avg_POLmaps(env_name, rep)
 
-
-
-
