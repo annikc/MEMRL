@@ -741,7 +741,7 @@ class Bootstrap_flat(gridworldExperiment):
 					self.agent.get_action = self.agent.EC_action
 				else:
 					self.agent.get_action = self.agent.MF_action
-
+				self.state_occ = np.zeros(self.env.nstates)
 				# get a trajectory in the environment up to NUM_EVENTS steps
 				for event in range(NUM_EVENTS):
 					done = self.single_step(trial)
