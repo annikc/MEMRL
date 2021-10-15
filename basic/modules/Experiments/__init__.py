@@ -437,10 +437,8 @@ class shallow_expt(expt):
 		self.data['loss'][1].append(v)
 
 		if self.agent.EC != None:
-			print('hello')
 			self.data['EC_occupancy'].append(self.state_occ)
 		else:
-			print(self.agent.EC)
 			self.data['MF_occupancy'].append(self.state_occ)
 
 		if trial <= 10:
