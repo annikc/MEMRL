@@ -692,7 +692,8 @@ class Bootstrap_flat(gridworldExperiment):
 
 			self.data['loss'][0].append(p)
 			self.data['loss'][1].append(v)
-			self.data['EC_occupancy'].append(self.state_occ)
+			if self.take_state_occ:
+				self.data['EC_occupancy'].append(self.state_occ)
 
 		elif set == 1: # MF
 			data_key = 'bootstrap_reward'
@@ -704,7 +705,8 @@ class Bootstrap_flat(gridworldExperiment):
 
 			self.data['mf_loss'][0].append(p)
 			self.data['mf_loss'][1].append(v)
-			self.data['MF_occupancy'].append(self.state_occ)
+			if self.take_state_occ:
+				self.data['MF_occupancy'].append(self.state_occ)
 
 		else:
 			raise Exception('Invalid Set Argument')
@@ -723,6 +725,7 @@ class Bootstrap_flat(gridworldExperiment):
 
 	def run(self, NUM_TRIALS, NUM_EVENTS, **kwargs):
 		take_pv_snap = kwargs.get('pv_snap',False)
+		self.take_state_occ = kwargs.get('state_occ',False)
 		self.print_freq = kwargs.get('printfreq', 100)
 		self.reset_data_logs()
 		self.data['bootstrap_reward'] = []
