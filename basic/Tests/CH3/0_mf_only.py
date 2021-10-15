@@ -11,8 +11,8 @@ import argparse
 
 # set up arguments to be passed in and their defauls
 parser = argparse.ArgumentParser()
-parser.add_argument('-v', type=int, default=1)
-parser.add_argument('-rep', default='onehot')
+parser.add_argument('-v', type=int, default=5)
+parser.add_argument('-rep', default='sr')
 parser.add_argument('-lr', default=0.0005)
 parser.add_argument('-cache', type=int, default=100)
 parser.add_argument('-dist', default='chebyshev')
@@ -30,7 +30,7 @@ write_to_file = 'naive_mf.csv'
 directory = '../../Data/' # ../../Data if you are in Tests/CH2
 env_name = f'gridworld:gridworld-v{version}'
 
-num_trials = 15000
+num_trials = 5000
 num_events = 250
 
 # make gym environment

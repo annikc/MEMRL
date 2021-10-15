@@ -744,7 +744,7 @@ class Bootstrap_flat(gridworldExperiment):
 
 				# get a trajectory in the environment up to NUM_EVENTS steps
 				for event in range(NUM_EVENTS):
-					done = self.single_step(trial,set)
+					done = self.single_step(trial)
 					if done:
 						break
 

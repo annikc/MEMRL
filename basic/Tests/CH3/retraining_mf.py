@@ -15,8 +15,8 @@ import argparse
 
 # set up arguments to be passed in and their defauls
 parser = argparse.ArgumentParser()
-parser.add_argument('-v', type=int, default=1)
-parser.add_argument('-rep', default='onehot')
+parser.add_argument('-v', type=int, default=4)
+parser.add_argument('-rep', default='sr')
 parser.add_argument('-lr', default=0.0005)
 parser.add_argument('-cache', type=int, default=100)
 parser.add_argument('-dist', default='chebyshev')
@@ -31,7 +31,7 @@ distance_metric = args.dist
 
 reps_for_reads = {'onehot':'onehot', 'sr':'analytic successor', 'place_cell':'place_cell','random':'random'}
 env_name = f'gridworld:gridworld-v{version}'
-directory = './Data/' # ../../Data if you are in Tests/CH2
+directory = '../../Data/' # ../../Data if you are in Tests/CH2
 
 df = pd.read_csv(directory+'train_only_shallowAC.csv')
 gb = df.groupby(['env_name','representation'])["save_id"]
@@ -47,7 +47,7 @@ write_to_file = 'retrain_mf.csv'
 env_name = f'gridworld:gridworld-v{version}1'
 
 
-num_trials = 15000
+num_trials = 1000
 num_events = 250
 
 # make gym environment
@@ -64,7 +64,7 @@ AC_head_agent = nets.shallow_ActorCritic(input_dims, 200, env.action_space.n, lr
 
 
 if load_from != None:
-    AC_head_agent.load_state_dict(torch.load(directory+f'agents/saved_agents/{load_from}.pt'))
+    AC_head_agent.load_state_dict(torch.load(directory+f'agents/{load_from}.pt'))
     print(f"weights loaded from {load_from}")
 
 memory = None#Memory.EpisodicMemory(cache_limit=cache_size_for_env, entry_size=env.action_space.n)
@@ -75,5 +75,5 @@ agent = Agent(AC_head_agent, memory=memory, state_representations=state_reps)
 run = expt(agent, env)
 run.run(NUM_TRIALS=num_trials, NUM_EVENTS=num_events)
 print([(x, len(run.data[x])) for x in run.data.keys()])
-run.record_log(env_name, representation_name,num_trials,num_events,dir=directory, file=write_to_file, load_from=load_from)
+run.record_log(env_name, representation_name,num_trials,num_events,dir=directory, file=write_to_file, load_from=load_from, extra=['randomwalk'])
 
